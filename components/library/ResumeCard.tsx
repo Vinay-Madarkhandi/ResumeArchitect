@@ -70,6 +70,8 @@ export function ResumeCard({ resume }: { resume: ResumeCardData }) {
           <div className="flex flex-wrap gap-1.5">
             {resume.is_default ? (
               <Badge variant="accent">Master</Badge>
+            ) : resume.kind === "master" ? (
+              <Badge variant="outline">Previous master</Badge>
             ) : (
               <Badge variant="outline">Tailored</Badge>
             )}

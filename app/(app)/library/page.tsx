@@ -13,15 +13,25 @@ export default async function LibraryPage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/sign-in");
 
-  const { data: resumes } = await supabase
-    .from("resumes")
-    .select("id, kind, title, is_default, status, job_title_snapshot, job_company_snapshot, updated_at, pdf_storage_path")
-    .eq("user_id", user.id)
-    .eq("status", "draft")
-    .order("is_default", { ascending: false })
-    .order("updated_at", { ascending: false });
+  const columns = "id, kind, title, is_default, status, job_title_snapshot, job_company_snapshot, updated_at, pdf_storage_path";
+  const [{ data: resumes }, { data: archived }] = await Promise.all([
+    supabase
+      .from("resumes")
+      .select(columns)
+      .eq("user_id", user.id)
+      .eq("status", "draft")
+      .order("is_default", { ascending: false })
+      .order("updated_at", { ascending: false }),
+    supabase
+      .from("resumes")
+      .select(columns)
+      .eq("user_id", user.id)
+      .eq("status", "archived")
+      .order("updated_at", { ascending: false }),
+  ]);
 
   const list = resumes ?? [];
+  const archivedList = archived ?? [];
   const hasMaster = list.some((r) => r.is_default);
 
   return (
@@ -58,6 +68,19 @@ export default async function LibraryPage() {
             <ResumeCard key={resume.id} resume={resume} />
           ))}
         </div>
+      )}
+
+      {archivedList.length > 0 && (
+        <details className="mt-xl">
+          <summary className="cursor-pointer font-sans text-body-lg text-on-surface-variant hover:text-on-surface">
+            Previous master resumes ({archivedList.length})
+          </summary>
+          <div className="mt-md grid grid-cols-1 gap-md sm:grid-cols-2 lg:grid-cols-3">
+            {archivedList.map((resume) => (
+              <ResumeCard key={resume.id} resume={resume} />
+            ))}
+          </div>
+        </details>
       )}
     </div>
   );
