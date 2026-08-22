@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+
+<html class="h-full" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>ResumeArchitect - Editor</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:ital,wght@0,100..900;1,100..900&amp;family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&amp;family=Source+Serif+4:ital,opsz,wght@0,8..60,200..900;1,8..60,200..900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "secondary-container": "#86f2e4",
+                        "on-primary": "#ffffff",
+                        "on-secondary-fixed-variant": "#005049",
+                        "tertiary-fixed-dim": "#dec29a",
+                        "error-container": "#ffdad6",
+                        "tertiary-fixed": "#fcdeb5",
+                        "on-error": "#ffffff",
+                        "surface-dim": "#cbdbf5",
+                        "on-background": "#0b1c30",
+                        "on-tertiary-container": "#98805d",
+                        "secondary": "#006a61",
+                        "secondary-fixed": "#89f5e7",
+                        "outline-variant": "#c6c6cd",
+                        "primary-fixed-dim": "#bec6e0",
+                        "on-secondary-container": "#006f66",
+                        "surface-bright": "#f8f9ff",
+                        "inverse-primary": "#bec6e0",
+                        "tertiary": "#000000",
+                        "primary": "#000000",
+                        "on-surface": "#0b1c30",
+                        "error": "#ba1a1a",
+                        "on-secondary": "#ffffff",
+                        "inverse-on-surface": "#eaf1ff",
+                        "surface-container-high": "#dce9ff",
+                        "surface-tint": "#565e74",
+                        "on-primary-fixed-variant": "#3f465c",
+                        "surface-container-lowest": "#ffffff",
+                        "primary-fixed": "#dae2fd",
+                        "outline": "#76777d",
+                        "on-tertiary-fixed": "#271901",
+                        "inverse-surface": "#213145",
+                        "surface-variant": "#d3e4fe",
+                        "tertiary-container": "#271901",
+                        "surface-container-low": "#eff4ff",
+                        "on-secondary-fixed": "#00201d",
+                        "on-primary-container": "#7c839b",
+                        "on-primary-fixed": "#131b2e",
+                        "primary-container": "#131b2e",
+                        "surface-container-highest": "#d3e4fe",
+                        "on-tertiary": "#ffffff",
+                        "secondary-fixed-dim": "#6bd8cb",
+                        "on-error-container": "#93000a",
+                        "on-tertiary-fixed-variant": "#574425",
+                        "background": "#f8f9ff",
+                        "surface": "#f8f9ff",
+                        "on-surface-variant": "#45464d",
+                        "surface-container": "#e5eeff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "xs": "4px",
+                        "lg": "24px",
+                        "xl": "40px",
+                        "base": "4px",
+                        "xxl": "80px",
+                        "max-width-doc": "720px",
+                        "gutter": "24px",
+                        "margin-desktop": "48px",
+                        "sm": "8px",
+                        "margin-mobile": "16px",
+                        "md": "16px"
+                    },
+                    "fontFamily": {
+                        "headline-lg-mobile": [
+                            "Hanken Grotesk"
+                        ],
+                        "body-doc": [
+                            "\"Source Serif 4\""
+                        ],
+                        "headline-lg": [
+                            "Hanken Grotesk"
+                        ],
+                        "display-lg": [
+                            "Hanken Grotesk"
+                        ],
+                        "body-lg": [
+                            "Hanken Grotesk"
+                        ],
+                        "button": [
+                            "Hanken Grotesk"
+                        ],
+                        "label-sm": [
+                            "JetBrains Mono"
+                        ],
+                        "headline-md": [
+                            "Hanken Grotesk"
+                        ]
+                    },
+                    "fontSize": {
+                        "headline-lg-mobile": [
+                            "24px",
+                            {
+                                "lineHeight": "1.2",
+                                "fontWeight": "600"
+                            }
+                        ],
+                        "body-doc": [
+                            "18px",
+                            {
+                                "lineHeight": "1.7",
+                                "fontWeight": "400"
+                            }
+                        ],
+                        "headline-lg": [
+                            "32px",
+                            {
+                                "lineHeight": "1.2",
+                                "letterSpacing": "-0.01em",
+                                "fontWeight": "600"
+                            }
+                        ],
+                        "display-lg": [
+                            "48px",
+                            {
+                                "lineHeight": "1.1",
+                                "letterSpacing": "-0.02em",
+                                "fontWeight": "600"
+                            }
+                        ],
+                        "body-lg": [
+                            "16px",
+                            {
+                                "lineHeight": "1.6",
+                                "fontWeight": "400"
+                            }
+                        ],
+                        "button": [
+                            "14px",
+                            {
+                                "lineHeight": "1.0",
+                                "fontWeight": "600"
+                            }
+                        ],
+                        "label-sm": [
+                            "12px",
+                            {
+                                "lineHeight": "1.0",
+                                "letterSpacing": "0.05em",
+                                "fontWeight": "500"
+                            }
+                        ],
+                        "headline-md": [
+                            "20px",
+                            {
+                                "lineHeight": "1.4",
+                                "fontWeight": "500"
+                            }
+                        ]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .split-view-container {
+            display: grid;
+            grid-template-columns: 20rem 1fr 20rem;
+            height: 100vh;
+        }
+        .editor-content {
+            box-shadow: 0px 4px 12px rgba(15, 23, 42, 0.08);
+        }
+    </style>
+</head>
+<body class="bg-surface text-on-surface h-full font-body-lg antialiased">
+<!-- SideNavBar (from JSON) -->
+<nav class="bg-surface dark:bg-inverse-surface border-r border-outline-variant dark:border-outline flex flex-col h-screen p-md fixed left-0 top-0 z-40 w-64 hidden md:flex">
+<div class="mb-lg">
+<div class="text-headline-md font-headline-md font-bold text-primary dark:text-on-primary">ResumeArchitect</div>
+<div class="font-label-sm text-label-sm text-secondary mt-1">Professional Plan</div>
+</div>
+<button class="bg-secondary text-on-secondary font-button text-button px-lg py-sm rounded-DEFAULT mb-lg hover:bg-on-secondary-container transition-colors w-full text-center">New Resume</button>
+<ul class="flex-1 space-y-sm">
+<li>
+<a class="flex items-center p-sm text-on-surface-variant dark:text-outline-variant hover:bg-surface-container-high transition-all rounded-DEFAULT" href="#">
+<span class="material-symbols-outlined mr-sm text-lg">folder_open</span>
+<span class="font-headline-md text-headline-md text-base">Library</span>
+</a>
+</li>
+<li>
+<a class="flex items-center p-sm text-on-surface-variant dark:text-outline-variant hover:bg-surface-container-high transition-all rounded-DEFAULT" href="#">
+<span class="material-symbols-outlined mr-sm text-lg">auto_fix_high</span>
+<span class="font-headline-md text-headline-md text-base">New Tailoring</span>
+</a>
+</li>
+<li>
+<a class="flex items-center p-sm bg-secondary-container dark:bg-secondary text-on-secondary-container dark:text-on-secondary font-bold rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined mr-sm text-lg" style="font-variation-settings: 'FILL' 1;">edit_note</span>
+<span class="font-headline-md text-headline-md text-base">Editor</span>
+</a>
+</li>
+<li>
+<a class="flex items-center p-sm text-on-surface-variant dark:text-outline-variant hover:bg-surface-container-high transition-all rounded-DEFAULT" href="#">
+<span class="material-symbols-outlined mr-sm text-lg">settings</span>
+<span class="font-headline-md text-headline-md text-base">Settings</span>
+</a>
+</li>
+<li>
+<a class="flex items-center p-sm text-on-surface-variant dark:text-outline-variant hover:bg-surface-container-high transition-all rounded-DEFAULT" href="#">
+<span class="material-symbols-outlined mr-sm text-lg">help_outline</span>
+<span class="font-headline-md text-headline-md text-base">Support</span>
+</a>
+</li>
+</ul>
+<div class="mt-auto">
+<a class="flex items-center p-sm text-on-surface-variant dark:text-outline-variant hover:bg-surface-container-high transition-all rounded-DEFAULT" href="#">
+<span class="material-symbols-outlined mr-sm text-lg">logout</span>
+<span class="font-headline-md text-headline-md text-base">Sign Out</span>
+</a>
+</div>
+</nav>
+<!-- Main Workspace -->
+<main class="md:ml-64 h-full flex flex-col overflow-hidden">
+<!-- Top Action Bar -->
+<header class="h-16 bg-surface-container-lowest border-b border-outline-variant flex items-center justify-between px-lg shrink-0">
+<div class="flex items-center gap-sm">
+<h1 class="font-headline-lg text-headline-lg text-lg">Senior Product Designer - TechCorp</h1>
+<span class="font-label-sm text-label-sm bg-surface-container-high text-on-surface px-sm py-1 rounded">Draft</span>
+</div>
+<div class="flex items-center gap-md">
+<button class="font-button text-button text-on-surface-variant hover:text-primary transition-colors flex items-center gap-1">
+<span class="material-symbols-outlined text-sm">save</span>
+                    Save Draft
+                </button>
+<button class="font-button text-button text-on-surface border border-outline-variant px-md py-sm rounded hover:bg-surface-container transition-colors flex items-center gap-1">
+<span class="material-symbols-outlined text-sm">visibility</span>
+                    Preview PDF
+                </button>
+<button class="font-button text-button bg-secondary text-on-secondary px-md py-sm rounded hover:bg-on-secondary-container transition-colors flex items-center gap-1">
+<span class="material-symbols-outlined text-sm">download</span>
+                    Export
+                </button>
+</div>
+</header>
+<!-- Split View Area -->
+<div class="flex-1 overflow-hidden grid grid-cols-1 md:grid-cols-[1fr_minmax(0,720px)_1fr] bg-background">
+<!-- Left: Original Resume -->
+<aside class="hidden md:flex flex-col border-r border-outline-variant bg-surface-container-low overflow-y-auto p-md">
+<div class="flex items-center gap-2 mb-lg sticky top-0 bg-surface-container-low pt-xs pb-sm z-10 border-b border-outline-variant">
+<span class="material-symbols-outlined text-outline">history</span>
+<h2 class="font-headline-md text-headline-md text-base text-on-surface-variant">Original Resume</h2>
+</div>
+<div class="space-y-lg opacity-70">
+<div>
+<h3 class="font-headline-md text-headline-md text-sm font-bold mb-xs">Experience</h3>
+<div class="space-y-sm">
+<div>
+<p class="font-bold">Product Designer | Acme Corp</p>
+<p class="text-sm text-on-surface-variant">2020 - Present</p>
+<ul class="list-disc pl-md text-sm mt-1 space-y-1">
+<li>Led design for core SaaS platform.</li>
+<li>Increased user engagement by 20%.</li>
+<li>Collaborated with engineering team.</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+</aside>
+<!-- Center: Editor -->
+<section class="overflow-y-auto p-lg md:p-xl flex justify-center bg-surface-container-lowest">
+<div class="w-full max-w-max-width-doc editor-content bg-surface-container-lowest p-xl min-h-[1056px]">
+<div class="font-body-doc text-body-doc space-y-xl text-primary">
+<!-- Header -->
+<div class="text-center border-b border-outline-variant pb-md">
+<h1 class="font-display-lg text-display-lg mb-1">Jane Doe</h1>
+<p class="font-label-sm text-label-sm text-on-surface-variant">San Francisco, CA • jane.doe@example.com • linkedin.com/in/janedoe</p>
+</div>
+<!-- Summary -->
+<div>
+<h2 class="font-headline-lg text-headline-lg text-lg border-b border-outline-variant pb-xs mb-sm uppercase tracking-wide">Professional Summary</h2>
+<p class="contenteditable outline-none hover:bg-surface-container-low p-1 -m-1 rounded transition-colors" contenteditable="true">Strategic and data-driven Senior Product Designer with 5+ years of experience transforming complex workflows into intuitive, high-performance SaaS interfaces. Proven track record of aligning user needs with business goals to drive measurable engagement and retention.</p>
+</div>
+<!-- Experience -->
+<div>
+<h2 class="font-headline-lg text-headline-lg text-lg border-b border-outline-variant pb-xs mb-sm uppercase tracking-wide">Experience</h2>
+<div class="mb-md group relative">
+<div class="flex justify-between items-baseline mb-1">
+<h3 class="font-bold contenteditable outline-none hover:bg-surface-container-low p-1 -ml-1 rounded" contenteditable="true">Senior Product Designer <span class="font-normal text-on-surface-variant">| Acme Corp</span></h3>
+<span class="text-sm text-on-surface-variant contenteditable outline-none" contenteditable="true">Mar 2020 – Present</span>
+</div>
+<ul class="list-disc pl-lg space-y-2 relative">
+<li class="contenteditable outline-none hover:bg-surface-container-low p-1 -m-1 rounded transition-colors" contenteditable="true">Spearheaded the end-to-end redesign of the core SaaS enterprise platform, resulting in a 25% increase in daily active users and a 15% reduction in customer support tickets.</li>
+<li class="contenteditable outline-none hover:bg-surface-container-low p-1 -m-1 rounded transition-colors bg-secondary-container bg-opacity-20 border-l-2 border-secondary" contenteditable="true">Implemented a comprehensive design system utilizing React and Storybook, accelerating engineering delivery velocity by 30% across cross-functional teams.</li>
+<li class="contenteditable outline-none hover:bg-surface-container-low p-1 -m-1 rounded transition-colors" contenteditable="true">Facilitated weekly user research sessions and A/B testing protocols to validate high-fidelity prototypes, directly informing the Q3 product roadmap.</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Right: AI Suggestions -->
+<aside class="hidden md:flex flex-col border-l border-outline-variant bg-surface-container-low overflow-y-auto p-md">
+<div class="flex items-center justify-between mb-lg sticky top-0 bg-surface-container-low pt-xs pb-sm z-10 border-b border-outline-variant">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary">auto_awesome</span>
+<h2 class="font-headline-md text-headline-md text-base text-on-surface">AI Tailoring</h2>
+</div>
+<span class="font-label-sm text-label-sm bg-surface-container-highest px-2 py-1 rounded">Score: 92/100</span>
+</div>
+<div class="space-y-md">
+<div class="bg-surface-container-lowest p-md rounded border border-outline-variant relative overflow-hidden">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-secondary"></div>
+<div class="flex items-start gap-sm mb-2">
+<span class="material-symbols-outlined text-secondary text-sm mt-1">check_circle</span>
+<div>
+<h4 class="font-bold text-sm">Quantified Impact Added</h4>
+<p class="text-sm text-on-surface-variant mt-1">Enhanced the bullet point regarding the design system to include specific metrics ("30% velocity increase") based on standard industry impacts, aligning with the target role's focus on efficiency.</p>
+</div>
+</div>
+<div class="mt-sm pt-sm border-t border-outline-variant flex gap-2">
+<button class="text-xs font-bold text-outline hover:text-primary transition-colors">Dismiss</button>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-md rounded border border-outline-variant">
+<div class="flex items-start gap-sm mb-2">
+<span class="material-symbols-outlined text-primary-container text-sm mt-1">lightbulb</span>
+<div>
+<h4 class="font-bold text-sm">Keyword Optimization</h4>
+<p class="text-sm text-on-surface-variant mt-1">Suggested changing "Collaborated with engineering team" to "cross-functional teams" to better match the job description's terminology.</p>
+</div>
+</div>
+<div class="mt-sm pt-sm border-t border-outline-variant flex gap-2">
+<button class="text-xs font-bold text-secondary hover:text-on-secondary-container transition-colors">Apply</button>
+<button class="text-xs font-bold text-outline hover:text-primary transition-colors">Dismiss</button>
+</div>
+</div>
+</div>
+</aside>
+</div>
+</main>
+</body></html>

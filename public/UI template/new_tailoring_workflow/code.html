@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+
+<html class="h-full" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>ResumeArchitect - New Tailoring</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600&amp;family=JetBrains+Mono:wght@500&amp;family=Source+Serif+4:wght@400&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "secondary-container": "#86f2e4",
+                      "on-primary": "#ffffff",
+                      "on-secondary-fixed-variant": "#005049",
+                      "tertiary-fixed-dim": "#dec29a",
+                      "error-container": "#ffdad6",
+                      "tertiary-fixed": "#fcdeb5",
+                      "on-error": "#ffffff",
+                      "surface-dim": "#cbdbf5",
+                      "on-background": "#0b1c30",
+                      "on-tertiary-container": "#98805d",
+                      "secondary": "#006a61",
+                      "secondary-fixed": "#89f5e7",
+                      "outline-variant": "#c6c6cd",
+                      "primary-fixed-dim": "#bec6e0",
+                      "on-secondary-container": "#006f66",
+                      "surface-bright": "#f8f9ff",
+                      "inverse-primary": "#bec6e0",
+                      "tertiary": "#000000",
+                      "primary": "#000000",
+                      "on-surface": "#0b1c30",
+                      "error": "#ba1a1a",
+                      "on-secondary": "#ffffff",
+                      "inverse-on-surface": "#eaf1ff",
+                      "surface-container-high": "#dce9ff",
+                      "surface-tint": "#565e74",
+                      "on-primary-fixed-variant": "#3f465c",
+                      "surface-container-lowest": "#ffffff",
+                      "primary-fixed": "#dae2fd",
+                      "outline": "#76777d",
+                      "on-tertiary-fixed": "#271901",
+                      "inverse-surface": "#213145",
+                      "surface-variant": "#d3e4fe",
+                      "tertiary-container": "#271901",
+                      "surface-container-low": "#eff4ff",
+                      "on-secondary-fixed": "#00201d",
+                      "on-primary-container": "#7c839b",
+                      "on-primary-fixed": "#131b2e",
+                      "primary-container": "#131b2e",
+                      "surface-container-highest": "#d3e4fe",
+                      "on-tertiary": "#ffffff",
+                      "secondary-fixed-dim": "#6bd8cb",
+                      "on-error-container": "#93000a",
+                      "on-tertiary-fixed-variant": "#574425",
+                      "background": "#f8f9ff",
+                      "surface": "#f8f9ff",
+                      "on-surface-variant": "#45464d",
+                      "surface-container": "#e5eeff"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "xs": "4px",
+                      "lg": "24px",
+                      "xl": "40px",
+                      "base": "4px",
+                      "xxl": "80px",
+                      "max-width-doc": "720px",
+                      "gutter": "24px",
+                      "margin-desktop": "48px",
+                      "sm": "8px",
+                      "margin-mobile": "16px",
+                      "md": "16px"
+              },
+              "fontFamily": {
+                      "headline-lg-mobile": [
+                              "Hanken Grotesk"
+                      ],
+                      "body-doc": [
+                              "\"Source Serif 4\""
+                      ],
+                      "headline-lg": [
+                              "Hanken Grotesk"
+                      ],
+                      "display-lg": [
+                              "Hanken Grotesk"
+                      ],
+                      "body-lg": [
+                              "Hanken Grotesk"
+                      ],
+                      "button": [
+                              "Hanken Grotesk"
+                      ],
+                      "label-sm": [
+                              "JetBrains Mono"
+                      ],
+                      "headline-md": [
+                              "Hanken Grotesk"
+                      ]
+              },
+              "fontSize": {
+                      "headline-lg-mobile": [
+                              "24px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-doc": [
+                              "18px",
+                              {
+                                      "lineHeight": "1.7",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "headline-lg": [
+                              "32px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "letterSpacing": "-0.01em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "display-lg": [
+                              "48px",
+                              {
+                                      "lineHeight": "1.1",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-lg": [
+                              "16px",
+                              {
+                                      "lineHeight": "1.6",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "button": [
+                              "14px",
+                              {
+                                      "lineHeight": "1.0",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "label-sm": [
+                              "12px",
+                              {
+                                      "lineHeight": "1.0",
+                                      "letterSpacing": "0.05em",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "headline-md": [
+                              "20px",
+                              {
+                                      "lineHeight": "1.4",
+                                      "fontWeight": "500"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+      </script>
+<style>
+        .drag-active {
+            border-color: #006a61;
+            background-color: #eaf1ff;
+        }
+      </style>
+</head>
+<body class="bg-background text-on-surface h-full flex antialiased">
+<!-- SideNavBar -->
+<nav class="bg-surface dark:bg-inverse-surface border-r border-outline-variant dark:border-outline docked full-height left-0 w-64 flex flex-col h-screen p-md fixed left-0 top-0 z-40 hidden md:flex">
+<div class="mb-xl">
+<div class="flex items-center gap-sm mb-xs">
+<div class="w-8 h-8 rounded-full bg-primary-container overflow-hidden shrink-0">
+<img alt="User Profile" class="w-full h-full object-cover" data-alt="A small, stylized avatar portrait of a professional in a minimalist setting. Bright lighting, clean lines, corporate modern aesthetic with off-white background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDbdpF6Rd9YCFCD__pFfRNROP8lAoGZWKKxdU983ZcynXBtral_7sZIcQRgldt8Cdoe0CXvpWBD_YZOvpiOBfg4oNJDaJF9HLbcHEHZD_hAOipJqWkC93lVEGBKZ5drkWMv0ry0Vhsvpq9bQhPdOCPzwziHYCHKShh4vF37Gqd0F-rApPhgrlhdruzEMvE3X2fNckZTzot7TV8M1U_1lmMBKFpDj4EyiFAYZKBcumfX73G7VSpx15At"/>
+</div>
+<div>
+<h1 class="text-headline-md font-headline-md font-bold text-primary dark:text-on-primary tracking-tight">ResumeArchitect</h1>
+<p class="font-label-sm text-label-sm text-on-surface-variant">Professional Plan</p>
+</div>
+</div>
+</div>
+<button class="mb-lg w-full py-sm px-md bg-secondary text-on-secondary font-button text-button rounded flex items-center justify-center gap-xs border-b border-on-secondary-container hover:bg-on-secondary-container transition-colors shadow-sm">
+<span class="material-symbols-outlined text-[18px]">add</span>
+            New Resume
+        </button>
+<div class="flex-1 flex flex-col gap-xs overflow-y-auto">
+<!-- Library -->
+<a class="flex items-center gap-md px-md py-sm rounded-lg text-on-surface-variant dark:text-outline-variant hover:bg-surface-container hover:bg-surface-container-high dark:hover:bg-surface-variant transition-all font-label-sm text-label-sm font-headline-md text-headline-md group" href="#">
+<span class="material-symbols-outlined group-hover:text-secondary transition-colors" data-icon="folder_open">folder_open</span>
+<span>Library</span>
+</a>
+<!-- New Tailoring (Active) -->
+<a class="flex items-center gap-md px-md py-sm bg-secondary-container dark:bg-secondary text-on-secondary-container dark:text-on-secondary font-bold rounded-lg transition-transform translate-x-1 font-label-sm text-label-sm font-headline-md text-headline-md" href="#">
+<span class="material-symbols-outlined" data-icon="auto_fix_high" data-weight="fill" style="font-variation-settings: 'FILL' 1;">auto_fix_high</span>
+<span>New Tailoring</span>
+</a>
+<!-- Editor -->
+<a class="flex items-center gap-md px-md py-sm rounded-lg text-on-surface-variant dark:text-outline-variant hover:bg-surface-container hover:bg-surface-container-high dark:hover:bg-surface-variant transition-all font-label-sm text-label-sm font-headline-md text-headline-md group" href="#">
+<span class="material-symbols-outlined group-hover:text-secondary transition-colors" data-icon="edit_note">edit_note</span>
+<span>Editor</span>
+</a>
+<!-- Settings -->
+<a class="flex items-center gap-md px-md py-sm rounded-lg text-on-surface-variant dark:text-outline-variant hover:bg-surface-container hover:bg-surface-container-high dark:hover:bg-surface-variant transition-all font-label-sm text-label-sm font-headline-md text-headline-md group" href="#">
+<span class="material-symbols-outlined group-hover:text-secondary transition-colors" data-icon="settings">settings</span>
+<span>Settings</span>
+</a>
+<!-- Support -->
+<a class="flex items-center gap-md px-md py-sm rounded-lg text-on-surface-variant dark:text-outline-variant hover:bg-surface-container hover:bg-surface-container-high dark:hover:bg-surface-variant transition-all font-label-sm text-label-sm font-headline-md text-headline-md group" href="#">
+<span class="material-symbols-outlined group-hover:text-secondary transition-colors" data-icon="help_outline">help_outline</span>
+<span>Support</span>
+</a>
+</div>
+<div class="mt-auto pt-lg border-t border-outline-variant">
+<!-- Sign Out -->
+<a class="flex items-center gap-md px-md py-sm rounded-lg text-on-surface-variant dark:text-outline-variant hover:bg-surface-container hover:bg-surface-container-high dark:hover:bg-surface-variant transition-all font-label-sm text-label-sm font-headline-md text-headline-md group" href="#">
+<span class="material-symbols-outlined group-hover:text-secondary transition-colors" data-icon="logout">logout</span>
+<span>Sign Out</span>
+</a>
+</div>
+</nav>
+<!-- Main Content Area -->
+<main class="flex-1 md:ml-64 bg-background min-h-screen p-margin-mobile md:p-margin-desktop overflow-y-auto">
+<div class="max-w-max-width-doc mx-auto">
+<header class="mb-xl">
+<h2 class="font-display-lg text-headline-lg-mobile md:text-display-lg text-on-background mb-sm">Tailor Your Resume</h2>
+<p class="font-body-lg text-body-lg text-on-surface-variant">Provide your current resume and the target job description. Our AI will align your experience with the employer's needs.</p>
+</header>
+<form class="space-y-xl">
+<!-- Step 1: Resume Upload -->
+<section class="bg-surface-container-lowest border border-outline-variant rounded-xl p-lg md:p-xl shadow-[0px_4px_12px_rgba(15,23,42,0.02)] transition-shadow hover:shadow-[0px_4px_12px_rgba(15,23,42,0.08)]">
+<div class="flex items-center gap-sm mb-md">
+<div class="w-8 h-8 rounded-full bg-surface-variant text-on-surface font-label-sm text-label-sm flex items-center justify-center font-bold">1</div>
+<h3 class="font-headline-md text-headline-md text-on-surface">Base Resume</h3>
+</div>
+<div class="border-2 border-dashed border-outline-variant rounded-lg p-xl flex flex-col items-center justify-center text-center cursor-pointer transition-colors bg-surface hover:bg-surface-container-low group" id="dropzone">
+<span class="material-symbols-outlined text-4xl text-outline mb-sm group-hover:text-secondary transition-colors">upload_file</span>
+<p class="font-body-lg text-body-lg font-medium text-on-surface mb-xs">Drag and drop your resume here</p>
+<p class="font-body-lg text-body-lg text-sm text-on-surface-variant mb-md">Supported formats: PDF, DOCX (Max 5MB)</p>
+<button class="py-sm px-lg border border-outline text-on-surface font-button text-button rounded hover:bg-surface-container transition-colors border-b-2" type="button">Browse Files</button>
+<input accept=".pdf,.docx" class="hidden" id="fileInput" type="file"/>
+</div>
+</section>
+<!-- Step 2: Job Description -->
+<section class="bg-surface-container-lowest border border-outline-variant rounded-xl p-lg md:p-xl shadow-[0px_4px_12px_rgba(15,23,42,0.02)] transition-shadow hover:shadow-[0px_4px_12px_rgba(15,23,42,0.08)]">
+<div class="flex items-center gap-sm mb-md">
+<div class="w-8 h-8 rounded-full bg-surface-variant text-on-surface font-label-sm text-label-sm flex items-center justify-center font-bold">2</div>
+<h3 class="font-headline-md text-headline-md text-on-surface">Target Job Description</h3>
+</div>
+<div class="relative">
+<label class="block font-label-sm text-label-sm text-on-surface-variant mb-xs" for="job_description">PASTE JOB POSTING HERE</label>
+<textarea class="w-full bg-surface-container-lowest border border-outline-variant rounded p-md font-body-doc text-body-doc text-on-surface focus:border-secondary focus:ring-1 focus:ring-secondary outline-none transition-all resize-y placeholder-outline" id="job_description" placeholder="Paste the full job description, including requirements and responsibilities..." rows="8"></textarea>
+</div>
+</section>
+<!-- Step 3: API Key -->
+<section class="bg-surface-container-lowest border border-outline-variant rounded-xl p-lg md:p-xl shadow-[0px_4px_12px_rgba(15,23,42,0.02)] transition-shadow hover:shadow-[0px_4px_12px_rgba(15,23,42,0.08)]">
+<div class="flex items-center justify-between mb-md">
+<div class="flex items-center gap-sm">
+<div class="w-8 h-8 rounded-full bg-surface-variant text-on-surface font-label-sm text-label-sm flex items-center justify-center font-bold">3</div>
+<h3 class="font-headline-md text-headline-md text-on-surface">API Authentication</h3>
+</div>
+<a class="font-label-sm text-label-sm text-secondary hover:underline flex items-center gap-xs" href="#">
+                            How to get a key <span class="material-symbols-outlined text-[14px]">open_in_new</span>
+</a>
+</div>
+<div>
+<label class="block font-label-sm text-label-sm text-on-surface-variant mb-xs" for="api_key">GEMINI API KEY</label>
+<div class="relative">
+<input class="w-full bg-surface-container-lowest border border-outline-variant rounded p-sm pl-10 font-label-sm text-label-sm text-on-surface focus:border-secondary focus:ring-1 focus:ring-secondary outline-none transition-all tracking-widest placeholder-outline" id="api_key" placeholder="AIzaSy..." type="password"/>
+<span class="material-symbols-outlined absolute left-sm top-1/2 -translate-y-1/2 text-outline">key</span>
+</div>
+<p class="mt-sm font-label-sm text-label-sm text-on-surface-variant opacity-75">Your key is stored locally in your browser and is never sent to our servers.</p>
+</div>
+</section>
+<!-- Action Area -->
+<div class="pt-md flex justify-end">
+<button class="py-md px-xl bg-secondary text-on-secondary font-button text-button rounded-lg flex items-center justify-center gap-sm border-b-2 border-on-secondary-container hover:bg-on-secondary-container transition-all hover:-translate-y-[1px] active:translate-y-0 active:border-b-0" type="submit">
+<span class="material-symbols-outlined">analytics</span>
+                        Analyze &amp; Tailor Resume
+                    </button>
+</div>
+</form>
+</div>
+</main>
+<script>
+        // Simple drag and drop logic for visual feedback
+        const dropzone = document.getElementById('dropzone');
+        const fileInput = document.getElementById('fileInput');
+
+        dropzone.addEventListener('click', () => fileInput.click());
+
+        dropzone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropzone.classList.add('drag-active');
+        });
+
+        dropzone.addEventListener('dragleave', () => {
+            dropzone.classList.remove('drag-active');
+        });
+
+        dropzone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropzone.classList.remove('drag-active');
+            if (e.dataTransfer.files.length) {
+                fileInput.files = e.dataTransfer.files;
+                // Optional: Update UI to show selected file name
+                const p = dropzone.querySelector('p.font-medium');
+                if(p) p.textContent = e.dataTransfer.files[0].name;
+            }
+        });
+    </script>
+</body></html>

@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+
+<html class="h-full" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>ResumeArchitect - Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@500&amp;family=Source+Serif+4:wght@400&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "secondary-container": "#86f2e4",
+                        "on-primary": "#ffffff",
+                        "on-secondary-fixed-variant": "#005049",
+                        "tertiary-fixed-dim": "#dec29a",
+                        "error-container": "#ffdad6",
+                        "tertiary-fixed": "#fcdeb5",
+                        "on-error": "#ffffff",
+                        "surface-dim": "#cbdbf5",
+                        "on-background": "#0b1c30",
+                        "on-tertiary-container": "#98805d",
+                        "secondary": "#006a61",
+                        "secondary-fixed": "#89f5e7",
+                        "outline-variant": "#c6c6cd",
+                        "primary-fixed-dim": "#bec6e0",
+                        "on-secondary-container": "#006f66",
+                        "surface-bright": "#f8f9ff",
+                        "inverse-primary": "#bec6e0",
+                        "tertiary": "#000000",
+                        "primary": "#000000",
+                        "on-surface": "#0b1c30",
+                        "error": "#ba1a1a",
+                        "on-secondary": "#ffffff",
+                        "inverse-on-surface": "#eaf1ff",
+                        "surface-container-high": "#dce9ff",
+                        "surface-tint": "#565e74",
+                        "on-primary-fixed-variant": "#3f465c",
+                        "surface-container-lowest": "#ffffff",
+                        "primary-fixed": "#dae2fd",
+                        "outline": "#76777d",
+                        "on-tertiary-fixed": "#271901",
+                        "inverse-surface": "#213145",
+                        "surface-variant": "#d3e4fe",
+                        "tertiary-container": "#271901",
+                        "surface-container-low": "#eff4ff",
+                        "on-secondary-fixed": "#00201d",
+                        "on-primary-container": "#7c839b",
+                        "on-primary-fixed": "#131b2e",
+                        "primary-container": "#131b2e",
+                        "surface-container-highest": "#d3e4fe",
+                        "on-tertiary": "#ffffff",
+                        "secondary-fixed-dim": "#6bd8cb",
+                        "on-error-container": "#93000a",
+                        "on-tertiary-fixed-variant": "#574425",
+                        "background": "#f8f9ff",
+                        "surface": "#f8f9ff",
+                        "on-surface-variant": "#45464d",
+                        "surface-container": "#e5eeff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "xs": "4px",
+                        "lg": "24px",
+                        "xl": "40px",
+                        "base": "4px",
+                        "xxl": "80px",
+                        "max-width-doc": "720px",
+                        "gutter": "24px",
+                        "margin-desktop": "48px",
+                        "sm": "8px",
+                        "margin-mobile": "16px",
+                        "md": "16px"
+                    },
+                    "fontFamily": {
+                        "headline-lg-mobile": ["Hanken Grotesk"],
+                        "body-doc": ["\"Source Serif 4\""],
+                        "headline-lg": ["Hanken Grotesk"],
+                        "display-lg": ["Hanken Grotesk"],
+                        "body-lg": ["Hanken Grotesk"],
+                        "button": ["Hanken Grotesk"],
+                        "label-sm": ["JetBrains Mono"],
+                        "headline-md": ["Hanken Grotesk"]
+                    },
+                    "fontSize": {
+                        "headline-lg-mobile": ["24px", { "lineHeight": "1.2", "fontWeight": "600" }],
+                        "body-doc": ["18px", { "lineHeight": "1.7", "fontWeight": "400" }],
+                        "headline-lg": ["32px", { "lineHeight": "1.2", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "display-lg": ["48px", { "lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "600" }],
+                        "body-lg": ["16px", { "lineHeight": "1.6", "fontWeight": "400" }],
+                        "button": ["14px", { "lineHeight": "1.0", "fontWeight": "600" }],
+                        "label-sm": ["12px", { "lineHeight": "1.0", "letterSpacing": "0.05em", "fontWeight": "500" }],
+                        "headline-md": ["20px", { "lineHeight": "1.4", "fontWeight": "500" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-symbols-outlined[data-weight="fill"] {
+            font-variation-settings: 'FILL' 1;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface h-full flex antialiased">
+<!-- SideNavBar -->
+<nav class="hidden md:flex flex-col h-screen p-md fixed left-0 top-0 z-40 bg-surface dark:bg-inverse-surface border-r border-outline-variant dark:border-outline w-64">
+<!-- Header -->
+<div class="mb-xl">
+<div class="flex items-center gap-sm mb-lg">
+<div class="w-8 h-8 rounded-full overflow-hidden bg-surface-container">
+<img alt="User Profile" class="object-cover w-full h-full" data-alt="A minimalist avatar or profile picture for a professional software developer. The aesthetic is clean, corporate modern, using neutral colors with a focus on intellectual calm. Light mode aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAzT7aSlcwhUB6Ze8gghStmAIAxiE7zDceDbi__4o3CA7iWlKeG5auDKKRY7JtO99foPZ0kr2feQPLW-4jfRkQhX6F6Vl2uLNy5q_vM0IdntWWMeGH_JylfClSs5hUQAQQtQvL-qY_QdDUaIkv5KDkVDvmjilyTjC807dl8Uo_iQyQF8T6mHbNZeDLIoXp8brZXGs-ZbAdePZl9HFxE8gZhck-FqkctI205CZgL6dGwA7X2OsGV6i7f"/>
+</div>
+<div>
+<h1 class="font-headline-md text-headline-md font-bold text-primary dark:text-on-primary">ResumeArchitect</h1>
+<p class="font-label-sm text-label-sm text-on-surface-variant">Professional Plan</p>
+</div>
+</div>
+<button class="w-full flex items-center justify-center gap-sm bg-primary text-on-primary font-button text-button py-sm px-md rounded-lg hover:bg-on-surface transition-colors border-b border-tertiary">
+<span class="material-symbols-outlined" data-icon="add">add</span>
+                New Resume
+            </button>
+</div>
+<!-- Navigation Links -->
+<ul class="flex-1 space-y-sm">
+<li>
+<a class="flex items-center gap-md p-sm bg-secondary-container dark:bg-secondary text-on-secondary-container dark:text-on-secondary font-bold rounded-lg group transition-transform hover:scale-[0.98]" href="#">
+<span class="material-symbols-outlined" data-icon="folder_open" data-weight="fill">folder_open</span>
+<span class="font-label-sm text-label-sm">Library</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-md p-sm text-on-surface-variant dark:text-outline-variant hover:bg-surface-container hover:text-secondary transition-all rounded-lg group" href="#">
+<span class="material-symbols-outlined" data-icon="auto_fix_high">auto_fix_high</span>
+<span class="font-label-sm text-label-sm">New Tailoring</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-md p-sm text-on-surface-variant dark:text-outline-variant hover:bg-surface-container hover:text-secondary transition-all rounded-lg group" href="#">
+<span class="material-symbols-outlined" data-icon="edit_note">edit_note</span>
+<span class="font-label-sm text-label-sm">Editor</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-md p-sm text-on-surface-variant dark:text-outline-variant hover:bg-surface-container hover:text-secondary transition-all rounded-lg group" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="font-label-sm text-label-sm">Settings</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-md p-sm text-on-surface-variant dark:text-outline-variant hover:bg-surface-container hover:text-secondary transition-all rounded-lg group" href="#">
+<span class="material-symbols-outlined" data-icon="help_outline">help_outline</span>
+<span class="font-label-sm text-label-sm">Support</span>
+</a>
+</li>
+</ul>
+<!-- Footer -->
+<div class="mt-auto border-t border-outline-variant pt-md">
+<a class="flex items-center gap-md p-sm text-on-surface-variant dark:text-outline-variant hover:bg-surface-container hover:text-secondary transition-all rounded-lg group" href="#">
+<span class="material-symbols-outlined" data-icon="logout">logout</span>
+<span class="font-label-sm text-label-sm">Sign Out</span>
+</a>
+</div>
+</nav>
+<!-- Main Content Canvas -->
+<main class="flex-1 md:ml-64 p-margin-mobile md:p-margin-desktop bg-surface-container-low min-h-screen">
+<div class="max-w-7xl mx-auto">
+<!-- Header Section -->
+<header class="flex flex-col md:flex-row justify-between items-start md:items-end mb-xl gap-md">
+<div>
+<h2 class="font-display-lg text-display-lg text-primary mb-xs">Your Resumes</h2>
+<p class="font-body-lg text-body-lg text-on-surface-variant">Manage and tailor your documents.</p>
+</div>
+<div class="flex items-center gap-md w-full md:w-auto">
+<!-- Search Bar -->
+<div class="relative flex-1 md:w-64">
+<span class="material-symbols-outlined absolute left-sm top-1/2 -translate-y-1/2 text-outline" data-icon="search">search</span>
+<input class="w-full pl-[36px] pr-sm py-sm rounded-lg border border-outline-variant bg-surface-container-lowest focus:border-secondary focus:ring-1 focus:ring-secondary font-body-lg text-body-lg text-on-surface outline-none transition-all" placeholder="Search library..." type="text"/>
+</div>
+<button class="shrink-0 flex items-center justify-center gap-sm bg-secondary text-on-secondary font-button text-button py-sm px-md rounded-lg hover:bg-on-secondary-container transition-colors border-b border-on-secondary-container">
+<span class="material-symbols-outlined" data-icon="add">add</span>
+                        New Tailoring
+                    </button>
+</div>
+</header>
+<!-- Library Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-lg">
+<!-- Resume Card 1 -->
+<div class="group bg-surface-container-lowest border border-outline-variant rounded-xl p-md hover:border-outline hover:shadow-[0_4px_12px_rgba(15,23,42,0.08)] transition-all cursor-pointer flex flex-col h-full">
+<div class="flex justify-between items-start mb-md">
+<div class="w-10 h-10 rounded bg-surface-container flex items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="description">description</span>
+</div>
+<button class="text-outline-variant hover:text-on-surface transition-colors p-xs rounded hover:bg-surface-container">
+<span class="material-symbols-outlined" data-icon="more_vert">more_vert</span>
+</button>
+</div>
+<h3 class="font-headline-md text-headline-md text-on-surface mb-xs group-hover:text-secondary transition-colors line-clamp-2">Senior Software Engineer @ Google - Tailored</h3>
+<p class="font-body-lg text-body-lg text-on-surface-variant mb-lg text-sm">Updated 2 days ago</p>
+<div class="mt-auto flex flex-wrap gap-xs">
+<span class="font-label-sm text-label-sm bg-surface-container px-xs py-[2px] rounded text-on-surface-variant">Tech</span>
+<span class="font-label-sm text-label-sm bg-surface-container px-xs py-[2px] rounded text-on-surface-variant">Google</span>
+<span class="font-label-sm text-label-sm bg-secondary-container px-xs py-[2px] rounded text-on-secondary-container">Tailored</span>
+</div>
+</div>
+<!-- Resume Card 2 -->
+<div class="group bg-surface-container-lowest border border-outline-variant rounded-xl p-md hover:border-outline hover:shadow-[0_4px_12px_rgba(15,23,42,0.08)] transition-all cursor-pointer flex flex-col h-full">
+<div class="flex justify-between items-start mb-md">
+<div class="w-10 h-10 rounded bg-surface-container flex items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="description">description</span>
+</div>
+<button class="text-outline-variant hover:text-on-surface transition-colors p-xs rounded hover:bg-surface-container">
+<span class="material-symbols-outlined" data-icon="more_vert">more_vert</span>
+</button>
+</div>
+<h3 class="font-headline-md text-headline-md text-on-surface mb-xs group-hover:text-secondary transition-colors line-clamp-2">Frontend Developer - Startup Focus</h3>
+<p class="font-body-lg text-body-lg text-on-surface-variant mb-lg text-sm">Updated 1 week ago</p>
+<div class="mt-auto flex flex-wrap gap-xs">
+<span class="font-label-sm text-label-sm bg-surface-container px-xs py-[2px] rounded text-on-surface-variant">Frontend</span>
+<span class="font-label-sm text-label-sm bg-surface-container px-xs py-[2px] rounded text-on-surface-variant">Startup</span>
+</div>
+</div>
+<!-- Empty State / Add New Card (Always visible for easy access) -->
+<div class="bg-surface-container border border-dashed border-outline-variant rounded-xl p-md flex flex-col items-center justify-center text-center h-full min-h-[240px] hover:bg-surface-container-high transition-colors cursor-pointer group">
+<div class="w-12 h-12 rounded-full bg-surface-container-lowest flex items-center justify-center text-secondary mb-md group-hover:scale-110 transition-transform shadow-[0_4px_12px_rgba(15,23,42,0.04)]">
+<span class="material-symbols-outlined" data-icon="add">add</span>
+</div>
+<h3 class="font-headline-md text-headline-md text-on-surface mb-xs">Start Your First Tailoring</h3>
+<p class="font-body-lg text-body-lg text-on-surface-variant max-w-[200px]">Create a new tailored resume from your master profile.</p>
+</div>
+</div>
+</div>
+</main>
+<!-- Mobile Bottom Navigation (Visible only on small screens) -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full bg-surface-container-lowest border-t border-outline-variant flex justify-around items-center h-16 px-md z-40">
+<a class="flex flex-col items-center justify-center text-secondary w-full h-full relative" href="#">
+<div class="absolute inset-x-4 top-1 h-8 bg-secondary-container rounded-full -z-10"></div>
+<span class="material-symbols-outlined text-on-secondary-container" data-icon="folder_open" data-weight="fill">folder_open</span>
+<span class="font-label-sm text-[10px] mt-1 text-on-surface">Library</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-on-surface w-full h-full transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="auto_fix_high">auto_fix_high</span>
+<span class="font-label-sm text-[10px] mt-1">Tailor</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-on-surface w-full h-full transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="edit_note">edit_note</span>
+<span class="font-label-sm text-[10px] mt-1">Editor</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-on-surface w-full h-full transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="font-label-sm text-[10px] mt-1">Settings</span>
+</a>
+</nav>
+</body></html>
