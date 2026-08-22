@@ -1,10 +1,11 @@
 import { createServerClient } from "@supabase/ssr";
 import { type NextRequest, NextResponse } from "next/server";
+import type { Database } from "@/lib/supabase/database.types";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 
-export const createClient = (request: NextRequest) => {
+export const createClient = async (request: NextRequest) => {
   // Create an unmodified response
   let supabaseResponse = NextResponse.next({
     request: {
@@ -12,7 +13,7 @@ export const createClient = (request: NextRequest) => {
     },
   });
 
-  const supabase = createServerClient(
+  const supabase = createServerClient<Database>(
     supabaseUrl!,
     supabaseKey!,
     {
@@ -21,7 +22,7 @@ export const createClient = (request: NextRequest) => {
           return request.cookies.getAll()
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) => request.cookies.set(name, value))
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
           supabaseResponse = NextResponse.next({
             request,
           })
@@ -33,5 +34,11 @@ export const createClient = (request: NextRequest) => {
     },
   );
 
-  return supabaseResponse
+  // Always revalidate via getUser() (not getSession()) in server contexts —
+  // getSession() trusts the JWT without contacting Supabase Auth.
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  return { supabase, supabaseResponse, user };
 };
