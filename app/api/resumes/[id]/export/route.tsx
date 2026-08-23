@@ -2,8 +2,8 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { renderToBuffer } from "@react-pdf/renderer";
 import { createClient } from "@/utils/supabase/server";
-import { ResumeContentSchema } from "@/lib/schemas/resume";
-import { ResumeDocumentPdf } from "@/components/resume-document/ResumeDocumentPdf";
+import { resolveDocument } from "@/lib/documentConversion";
+import { DocumentPdf } from "@/lib/pdf/docToPdfTree";
 import { RESUME_EXPORTS_BUCKET, exportedPdfPath } from "@/lib/storage/paths";
 
 export const runtime = "nodejs";
@@ -60,14 +60,14 @@ export async function POST(_request: Request, { params }: { params: Promise<{ id
 
   if (!resume) return NextResponse.json({ error: "Resume not found." }, { status: 404 });
 
-  const parsedContent = ResumeContentSchema.safeParse(resume.content);
-  if (!parsedContent.success) {
+  const doc = resolveDocument(resume.content);
+  if (!doc) {
     return NextResponse.json({ error: "This resume's content looks corrupted. Please open and re-save it first." }, { status: 422 });
   }
 
   let buffer: Buffer;
   try {
-    buffer = await renderToBuffer(<ResumeDocumentPdf content={parsedContent.data} />);
+    buffer = await renderToBuffer(<DocumentPdf doc={doc} />);
   } catch {
     return NextResponse.json({ error: "Couldn't generate the PDF. Please try again." }, { status: 500 });
   }

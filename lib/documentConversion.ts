@@ -1,14 +1,31 @@
-import type { ResumeContent } from "@/lib/schemas/resume";
-import type {
-  BlockNode,
-  BulletListNode,
-  DocumentContent,
-  HeadingNode,
-  InlineNode,
-  ListItemNode,
-  ParagraphNode,
-  TextNode,
+import { ResumeContentSchema, type ResumeContent } from "@/lib/schemas/resume";
+import {
+  DocumentContentSchema,
+  type BlockNode,
+  type BulletListNode,
+  type DocumentContent,
+  type HeadingNode,
+  type InlineNode,
+  type ListItemNode,
+  type ParagraphNode,
+  type TextNode,
 } from "@/lib/schemas/document";
+
+/**
+ * `resumes.content` can hold either the new freeform document or the legacy
+ * typed ResumeContent, with no DB migration involved (see module doc below).
+ * Every read path that needs a document out of that column goes through
+ * this so the two-shape handling lives in exactly one place.
+ */
+export function resolveDocument(content: unknown): DocumentContent | null {
+  const asDoc = DocumentContentSchema.safeParse(content);
+  if (asDoc.success) return asDoc.data;
+
+  const asLegacy = ResumeContentSchema.safeParse(content);
+  if (asLegacy.success) return resumeContentToDoc(asLegacy.data);
+
+  return null;
+}
 
 /**
  * Builds an initial freeform document from reviewed, structured resume data.

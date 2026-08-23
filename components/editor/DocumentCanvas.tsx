@@ -24,11 +24,18 @@ export function DocumentCanvas({
   onChange,
   onReady,
   editable = true,
+  variant = "full",
 }: {
   initialContent: DocumentContent;
   onChange?: (doc: DocumentContent) => void;
   onReady?: (editor: Editor) => void;
   editable?: boolean;
+  /** "compact" is for the narrow read-only comparison sidebar
+   * (OriginalComparisonPanel) — full document width doesn't fit a 280px
+   * column, so this uses a smaller max-width and font scale instead of a
+   * CSS transform (which would shrink visually but keep its full-width
+   * layout footprint). */
+  variant?: "full" | "compact";
 }) {
   const editor = useEditor({
     immediatelyRender: false,
@@ -60,6 +67,14 @@ export function DocumentCanvas({
   useEffect(() => {
     if (editor) onReady?.(editor);
   }, [editor, onReady]);
+
+  if (variant === "compact") {
+    return (
+      <div className="w-full bg-surface-container-lowest p-sm">
+        <EditorContent editor={editor} className="resume-doc-canvas resume-doc-canvas--compact font-doc text-on-surface" />
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto w-full max-w-[720px] bg-surface-container-lowest px-margin-desktop py-xl shadow-crisp">

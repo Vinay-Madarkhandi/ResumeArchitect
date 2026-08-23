@@ -3,11 +3,11 @@
 import Link from "next/link";
 import { useCallback, useState } from "react";
 import { useEditorState, type Editor } from "@tiptap/react";
-import type { ResumeContent } from "@/lib/schemas/resume";
 import type { DocumentContent } from "@/lib/schemas/document";
 import type { ChangeExplanation } from "@/lib/schemas/tailoring";
 import { useDebouncedAutosave } from "@/lib/editor/useDebouncedAutosave";
 import { DocumentCanvas } from "@/components/editor/DocumentCanvas";
+import { AskAiBubbleMenu } from "@/components/editor/AskAiBubbleMenu";
 import { OriginalComparisonPanel } from "@/components/editor/OriginalComparisonPanel";
 import { ChangeExplanationsPanel } from "@/components/editor/ChangeExplanationsPanel";
 import { Badge } from "@/components/ui/Badge";
@@ -28,7 +28,7 @@ export function ResumeEditorClient({
   title: string;
   isDefault: boolean;
   initialDoc: DocumentContent;
-  sourceContent: ResumeContent | null;
+  sourceContent: DocumentContent | null;
   jobTitleSnapshot: string | null;
   jobCompanySnapshot: string | null;
   changes: ChangeExplanation[] | null;
@@ -115,12 +115,13 @@ export function ResumeEditorClient({
               <Icon name="history" size={16} className="text-outline" />
               <h2 className="font-sans text-headline-md text-sm text-on-surface-variant">Original resume</h2>
             </div>
-            {sourceContent && <OriginalComparisonPanel content={sourceContent} changes={changes ?? []} />}
+            {sourceContent && <OriginalComparisonPanel content={sourceContent} />}
           </aside>
         )}
 
         <main className="overflow-y-auto p-lg md:p-xl">
           <DocumentCanvas initialContent={initialDoc} onChange={setDoc} onReady={setEditor} />
+          {editor && <AskAiBubbleMenu editor={editor} resumeId={resumeId} />}
         </main>
 
         {isTailored && (

@@ -272,3 +272,21 @@ body {
   height: 0;
   pointer-events: none;
 }
+
+/* Compact variant: the read-only comparison sidebar (OriginalComparisonPanel)
+ * is ~280px wide, far narrower than the full document canvas. */
+.resume-doc-canvas--compact h1 {
+  font-size: 15px;
+}
+.resume-doc-canvas--compact h2 {
+  font-size: 11px;
+  margin-top: var(--spacing-sm);
+}
+.resume-doc-canvas--compact h3 {
+  font-size: 10.5px;
+  margin-top: var(--spacing-xs);
+}
+.resume-doc-canvas--compact p,
+.resume-doc-canvas--compact li {
+  font-size: 10.5px;
+}
