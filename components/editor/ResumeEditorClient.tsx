@@ -1,11 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useEditorState, type Editor } from "@tiptap/react";
 import type { DocumentContent } from "@/lib/schemas/document";
 import type { ChangeExplanation } from "@/lib/schemas/tailoring";
 import { useDebouncedAutosave } from "@/lib/editor/useDebouncedAutosave";
+import { usePageCount } from "@/lib/editor/usePageCount";
+import { setHighlights } from "@/lib/editor/aiHighlightExtension";
 import { DocumentCanvas } from "@/components/editor/DocumentCanvas";
 import { AskAiBubbleMenu } from "@/components/editor/AskAiBubbleMenu";
 import { OriginalComparisonPanel } from "@/components/editor/OriginalComparisonPanel";
@@ -49,7 +51,25 @@ export function ResumeEditorClient({
   );
 
   const saveStatus = useDebouncedAutosave(doc, save);
+  const pageCount = usePageCount(resumeId, doc);
   const isTailored = sourceContent !== null;
+
+  // Mark up everything the bulk tailoring run touched, once, right when the
+  // editor is ready — a client-side-only decoration (see
+  // lib/editor/aiHighlightExtension.ts), never part of the saved document,
+  // so it's simply not there in an exported PDF rather than needing to be
+  // stripped out before export.
+  const highlightsApplied = useRef(false);
+  useEffect(() => {
+    if (!editor || highlightsApplied.current || !changes || changes.length === 0) return;
+    highlightsApplied.current = true;
+    setHighlights(
+      editor,
+      changes
+        .filter((c) => c.quote)
+        .map((c) => ({ quote: c.quote as string, tone: c.kind === "flagged" ? "flagged" : "change", title: c.why })),
+    );
+  }, [editor, changes]);
 
   const { canUndo, canRedo } = useEditorState({
     editor,
@@ -93,6 +113,14 @@ export function ResumeEditorClient({
             </button>
           </div>
           <SaveStatusLabel status={saveStatus} />
+          {pageCount !== null && (
+            <span
+              className="font-mono text-label-sm text-on-surface-variant"
+              title="Estimated length of the exported PDF"
+            >
+              {pageCount} {pageCount === 1 ? "page" : "pages"}
+            </span>
+          )}
           <Link
             href={`/resumes/${resumeId}/export`}
             className="inline-flex h-9 items-center gap-1.5 rounded bg-secondary px-md font-sans text-button text-on-secondary hover:bg-on-secondary-container"

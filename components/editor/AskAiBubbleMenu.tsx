@@ -5,6 +5,7 @@ import type { Editor } from "@tiptap/react";
 import { BubbleMenu } from "@tiptap/react/menus";
 import { Icon } from "@/components/icon/Icon";
 import { Button } from "@/components/ui/Button";
+import { addHighlight } from "@/lib/editor/aiHighlightExtension";
 
 interface CapturedSelection {
   from: number;
@@ -76,6 +77,13 @@ export function AskAiBubbleMenu({ editor, resumeId }: { editor: Editor; resumeId
   function accept() {
     if (!captured || !preview) return;
     editor.chain().focus().insertContentAt({ from: captured.from, to: captured.to }, preview.replacementText).run();
+    // Cursor lands right after the inserted content once the chain runs;
+    // walking back by the replacement's length gives the range actually
+    // just inserted, so it can be highlighted the same way a bulk
+    // tailoring change is (see lib/editor/aiHighlightExtension.ts).
+    const to = editor.state.selection.from;
+    const from = Math.max(0, to - preview.replacementText.length);
+    addHighlight(editor, from, to, preview.flagged ? "flagged" : "change", preview.flagReason ?? undefined);
     close();
   }
 
