@@ -21,13 +21,18 @@ export function ConnectGeminiClient({
   async function finish() {
     setIsFinishing(true);
     setError(null);
-    // completeOnboarding() redirects on success and never returns in that
-    // case (the redirect throws internally, by design) — reaching the line
-    // below at all means it failed, so surface why instead of leaving the
-    // user stuck on a button that looks like it did nothing.
     const result = await completeOnboarding();
-    if (!result.ok) setError(result.error);
-    setIsFinishing(false);
+    if (!result.ok) {
+      setError(result.error);
+      setIsFinishing(false);
+      return;
+    }
+    // A hard navigation, not router.push()/router.refresh(): this guarantees
+    // the browser's next request to /library is genuinely fresh, so the
+    // proxy's onboarding check is certain to see the update just committed
+    // above rather than depend on client-router/soft-navigation timing.
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination
+    window.location.href = "/library";
   }
 
   return (
