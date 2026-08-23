@@ -6,7 +6,15 @@
  * JSON columns here are typed against lib/schemas/* on purpose (see notes).
  */
 import type { Link, ResumeContent } from "@/lib/schemas/resume";
+import type { DocumentContent } from "@/lib/schemas/document";
 import type { ChangeExplanation } from "@/lib/schemas/tailoring";
+
+/**
+ * `resumes.content` holds either the new freeform document (going forward)
+ * or the legacy typed ResumeContent (rows not yet opened in the new editor)
+ * — deliberately no DB migration for this, see lib/documentConversion.ts.
+ */
+type ResumeContentColumn = DocumentContent | ResumeContent;
 
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
 
@@ -62,7 +70,7 @@ export interface Database {
           user_id: string;
           kind: "master" | "tailored";
           title: string;
-          content: ResumeContent;
+          content: ResumeContentColumn;
           status: "draft" | "archived";
           is_default: boolean;
           version: number;
@@ -85,10 +93,10 @@ export interface Database {
           user_id: string;
           kind: "master" | "tailored";
           title: string;
-          content: ResumeContent;
+          content: ResumeContentColumn;
         };
         Update: Partial<Omit<Database["public"]["Tables"]["resumes"]["Row"], "content">> & {
-          content?: ResumeContent;
+          content?: ResumeContentColumn;
         };
       };
       tailoring_sessions: {

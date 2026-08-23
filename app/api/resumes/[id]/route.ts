@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
-import { ResumeContentSchema } from "@/lib/schemas/resume";
+import { DocumentContentSchema } from "@/lib/schemas/document";
 
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -31,7 +31,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   if (!user) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
 
   const body = await request.json().catch(() => null);
-  const parsed = ResumeContentSchema.safeParse(body?.content);
+  const parsed = DocumentContentSchema.safeParse(body?.content);
   if (!parsed.success) {
     return NextResponse.json({ error: "Resume content didn't match the expected shape." }, { status: 400 });
   }
