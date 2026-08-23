@@ -46,6 +46,27 @@ export function isSimilarFontSize(a: number, b: number): boolean {
   return ratio > 0.85 && ratio < 1.18;
 }
 
+function looksBold(fontFamily: string): boolean {
+  return /bold|black|heavy/i.test(fontFamily);
+}
+
+/**
+ * Whether two lines are the same visual text run for entry-boundary
+ * purposes: same font size, and — when the PDF exposes font family for
+ * both — the same bold/non-bold weight. Many resumes distinguish a header
+ * from body text by boldness alone at an identical point size, which size
+ * comparison misses on its own; checking both keeps the heuristic working
+ * across differently-styled resumes rather than just this one PDF's layout.
+ */
+export function isSameVisualStyle(
+  a: { maxFontSize: number; fontFamily: string },
+  b: { maxFontSize: number; fontFamily: string },
+): boolean {
+  if (!isSimilarFontSize(a.maxFontSize, b.maxFontSize)) return false;
+  if (a.fontFamily && b.fontFamily && looksBold(a.fontFamily) !== looksBold(b.fontFamily)) return false;
+  return true;
+}
+
 export const SECTION_HEADER_KEYWORDS: Record<
   "summary" | "experience" | "education" | "skills" | "projects" | "certifications",
   string[]

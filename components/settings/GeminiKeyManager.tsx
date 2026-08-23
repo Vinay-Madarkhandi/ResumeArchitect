@@ -32,10 +32,10 @@ export function GeminiKeyManager({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ apiKey }),
       });
-      const body = await res.json();
-      if (!res.ok) {
+      const body = await res.json().catch(() => null);
+      if (!res.ok || !body) {
         setStatus("invalid");
-        setMessage({ text: body.error ?? "Something went wrong.", tone: "error" });
+        setMessage({ text: body?.error ?? "Something went wrong. Please try again.", tone: "error" });
         return;
       }
       setStatus("valid");
@@ -44,6 +44,8 @@ export function GeminiKeyManager({
       setIsEditing(false);
       setMessage({ text: "Connected.", tone: "success" });
       onSaved?.();
+    } catch {
+      setMessage({ text: "Network error — please try again.", tone: "error" });
     } finally {
       setIsSubmitting(false);
     }
@@ -54,9 +56,15 @@ export function GeminiKeyManager({
     setIsSubmitting(true);
     try {
       const res = await fetch("/api/settings/gemini-key/test", { method: "POST" });
-      const body = await res.json();
+      const body = await res.json().catch(() => null);
+      if (!body) {
+        setMessage({ text: "Something went wrong. Please try again.", tone: "error" });
+        return;
+      }
       setStatus(body.valid ? "valid" : "invalid");
-      setMessage({ text: body.message, tone: body.valid ? "success" : "error" });
+      setMessage({ text: body.message ?? "Something went wrong.", tone: body.valid ? "success" : "error" });
+    } catch {
+      setMessage({ text: "Network error — please try again.", tone: "error" });
     } finally {
       setIsSubmitting(false);
     }
@@ -66,11 +74,17 @@ export function GeminiKeyManager({
     setMessage(null);
     setIsSubmitting(true);
     try {
-      await fetch("/api/settings/gemini-key", { method: "DELETE" });
+      const res = await fetch("/api/settings/gemini-key", { method: "DELETE" });
+      if (!res.ok) {
+        setMessage({ text: "Couldn't remove your key. Please try again.", tone: "error" });
+        return;
+      }
       setStatus("not_configured");
       setLast4(null);
       setIsEditing(true);
       setMessage(null);
+    } catch {
+      setMessage({ text: "Network error — please try again.", tone: "error" });
     } finally {
       setIsSubmitting(false);
     }

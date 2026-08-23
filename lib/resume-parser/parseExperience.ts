@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import type { ResumeLine } from "./extractLines";
-import { DATE_RANGE_RE, isSimilarFontSize, looksLikeBullet, looksLikeDateBoundary, stripBulletPrefix } from "./patterns";
+import { DATE_RANGE_RE, isSameVisualStyle, looksLikeBullet, looksLikeDateBoundary, stripBulletPrefix } from "./patterns";
 import type { ExperienceEntry } from "@/lib/schemas/resume";
 
 interface RawEntry {
@@ -27,7 +27,7 @@ function groupIntoRawEntries(lines: ResumeLine[]): RawEntry[] {
     // header, even on the rare occasion its font happens to match.
     if (!looksLikeDateBoundary(line.text) && current && current.bulletLines.length > 0) {
       const lastBullet = current.bulletLines[current.bulletLines.length - 1];
-      if (isSimilarFontSize(line.maxFontSize, lastBullet.maxFontSize)) {
+      if (isSameVisualStyle(line, lastBullet)) {
         lastBullet.text += ` ${line.text}`;
         continue;
       }

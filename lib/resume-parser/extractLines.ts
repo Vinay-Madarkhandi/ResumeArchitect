@@ -5,6 +5,11 @@ export interface ResumeLine {
   y: number;
   text: string;
   maxFontSize: number;
+  /** Font family of the line's first text run (e.g. "Arial-BoldMT"), used
+   * alongside maxFontSize to tell a bolded header apart from body text even
+   * when both render at the same point size. Empty when the PDF doesn't
+   * expose it. */
+  fontFamily: string;
 }
 
 const Y_TOLERANCE = 2.5;
@@ -49,7 +54,7 @@ export async function extractResumeLines(fileBuffer: ArrayBuffer): Promise<Resum
       }
       const trimmed = text.replace(/\s+/g, " ").trim();
       if (trimmed) {
-        lines.push({ page: pageIndex, y: cluster[0].y, text: trimmed, maxFontSize });
+        lines.push({ page: pageIndex, y: cluster[0].y, text: trimmed, maxFontSize, fontFamily: cluster[0].fontFamily });
       }
     }
   });

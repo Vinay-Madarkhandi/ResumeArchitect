@@ -29,22 +29,36 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: result.message }, { status: 422 });
   }
 
-  const ciphertext = encryptApiKey(apiKey);
-  const now = new Date().toISOString();
-  const { error } = await supabase
-    .from("profiles")
-    .update({
-      gemini_key_ciphertext: bufferToPgBytea(ciphertext),
-      gemini_key_last4: lastFour(apiKey),
-      gemini_key_status: "valid",
-      gemini_key_updated_at: now,
-      gemini_key_validated_at: now,
-    })
-    .eq("id", user.id);
+  // The key validated against Gemini above; everything past this point is
+  // our own encryption/storage, which can throw (e.g. a misconfigured
+  // GEMINI_KEY_ENCRYPTION_SECRET on the deployment). Without this guard an
+  // unhandled throw here returns a non-JSON error page, which breaks the
+  // client's res.json() call silently — the key would test as valid but
+  // never actually get saved, with no visible error.
+  try {
+    const ciphertext = encryptApiKey(apiKey);
+    const now = new Date().toISOString();
+    const { error } = await supabase
+      .from("profiles")
+      .update({
+        gemini_key_ciphertext: bufferToPgBytea(ciphertext),
+        gemini_key_last4: lastFour(apiKey),
+        gemini_key_status: "valid",
+        gemini_key_updated_at: now,
+        gemini_key_validated_at: now,
+      })
+      .eq("id", user.id);
 
-  if (error) return NextResponse.json({ error: "Couldn't save your key. Please try again." }, { status: 500 });
+    if (error) return NextResponse.json({ error: "Couldn't save your key. Please try again." }, { status: 500 });
 
-  return NextResponse.json({ status: "valid", last4: lastFour(apiKey) });
+    return NextResponse.json({ status: "valid", last4: lastFour(apiKey) });
+  } catch (error) {
+    console.error("Failed to encrypt/save Gemini key:", error);
+    return NextResponse.json(
+      { error: "The key was valid, but we couldn't save it due to a server configuration issue. Please try again shortly." },
+      { status: 500 },
+    );
+  }
 }
 
 export async function DELETE() {

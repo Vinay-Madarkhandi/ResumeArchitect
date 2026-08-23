@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import type { ResumeLine } from "./extractLines";
-import { DATE_RANGE_RE, isSimilarFontSize, looksLikeBullet, looksLikeDateBoundary, stripBulletPrefix } from "./patterns";
+import { DATE_RANGE_RE, isSameVisualStyle, looksLikeBullet, looksLikeDateBoundary, stripBulletPrefix } from "./patterns";
 import type { EducationEntry } from "@/lib/schemas/resume";
 
 // Supports both the US 4.0 scale and the 10-point scale common outside the
@@ -40,7 +40,7 @@ function groupEntries(lines: ResumeLine[]): RawEducation[] {
     // header, even on the rare occasion its font happens to match.
     if (!looksLikeDateBoundary(line.text) && current && current.honorLines.length > 0) {
       const lastHonor = current.honorLines[current.honorLines.length - 1];
-      if (isSimilarFontSize(line.maxFontSize, lastHonor.maxFontSize)) {
+      if (isSameVisualStyle(line, lastHonor)) {
         lastHonor.text += ` ${line.text}`;
         continue;
       }

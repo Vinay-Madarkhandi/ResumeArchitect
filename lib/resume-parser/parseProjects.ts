@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import type { ResumeLine } from "./extractLines";
-import { DATE_RANGE_RE, isSimilarFontSize, looksLikeBullet, looksLikeDateBoundary, stripBulletPrefix, URL_RE } from "./patterns";
+import { DATE_RANGE_RE, isSameVisualStyle, looksLikeBullet, looksLikeDateBoundary, stripBulletPrefix, URL_RE } from "./patterns";
 import type { ProjectEntry } from "@/lib/schemas/resume";
 
 const TECH_LINE_RE = /^(Technologies|Tech Stack|Built with|Stack|Tools)\s*:\s*(.+)$/i;
@@ -50,15 +50,15 @@ export function parseProjectsSection(lines: ResumeLine[]): {
     // title, even on the rare occasion its font happens to match the bullet.
     if (!hasDate && current && current.bulletLines.length > 0) {
       const lastBullet = current.bulletLines[current.bulletLines.length - 1];
-      if (isSimilarFontSize(line.maxFontSize, lastBullet.maxFontSize)) {
+      if (isSameVisualStyle(line, lastBullet)) {
         lastBullet.text += ` ${line.text}`;
         continue;
       }
     }
 
     // A new project starts once the current one already has bullets and this
-    // plain line's font doesn't match them (a real font mismatch, not just a
-    // wrap), or there is no current project yet.
+    // plain line's style doesn't match them (a real font/weight mismatch,
+    // not just a wrap), or there is no current project yet.
     if (!current || current.bulletLines.length > 0) {
       current = { descriptionLines: [], bulletLines: [], technologies: [] };
       raw.push(current);
@@ -67,7 +67,7 @@ export function parseProjectsSection(lines: ResumeLine[]): {
     if (!current.nameLine) {
       current.nameLine = line;
       if (urlMatch) current.url = urlMatch[0];
-    } else if (isSimilarFontSize(line.maxFontSize, current.nameLine.maxFontSize)) {
+    } else if (isSameVisualStyle(line, current.nameLine)) {
       // Same font as the title: a wrapped continuation of the title line.
       current.nameLine = { ...current.nameLine, text: `${current.nameLine.text} ${line.text}` };
     } else {
