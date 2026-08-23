@@ -7,6 +7,7 @@ import type { DocumentContent } from "@/lib/schemas/document";
 import type { ChangeExplanation } from "@/lib/schemas/tailoring";
 import { useDebouncedAutosave } from "@/lib/editor/useDebouncedAutosave";
 import { DocumentCanvas } from "@/components/editor/DocumentCanvas";
+import { AskAiBubbleMenu } from "@/components/editor/AskAiBubbleMenu";
 import { OriginalComparisonPanel } from "@/components/editor/OriginalComparisonPanel";
 import { ChangeExplanationsPanel } from "@/components/editor/ChangeExplanationsPanel";
 import { Badge } from "@/components/ui/Badge";
@@ -120,6 +121,7 @@ export function ResumeEditorClient({
 
         <main className="overflow-y-auto p-lg md:p-xl">
           <DocumentCanvas initialContent={initialDoc} onChange={setDoc} onReady={setEditor} />
+          {editor && <AskAiBubbleMenu editor={editor} resumeId={resumeId} />}
         </main>
 
         {isTailored && (

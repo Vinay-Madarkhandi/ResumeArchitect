@@ -41,3 +41,18 @@ export const tailoringResultGeminiSchema: Schema = {
   },
   required: ["markdown", "changes"],
 };
+
+/** Mirror of SelectionEditResultSchema (lib/schemas/selectionEdit.ts) — the
+ * scoped "select text, ask AI to rewrite just this" flow. */
+export const selectionEditGeminiSchema: Schema = {
+  type: Type.OBJECT,
+  properties: {
+    replacementText: { type: Type.STRING },
+    flagged: {
+      type: Type.BOOLEAN,
+      description: "true if honoring the instruction required you to go beyond what the context actually supports.",
+    },
+    flagReason: { type: Type.STRING, nullable: true, description: "If flagged, briefly explain what you were unsure about." },
+  },
+  required: ["replacementText", "flagged"],
+};
