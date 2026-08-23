@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import { redirect, notFound } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
-import { ResumeContentSchema } from "@/lib/schemas/resume";
+import { resolveDocument } from "@/lib/documentConversion";
 import { ExportClient } from "./ExportClient";
 
 export default async function ResumeExportPage({ params }: { params: Promise<{ id: string }> }) {
@@ -21,8 +21,11 @@ export default async function ResumeExportPage({ params }: { params: Promise<{ i
 
   if (!resume) notFound();
 
-  const parsedContent = ResumeContentSchema.safeParse(resume.content);
-  if (!parsedContent.success) notFound();
+  // Just confirming this resume's content is exportable at all — the actual
+  // PDF is rendered server-side on demand by /api/resumes/[id]/export, not
+  // previewed here (see ExportClient: no live PDFViewer iframe anymore,
+  // which is what broke on mobile browsers that don't render one inline).
+  if (!resolveDocument(resume.content)) notFound();
 
-  return <ExportClient resumeId={resume.id} title={resume.title} content={parsedContent.data} />;
+  return <ExportClient resumeId={resume.id} title={resume.title} />;
 }
