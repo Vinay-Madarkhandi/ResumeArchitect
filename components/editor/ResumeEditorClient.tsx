@@ -1,12 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
+import { useEditorState, type Editor } from "@tiptap/react";
 import type { ResumeContent } from "@/lib/schemas/resume";
+import type { DocumentContent } from "@/lib/schemas/document";
 import type { ChangeExplanation } from "@/lib/schemas/tailoring";
-import { useUndoableState } from "@/lib/editor/useUndoableState";
 import { useDebouncedAutosave } from "@/lib/editor/useDebouncedAutosave";
-import { ResumeContentEditor } from "@/components/editor/ResumeContentEditor";
+import { DocumentCanvas } from "@/components/editor/DocumentCanvas";
 import { OriginalComparisonPanel } from "@/components/editor/OriginalComparisonPanel";
 import { ChangeExplanationsPanel } from "@/components/editor/ChangeExplanationsPanel";
 import { Badge } from "@/components/ui/Badge";
@@ -17,8 +18,7 @@ export function ResumeEditorClient({
   resumeId,
   title,
   isDefault,
-  initialContent,
-  lowConfidenceFields,
+  initialDoc,
   sourceContent,
   jobTitleSnapshot,
   jobCompanySnapshot,
@@ -27,17 +27,17 @@ export function ResumeEditorClient({
   resumeId: string;
   title: string;
   isDefault: boolean;
-  initialContent: ResumeContent;
-  lowConfidenceFields: string[];
+  initialDoc: DocumentContent;
   sourceContent: ResumeContent | null;
   jobTitleSnapshot: string | null;
   jobCompanySnapshot: string | null;
   changes: ChangeExplanation[] | null;
 }) {
-  const { value: content, set: setContent, undo, redo, canUndo, canRedo } = useUndoableState(initialContent);
+  const [editor, setEditor] = useState<Editor | null>(null);
+  const [doc, setDoc] = useState<DocumentContent>(initialDoc);
 
   const save = useCallback(
-    async (value: ResumeContent) => {
+    async (value: DocumentContent) => {
       const res = await fetch(`/api/resumes/${resumeId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -48,8 +48,16 @@ export function ResumeEditorClient({
     [resumeId],
   );
 
-  const saveStatus = useDebouncedAutosave(content, save);
+  const saveStatus = useDebouncedAutosave(doc, save);
   const isTailored = sourceContent !== null;
+
+  const { canUndo, canRedo } = useEditorState({
+    editor,
+    selector: ({ editor }) => ({
+      canUndo: Boolean(editor?.can().undo()),
+      canRedo: Boolean(editor?.can().redo()),
+    }),
+  }) ?? { canUndo: false, canRedo: false };
 
   return (
     <div className="flex h-screen flex-col">
@@ -67,7 +75,7 @@ export function ResumeEditorClient({
           <div className="flex items-center gap-1">
             <button
               type="button"
-              onClick={undo}
+              onClick={() => editor?.chain().focus().undo().run()}
               disabled={!canUndo}
               className="rounded p-1.5 text-on-surface-variant hover:bg-surface-container-high disabled:opacity-30"
               aria-label="Undo"
@@ -76,7 +84,7 @@ export function ResumeEditorClient({
             </button>
             <button
               type="button"
-              onClick={redo}
+              onClick={() => editor?.chain().focus().redo().run()}
               disabled={!canRedo}
               className="rounded p-1.5 text-on-surface-variant hover:bg-surface-container-high disabled:opacity-30"
               aria-label="Redo"
@@ -112,9 +120,7 @@ export function ResumeEditorClient({
         )}
 
         <main className="overflow-y-auto p-lg md:p-xl">
-          <div className="mx-auto max-w-max-width-doc rounded-lg border border-outline-variant bg-surface-container-lowest p-xl shadow-[var(--shadow-crisp)]">
-            <ResumeContentEditor value={content} onChange={setContent} lowConfidenceFields={lowConfidenceFields} />
-          </div>
+          <DocumentCanvas initialContent={initialDoc} onChange={setDoc} onReady={setEditor} />
         </main>
 
         {isTailored && (

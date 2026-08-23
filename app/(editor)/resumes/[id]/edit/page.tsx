@@ -2,9 +2,28 @@ import { cookies } from "next/headers";
 import { redirect, notFound } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 import { ResumeContentSchema } from "@/lib/schemas/resume";
+import { DocumentContentSchema, type DocumentContent } from "@/lib/schemas/document";
+import { resumeContentToDoc } from "@/lib/documentConversion";
 import { ChangeExplanationSchema } from "@/lib/schemas/tailoring";
 import { z } from "zod";
 import { ResumeEditorClient } from "@/components/editor/ResumeEditorClient";
+
+/**
+ * `resumes.content` can hold either shape — the new freeform document, or
+ * the legacy typed ResumeContent from before this editor existed — with no
+ * DB migration involved. A legacy row is converted here on read; the editor
+ * persists it back in the new shape on its first autosave, so every resume
+ * upgrades the moment someone actually opens it, with no batch migration.
+ */
+function resolveDocument(content: unknown): DocumentContent | null {
+  const asDoc = DocumentContentSchema.safeParse(content);
+  if (asDoc.success) return asDoc.data;
+
+  const asLegacy = ResumeContentSchema.safeParse(content);
+  if (asLegacy.success) return resumeContentToDoc(asLegacy.data);
+
+  return null;
+}
 
 export default async function ResumeEditPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -17,7 +36,7 @@ export default async function ResumeEditPage({ params }: { params: Promise<{ id:
   const { data: resume } = await supabase
     .from("resumes")
     .select(
-      "id, user_id, kind, title, content, is_default, low_confidence_fields, source_resume_id, job_title_snapshot, job_company_snapshot, tailoring_session_id",
+      "id, user_id, kind, title, content, is_default, source_resume_id, job_title_snapshot, job_company_snapshot, tailoring_session_id",
     )
     .eq("id", id)
     .eq("user_id", user.id)
@@ -25,8 +44,8 @@ export default async function ResumeEditPage({ params }: { params: Promise<{ id:
 
   if (!resume) notFound();
 
-  const contentResult = ResumeContentSchema.safeParse(resume.content);
-  if (!contentResult.success) notFound();
+  const initialDoc = resolveDocument(resume.content);
+  if (!initialDoc) notFound();
 
   let sourceContent = null;
   let changes = null;
@@ -40,6 +59,12 @@ export default async function ResumeEditPage({ params }: { params: Promise<{ id:
         .eq("user_id", user.id)
         .single();
       if (source) {
+        // The comparison rail (OriginalComparisonPanel) is still typed to
+        // the legacy ResumeContent shape until Stage C rebuilds it around
+        // documents — if the source resume has itself already been opened
+        // and upgraded to the new document shape, this simply omits the
+        // comparison rather than showing mismatched data. The editor itself
+        // is unaffected either way.
         const parsedSource = ResumeContentSchema.safeParse(source.content);
         if (parsedSource.success) sourceContent = parsedSource.data;
       }
@@ -54,10 +79,6 @@ export default async function ResumeEditPage({ params }: { params: Promise<{ id:
       const parsedChanges = z.array(ChangeExplanationSchema).safeParse(session?.change_explanations);
       if (parsedChanges.success) changes = parsedChanges.data;
     }
-    // Fall back to an empty comparison rather than hiding the panels — the
-    // source resume may have since been deleted, but this is still a
-    // tailored resume and the reviewer should see that context is missing.
-    if (!sourceContent) sourceContent = contentResult.data;
     if (!changes) changes = [];
   }
 
@@ -66,8 +87,7 @@ export default async function ResumeEditPage({ params }: { params: Promise<{ id:
       resumeId={resume.id}
       title={resume.title}
       isDefault={resume.is_default}
-      initialContent={contentResult.data}
-      lowConfidenceFields={resume.low_confidence_fields}
+      initialDoc={initialDoc}
       sourceContent={sourceContent}
       jobTitleSnapshot={resume.job_title_snapshot}
       jobCompanySnapshot={resume.job_company_snapshot}

@@ -3,18 +3,28 @@
 import { cookies } from "next/headers";
 import { createClient } from "@/utils/supabase/server";
 import { ResumeContentSchema } from "@/lib/schemas/resume";
+import { resumeContentToDoc } from "@/lib/documentConversion";
 
 export type ActionResult = { ok: true } | { ok: false; error: string };
 
 /** Confirms the reviewed content, promotes this resume to the user's master,
  * and archives whichever resume was previously the default master (see
  * "replacing the master resume" in the plan — a new row, not an in-place
- * edit, so prior tailored resumes' source links stay valid). */
+ * edit, so prior tailored resumes' source links stay valid).
+ *
+ * The onboarding review step still edits the parser's typed ResumeContent
+ * output (ResumeContentEditor, unchanged) — it's reviewing structured
+ * extraction results, a different job from ongoing document editing. This
+ * is the one place that content gets converted into the freeform document
+ * shape the editor (/resumes/[id]/edit) actually works with, so a freshly
+ * onboarded user's master resume is already in the new shape from the
+ * start, with no separate migration step. */
 export async function finalizeMasterResume(resumeId: string, content: unknown): Promise<ActionResult> {
   const parsedContent = ResumeContentSchema.safeParse(content);
   if (!parsedContent.success) {
     return { ok: false, error: "Resume content didn't match the expected shape." };
   }
+  const doc = resumeContentToDoc(parsedContent.data);
 
   const supabase = createClient(await cookies());
   const {
@@ -50,7 +60,7 @@ export async function finalizeMasterResume(resumeId: string, content: unknown): 
 
   const { error: updateError } = await supabase
     .from("resumes")
-    .update({ content: parsedContent.data, is_default: true })
+    .update({ content: doc, is_default: true })
     .eq("id", resumeId);
   if (updateError) return { ok: false, error: updateError.message };
 
