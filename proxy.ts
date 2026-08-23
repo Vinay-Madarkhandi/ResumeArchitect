@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/proxy";
 
-const PUBLIC_PATHS = ["/", "/sign-in", "/sign-up", "/forgot-password", "/reset-password"];
+const PUBLIC_PATHS = ["/", "/sign-in", "/sign-up", "/forgot-password", "/reset-password", "/auth-confirm"];
 const AUTH_PATHS = ["/sign-in", "/sign-up"];
 const ONBOARDING_PREFIX = "/onboarding";
 // /onboarding/upload and /onboarding/review are also the "replace master
