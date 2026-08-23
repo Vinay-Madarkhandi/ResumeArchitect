@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import type { ResumeLine } from "./extractLines";
-import { DATE_RANGE_RE, looksLikeBullet, stripBulletPrefix } from "./patterns";
+import { DATE_RANGE_RE, isSameVisualStyle, looksLikeBullet, looksLikeDateBoundary, stripBulletPrefix } from "./patterns";
 import type { ExperienceEntry } from "@/lib/schemas/resume";
 
 interface RawEntry {
@@ -22,8 +22,21 @@ function groupIntoRawEntries(lines: ResumeLine[]): RawEntry[] {
       continue;
     }
 
+    // A wrapped continuation of the last bullet shares its font size and
+    // carries no date of its own — a date always signals a new entry's
+    // header, even on the rare occasion its font happens to match.
+    if (!looksLikeDateBoundary(line.text) && current && current.bulletLines.length > 0) {
+      const lastBullet = current.bulletLines[current.bulletLines.length - 1];
+      if (isSameVisualStyle(line, lastBullet)) {
+        lastBullet.text += ` ${line.text}`;
+        continue;
+      }
+    }
+
+    const stillBuildingHeader = current !== null && current.bulletLines.length === 0;
+
     if (hasDate) {
-      if (current && current.bulletLines.length === 0 && !current.hasDateLine) {
+      if (stillBuildingHeader && current && !current.hasDateLine) {
         current.headerLines.push(line);
         current.hasDateLine = true;
       } else {
@@ -33,17 +46,11 @@ function groupIntoRawEntries(lines: ResumeLine[]): RawEntry[] {
       continue;
     }
 
-    // Plain line, no date, no bullet glyph.
-    if (current && current.bulletLines.length === 0 && !current.hasDateLine) {
+    // Plain line, no date, no bullet glyph: another header line (role and
+    // company often sit on separate lines) as long as bullets haven't
+    // started yet; a font-mismatched plain line after bullets is a new entry.
+    if (stillBuildingHeader && current) {
       current.headerLines.push(line);
-    } else if (current && current.bulletLines.length > 0 && line.text.length <= 100) {
-      current = { headerLines: [line], bulletLines: [], hasDateLine: false };
-      entries.push(current);
-    } else if (current && current.bulletLines.length > 0) {
-      // Long line with no bullet glyph directly after bullets: most likely a
-      // wrapped continuation of the previous bullet, not a new entry.
-      const lastBullet = current.bulletLines[current.bulletLines.length - 1];
-      lastBullet.text += ` ${line.text}`;
     } else {
       current = { headerLines: [line], bulletLines: [], hasDateLine: false };
       entries.push(current);

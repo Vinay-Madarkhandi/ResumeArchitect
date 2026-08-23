@@ -36,17 +36,29 @@ export function ResumeCard({ resume }: { resume: ResumeCardData }) {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [title, setTitle] = useState(resume.title);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [renameError, setRenameError] = useState<string | null>(null);
+  const [duplicateError, setDuplicateError] = useState<string | null>(null);
 
   function handleRename() {
+    setRenameError(null);
     startTransition(async () => {
-      await renameResume(resume.id, title);
+      const result = await renameResume(resume.id, title);
+      if (!result.ok) {
+        setRenameError(result.error);
+        return;
+      }
       setRenameOpen(false);
     });
   }
 
   function handleDuplicate() {
+    setDuplicateError(null);
     startTransition(async () => {
-      await duplicateResume(resume.id);
+      const result = await duplicateResume(resume.id);
+      if (!result.ok) {
+        setDuplicateError(result.error);
+        return;
+      }
       router.refresh();
     });
   }
@@ -128,12 +140,14 @@ export function ResumeCard({ resume }: { resume: ResumeCardData }) {
             Updated {formatRelativeTime(resume.updated_at)}
           </p>
         </Link>
+        {duplicateError && <p className="mt-sm font-sans text-label-sm text-error">{duplicateError}</p>}
       </Card>
 
       <Dialog open={renameOpen} onOpenChange={setRenameOpen}>
         <DialogContent>
           <DialogTitle>Rename resume</DialogTitle>
           <Input value={title} onChange={(e) => setTitle(e.target.value)} className="mt-sm" />
+          {renameError && <p className="mt-sm font-sans text-body-lg text-error">{renameError}</p>}
           <div className="mt-lg flex justify-end gap-2">
             <Button variant="secondary" size="sm" onClick={() => setRenameOpen(false)}>
               Cancel

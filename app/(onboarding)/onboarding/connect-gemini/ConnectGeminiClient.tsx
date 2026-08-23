@@ -4,6 +4,7 @@ import { useState } from "react";
 import { completeOnboarding } from "@/app/actions/onboarding";
 import { GeminiKeyManager } from "@/components/settings/GeminiKeyManager";
 import { Button } from "@/components/ui/Button";
+import { FieldError } from "@/components/ui/Input";
 import type { GeminiKeyStatusT } from "@/lib/schemas/profile";
 
 export function ConnectGeminiClient({
@@ -15,13 +16,17 @@ export function ConnectGeminiClient({
 }) {
   const [isFinishing, setIsFinishing] = useState(false);
   const [connected, setConnected] = useState(initialStatus === "valid");
+  const [error, setError] = useState<string | null>(null);
 
   async function finish() {
     setIsFinishing(true);
-    // completeOnboarding() redirects on success; it only returns if it
-    // failed (e.g. the session expired), in which case we just stop
-    // showing the loading state rather than getting stuck.
-    await completeOnboarding();
+    setError(null);
+    // completeOnboarding() redirects on success and never returns in that
+    // case (the redirect throws internally, by design) — reaching the line
+    // below at all means it failed, so surface why instead of leaving the
+    // user stuck on a button that looks like it did nothing.
+    const result = await completeOnboarding();
+    if (!result.ok) setError(result.error);
     setIsFinishing(false);
   }
 
@@ -50,6 +55,12 @@ export function ConnectGeminiClient({
           {isFinishing ? "Finishing…" : connected ? "Finish" : "Continue without connecting"}
         </Button>
       </div>
+
+      {error && (
+        <div className="mt-sm">
+          <FieldError>{error}</FieldError>
+        </div>
+      )}
     </div>
   );
 }

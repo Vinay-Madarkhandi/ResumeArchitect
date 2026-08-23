@@ -8,6 +8,18 @@ export const DATE_RANGE_RE = new RegExp(
   `(${DATE_TOKEN})\\s*(?:-|–|—|to)\\s*(${DATE_TOKEN}|[Pp]resent|[Cc]urrent)`,
 );
 export const DATE_SINGLE_RE = new RegExp(`^${DATE_TOKEN}$`);
+const MONTH_YEAR_ANYWHERE_RE = new RegExp(`${MONTH}\\s+\\d{4}`);
+
+/**
+ * Whether a line carries any date signal — a full range ("Nov 2025 - Jan
+ * 2026") or a single month+year stamp ("Feb 2026", common on project
+ * headers that show only a start month). Used to tell a new entry's header
+ * apart from a wrapped continuation even when the two happen to share a
+ * font size.
+ */
+export function looksLikeDateBoundary(text: string): boolean {
+  return DATE_RANGE_RE.test(text) || MONTH_YEAR_ANYWHERE_RE.test(text);
+}
 
 export const BULLET_PREFIX_RE = /^[•\-\*▪◦‣·○]\s*/;
 
@@ -17,6 +29,42 @@ export function stripBulletPrefix(line: string): string {
 
 export function looksLikeBullet(line: string): boolean {
   return BULLET_PREFIX_RE.test(line);
+}
+
+/**
+ * Whether two lines are likely the same visual text run (e.g. a bullet or
+ * title that wrapped onto a second PDF line), based on font size rather than
+ * text length — a wrapped continuation can be short ("workflows") or long,
+ * but it always renders at the same font size as the line it continues.
+ * Missing/zero font-size metadata (some PDFs don't expose it) defaults to
+ * "similar" since assuming a wrap is the safer failure mode than fragmenting
+ * a single entry into several.
+ */
+export function isSimilarFontSize(a: number, b: number): boolean {
+  if (a <= 0 || b <= 0) return true;
+  const ratio = a / b;
+  return ratio > 0.85 && ratio < 1.18;
+}
+
+function looksBold(fontFamily: string): boolean {
+  return /bold|black|heavy/i.test(fontFamily);
+}
+
+/**
+ * Whether two lines are the same visual text run for entry-boundary
+ * purposes: same font size, and — when the PDF exposes font family for
+ * both — the same bold/non-bold weight. Many resumes distinguish a header
+ * from body text by boldness alone at an identical point size, which size
+ * comparison misses on its own; checking both keeps the heuristic working
+ * across differently-styled resumes rather than just this one PDF's layout.
+ */
+export function isSameVisualStyle(
+  a: { maxFontSize: number; fontFamily: string },
+  b: { maxFontSize: number; fontFamily: string },
+): boolean {
+  if (!isSimilarFontSize(a.maxFontSize, b.maxFontSize)) return false;
+  if (a.fontFamily && b.fontFamily && looksBold(a.fontFamily) !== looksBold(b.fontFamily)) return false;
+  return true;
 }
 
 export const SECTION_HEADER_KEYWORDS: Record<
