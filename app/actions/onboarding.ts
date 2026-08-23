@@ -1,7 +1,6 @@
 "use server";
 
 import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 import { ResumeContentSchema } from "@/lib/schemas/resume";
 
@@ -77,5 +76,12 @@ export async function completeOnboarding(): Promise<ActionResult> {
     .eq("id", user.id);
 
   if (error) return { ok: false, error: error.message };
-  redirect("/library");
+  // Deliberately no redirect() here — the caller does a hard navigation once
+  // it has confirmed this returned { ok: true }, rather than relying on
+  // Next's action-redirect signal being intercepted correctly for an action
+  // invoked from a bare onClick (not a <form action>). That guarantees the
+  // browser's next request to /library is a genuinely fresh one that sees
+  // this update, instead of depending on router-cache/soft-navigation
+  // internals that reportedly weren't taking users there reliably.
+  return { ok: true };
 }
