@@ -1,15 +1,17 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/database.types";
-import { tailorResume } from "@/lib/gemini/prompts/tailorResume";
+import type { ChangeExplanation } from "@/lib/schemas/tailoring";
+import type { DocumentContent } from "@/lib/schemas/document";
+import { tailorDocument } from "@/lib/gemini/prompts/tailorDocument";
 import { TAILOR_MODEL } from "@/lib/gemini/config";
-import { findFabricatedCompanies } from "./fabricationGuardrail";
-import type { ResumeContent } from "@/lib/schemas/resume";
+import { documentToMarkdown, markdownToDocument } from "@/lib/documentMarkdown";
+import { findFlaggedPhrases } from "./fabricationGuardrail";
 
 export interface RunTailoringSessionInput {
   supabase: SupabaseClient<Database>;
   userId: string;
   apiKey: string;
-  sourceResume: { id: string; title: string; content: ResumeContent };
+  sourceResume: { id: string; title: string; content: DocumentContent };
   jobDescriptionId: string;
   jobDescriptionText: string;
   jobTitle: string | null;
@@ -19,7 +21,7 @@ export interface RunTailoringSessionInput {
 export type SessionErrorCode = NonNullable<Database["public"]["Tables"]["tailoring_sessions"]["Row"]["error_code"]>;
 
 export type RunTailoringSessionResult =
-  | { ok: true; sessionId: string; resumeId: string; changes: unknown }
+  | { ok: true; sessionId: string; resumeId: string; changes: ChangeExplanation[] }
   | { ok: false; sessionId: string; errorCode: SessionErrorCode; errorMessage: string };
 
 /** Shared by the initial POST /api/tailoring and its retry endpoint — every
@@ -55,18 +57,33 @@ export async function runTailoringSession(input: RunTailoringSessionInput): Prom
     return { ok: false, sessionId, errorCode, errorMessage };
   }
 
-  const tailorResult = await tailorResume(apiKey, sourceResume.content, jobDescriptionText);
+  const sourceMarkdown = documentToMarkdown(sourceResume.content);
+  const tailorResult = await tailorDocument(apiKey, sourceMarkdown, jobDescriptionText);
   if (!tailorResult.ok) {
     return fail(tailorResult.errorCode, tailorResult.message);
   }
 
-  const fabricated = findFabricatedCompanies(sourceResume.content, tailorResult.result.resume);
-  if (fabricated.length > 0) {
-    return fail(
-      "fabrication_detected",
-      "The generated resume introduced a company that wasn't in your original resume, so it was discarded. Please try again.",
-    );
-  }
+  const tailoredDoc = markdownToDocument(tailorResult.result.markdown);
+
+  // Never blocks — any proper-noun-like phrase not present in the source is
+  // surfaced as a "flagged" change for the user to verify, merged with
+  // whatever Gemini itself already self-reported (deduped by normalized
+  // phrase so the same thing isn't flagged twice).
+  const heuristicFlags = findFlaggedPhrases(sourceResume.content, tailoredDoc);
+  const alreadyFlagged = new Set(
+    tailorResult.result.changes
+      .filter((c) => c.kind === "flagged" && c.quote)
+      .map((c) => c.quote!.toLowerCase().trim()),
+  );
+  const mergedFlags: ChangeExplanation[] = heuristicFlags
+    .filter((f) => !alreadyFlagged.has(f.phrase.toLowerCase().trim()))
+    .map((f) => ({
+      kind: "flagged" as const,
+      quote: f.phrase,
+      whatChanged: `New phrase not in your original: "${f.phrase}"`,
+      why: `This appears in the tailored text near: "${f.contextSnippet}" — please verify it's accurate before keeping it.`,
+    }));
+  const changes = [...tailorResult.result.changes, ...mergedFlags];
 
   const resumeId = crypto.randomUUID();
   const title = jobTitle && company ? `${jobTitle} — ${company}` : jobTitle || company || `Tailored from ${sourceResume.title}`;
@@ -76,7 +93,7 @@ export async function runTailoringSession(input: RunTailoringSessionInput): Prom
     user_id: userId,
     kind: "tailored",
     title,
-    content: tailorResult.result.resume,
+    content: tailoredDoc,
     status: "draft",
     is_default: false,
     source_resume_id: sourceResume.id,
@@ -98,10 +115,10 @@ export async function runTailoringSession(input: RunTailoringSessionInput): Prom
       status: "completed",
       result_resume_id: resumeId,
       result_resume_title_snapshot: title,
-      change_explanations: tailorResult.result.changes,
+      change_explanations: changes,
       completed_at: new Date().toISOString(),
     })
     .eq("id", sessionId);
 
-  return { ok: true, sessionId, resumeId, changes: tailorResult.result.changes };
+  return { ok: true, sessionId, resumeId, changes };
 }

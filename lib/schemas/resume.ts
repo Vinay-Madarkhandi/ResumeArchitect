@@ -103,15 +103,3 @@ export function emptyResumeContent(): ResumeContent {
     certifications: [],
   };
 }
-
-/** Section keys used for low-confidence-field paths and change explanations. */
-export const RESUME_SECTIONS = [
-  "personalInfo",
-  "summary",
-  "experience",
-  "projects",
-  "education",
-  "skills",
-  "certifications",
-] as const;
-export type ResumeSection = (typeof RESUME_SECTIONS)[number];

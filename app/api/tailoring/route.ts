@@ -4,7 +4,7 @@ import { createClient } from "@/utils/supabase/server";
 import { decryptApiKey } from "@/lib/crypto/keyCipher";
 import { pgByteaToBuffer } from "@/lib/crypto/bytea";
 import { runTailoringSession } from "@/lib/tailoring/runTailoringSession";
-import { ResumeContentSchema } from "@/lib/schemas/resume";
+import { resolveDocument } from "@/lib/documentConversion";
 import { MIN_JOB_DESCRIPTION_LENGTH } from "@/lib/schemas/tailoring";
 
 export const runtime = "nodejs";
@@ -53,8 +53,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ errorCode: "source_not_found", errorMessage: "That resume could not be found." }, { status: 404 });
   }
 
-  const sourceContent = ResumeContentSchema.safeParse(sourceResume.content);
-  if (!sourceContent.success) {
+  const sourceDoc = resolveDocument(sourceResume.content);
+  if (!sourceDoc) {
     return NextResponse.json(
       { errorCode: "source_not_found", errorMessage: "That resume's content looks corrupted. Please open and re-save it first." },
       { status: 422 },
@@ -98,7 +98,7 @@ export async function POST(request: Request) {
     supabase,
     userId: user.id,
     apiKey,
-    sourceResume: { id: sourceResume.id, title: sourceResume.title, content: sourceContent.data },
+    sourceResume: { id: sourceResume.id, title: sourceResume.title, content: sourceDoc },
     jobDescriptionId: jobDescription.id,
     jobDescriptionText,
     jobTitle,

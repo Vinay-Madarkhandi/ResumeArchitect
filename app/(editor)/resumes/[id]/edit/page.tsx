@@ -1,7 +1,6 @@
 import { cookies } from "next/headers";
 import { redirect, notFound } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
-import { ResumeContentSchema } from "@/lib/schemas/resume";
 import { resolveDocument } from "@/lib/documentConversion";
 import { ChangeExplanationSchema } from "@/lib/schemas/tailoring";
 import { z } from "zod";
@@ -40,16 +39,7 @@ export default async function ResumeEditPage({ params }: { params: Promise<{ id:
         .eq("id", resume.source_resume_id)
         .eq("user_id", user.id)
         .single();
-      if (source) {
-        // The comparison rail (OriginalComparisonPanel) is still typed to
-        // the legacy ResumeContent shape until Stage C rebuilds it around
-        // documents — if the source resume has itself already been opened
-        // and upgraded to the new document shape, this simply omits the
-        // comparison rather than showing mismatched data. The editor itself
-        // is unaffected either way.
-        const parsedSource = ResumeContentSchema.safeParse(source.content);
-        if (parsedSource.success) sourceContent = parsedSource.data;
-      }
+      if (source) sourceContent = resolveDocument(source.content);
     }
     if (resume.tailoring_session_id) {
       const { data: session } = await supabase
