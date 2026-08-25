@@ -56,3 +56,23 @@ export const selectionEditGeminiSchema: Schema = {
   },
   required: ["replacementText", "flagged"],
 };
+
+/** Mirror of MatchAnalysisResultSchema (lib/schemas/matchAnalysis.ts) —
+ * deliberately no score field; see that schema's doc comment for why. */
+export const matchAnalysisGeminiSchema: Schema = {
+  type: Type.OBJECT,
+  properties: {
+    requiredSkills: {
+      type: Type.ARRAY,
+      items: { type: Type.STRING },
+      description: "The concrete skills/technologies/qualifications this job description asks for, most important first.",
+    },
+    missingSkills: {
+      type: Type.ARRAY,
+      items: { type: Type.STRING },
+      description: "The subset of requiredSkills the resume shows no real evidence of — using the exact same phrase as in requiredSkills.",
+    },
+    summary: { type: Type.STRING, description: "One factual sentence — no score, no percentage, no filler." },
+  },
+  required: ["requiredSkills", "missingSkills", "summary"],
+};

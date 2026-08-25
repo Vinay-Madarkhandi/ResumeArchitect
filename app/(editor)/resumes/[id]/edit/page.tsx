@@ -17,7 +17,7 @@ export default async function ResumeEditPage({ params }: { params: Promise<{ id:
   const { data: resume } = await supabase
     .from("resumes")
     .select(
-      "id, user_id, kind, title, content, is_default, source_resume_id, job_title_snapshot, job_company_snapshot, tailoring_session_id",
+      "id, user_id, kind, title, content, is_default, source_resume_id, job_description_id, job_title_snapshot, job_company_snapshot, tailoring_session_id",
     )
     .eq("id", id)
     .eq("user_id", user.id)
@@ -60,6 +60,7 @@ export default async function ResumeEditPage({ params }: { params: Promise<{ id:
       isDefault={resume.is_default}
       initialDoc={initialDoc}
       sourceContent={sourceContent}
+      hasJobDescription={resume.job_description_id !== null}
       jobTitleSnapshot={resume.job_title_snapshot}
       jobCompanySnapshot={resume.job_company_snapshot}
       changes={changes}
