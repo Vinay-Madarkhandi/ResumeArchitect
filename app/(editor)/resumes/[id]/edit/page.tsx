@@ -32,26 +32,25 @@ export default async function ResumeEditPage({ params }: { params: Promise<{ id:
   let changes = null;
 
   if (resume.kind === "tailored") {
-    if (resume.source_resume_id) {
-      const { data: source } = await supabase
-        .from("resumes")
-        .select("content")
-        .eq("id", resume.source_resume_id)
-        .eq("user_id", user.id)
-        .single();
-      if (source) sourceContent = resolveDocument(source.content);
-    }
-    if (resume.tailoring_session_id) {
-      const { data: session } = await supabase
-        .from("tailoring_sessions")
-        .select("change_explanations")
-        .eq("id", resume.tailoring_session_id)
-        .eq("user_id", user.id)
-        .single();
-      const parsedChanges = z.array(ChangeExplanationSchema).safeParse(session?.change_explanations);
-      if (parsedChanges.success) changes = parsedChanges.data;
-    }
-    if (!changes) changes = [];
+    // Neither query depends on the other's result — only both depend on
+    // `resume`, already in hand — so run them concurrently instead of
+    // paying two sequential round-trips.
+    const [{ data: source }, { data: session }] = await Promise.all([
+      resume.source_resume_id
+        ? supabase.from("resumes").select("content").eq("id", resume.source_resume_id).eq("user_id", user.id).single()
+        : Promise.resolve({ data: null }),
+      resume.tailoring_session_id
+        ? supabase
+            .from("tailoring_sessions")
+            .select("change_explanations")
+            .eq("id", resume.tailoring_session_id)
+            .eq("user_id", user.id)
+            .single()
+        : Promise.resolve({ data: null }),
+    ]);
+    if (source) sourceContent = resolveDocument(source.content);
+    const parsedChanges = z.array(ChangeExplanationSchema).safeParse(session?.change_explanations);
+    changes = parsedChanges.success ? parsedChanges.data : [];
   }
 
   return (

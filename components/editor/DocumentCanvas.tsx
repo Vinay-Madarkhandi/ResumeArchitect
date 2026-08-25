@@ -26,6 +26,7 @@ export function DocumentCanvas({
   onReady,
   editable = true,
   variant = "full",
+  widthPx = 720,
 }: {
   initialContent: DocumentContent;
   onChange?: (doc: DocumentContent) => void;
@@ -37,6 +38,10 @@ export function DocumentCanvas({
    * CSS transform (which would shrink visually but keep its full-width
    * layout footprint). */
   variant?: "full" | "compact";
+  /** User-adjustable canvas width in px (see the width slider in
+   * ResumeEditorClient) — ignored for the "compact" variant, which is
+   * always sized to its sidebar column. */
+  widthPx?: number;
 }) {
   const editor = useEditor({
     immediatelyRender: false,
@@ -79,7 +84,10 @@ export function DocumentCanvas({
   }
 
   return (
-    <div className="mx-auto w-full max-w-[720px] bg-surface-container-lowest px-margin-desktop py-xl shadow-crisp">
+    <div
+      className="mx-auto w-full bg-surface-container-lowest px-margin-desktop py-xl shadow-[var(--shadow-soft)] transition-[max-width] duration-150"
+      style={{ maxWidth: widthPx }}
+    >
       <EditorContent editor={editor} className="resume-doc-canvas font-doc text-on-surface" />
     </div>
   );

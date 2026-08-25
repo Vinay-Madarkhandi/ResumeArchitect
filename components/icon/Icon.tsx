@@ -28,6 +28,7 @@ import {
   MapPin,
   Menu,
   MoreVertical,
+  MoveHorizontal,
   Pencil,
   Phone,
   Plus,
@@ -98,6 +99,7 @@ const ICONS = {
   spinner: Loader2,
   menu: Menu,
   warning: AlertTriangle,
+  "resize-width": MoveHorizontal,
 } as const;
 
 export type IconName = keyof typeof ICONS;

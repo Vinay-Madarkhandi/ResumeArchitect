@@ -202,6 +202,15 @@ body {
   color: var(--color-on-surface);
 }
 
+/* Tailwind v4's preflight no longer sets `cursor: pointer` on <button> (it
+ * matches the browser default of `cursor: default` instead) — this
+ * restores the expected hand cursor on every interactive control, including
+ * Radix's native <button>-based triggers (Tabs/Dialog/DropdownMenu). */
+button:not(:disabled),
+[role="button"]:not([aria-disabled="true"]) {
+  cursor: pointer;
+}
+
 /* The live rich-text resume canvas (components/editor/DocumentCanvas.tsx).
  * Mirrors lib/pdf/tokens.ts's visual hierarchy at screen scale so what you
  * edit here looks like what gets exported, without needing a separate PDF
@@ -312,6 +321,35 @@ body {
   background-size: 22px 22px;
   -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 0%, black 40%, transparent 100%);
   mask-image: radial-gradient(ellipse 70% 60% at 50% 0%, black 40%, transparent 100%);
+}
+
+/* Resume canvas width slider (ResumeEditorClient) — minimal custom track/
+ * thumb since range inputs render unstyled per-browser otherwise. */
+.doc-width-slider {
+  appearance: none;
+  height: 3px;
+  border-radius: 999px;
+  background: var(--color-outline-variant);
+  outline: none;
+}
+.doc-width-slider::-webkit-slider-thumb {
+  appearance: none;
+  width: 13px;
+  height: 13px;
+  border-radius: 999px;
+  background: var(--color-secondary);
+  cursor: pointer;
+  border: 2px solid var(--color-surface-container-lowest);
+  box-shadow: 0 0 0 1px var(--color-secondary);
+}
+.doc-width-slider::-moz-range-thumb {
+  width: 13px;
+  height: 13px;
+  border-radius: 999px;
+  background: var(--color-secondary);
+  cursor: pointer;
+  border: 2px solid var(--color-surface-container-lowest);
+  box-shadow: 0 0 0 1px var(--color-secondary);
 }
 
 /* AI-tailoring highlights — client-side-only decorations (never part of the
