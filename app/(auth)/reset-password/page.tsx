@@ -81,7 +81,7 @@ export default function ResetPasswordPage() {
   if (status === "invalid") {
     return (
       <div className="text-center">
-        <h1 className="mb-1 font-sans text-headline-lg text-primary">This link isn&rsquo;t valid</h1>
+        <h1 className="mb-1 font-display text-headline-lg text-primary">This link isn&rsquo;t valid</h1>
         <p className="font-sans text-body-lg text-on-surface-variant">
           Password reset links expire after a while. Request a new one to continue.
         </p>
@@ -98,7 +98,7 @@ export default function ResetPasswordPage() {
   if (status === "done") {
     return (
       <div className="text-center">
-        <h1 className="mb-1 font-sans text-headline-lg text-primary">Password updated</h1>
+        <h1 className="mb-1 font-display text-headline-lg text-primary">Password updated</h1>
         <p className="font-sans text-body-lg text-on-surface-variant">Taking you to your workspace…</p>
       </div>
     );
@@ -106,7 +106,7 @@ export default function ResetPasswordPage() {
 
   return (
     <div>
-      <h1 className="mb-1 font-sans text-headline-lg text-primary">Set a new password</h1>
+      <h1 className="mb-1 font-display text-headline-lg text-primary">Set a new password</h1>
       <p className="mb-lg font-sans text-body-lg text-on-surface-variant">Choose a new password for your account.</p>
 
       <form onSubmit={handleSubmit} className="space-y-md" noValidate>

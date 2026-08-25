@@ -53,7 +53,7 @@ export function ExportClient({ resumeId, title }: { resumeId: string; title: str
         {status === "done" ? (
           <>
             <Icon name="check-circle" size={48} className="mb-md text-secondary" />
-            <h2 className="mb-1 font-sans text-headline-lg text-primary">Export complete</h2>
+            <h2 className="mb-1 font-display text-headline-lg text-primary">Export complete</h2>
             <p className="mb-lg font-sans text-body-lg text-on-surface-variant">Your download should have started.</p>
             <div className="flex gap-2">
               <Link href="/library">
@@ -67,7 +67,7 @@ export function ExportClient({ resumeId, title }: { resumeId: string; title: str
         ) : (
           <>
             <Icon name="download" size={48} className="mb-md text-secondary" />
-            <h2 className="mb-1 font-sans text-headline-lg text-primary">{title}</h2>
+            <h2 className="mb-1 font-display text-headline-lg text-primary">{title}</h2>
             <p className="mb-lg max-w-sm font-sans text-body-lg text-on-surface-variant">
               We&rsquo;ll generate a PDF from your current document and start the download.
             </p>

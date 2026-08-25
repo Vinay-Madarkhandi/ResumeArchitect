@@ -1,13 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useEditorState, type Editor } from "@tiptap/react";
-import type { DocumentContent } from "@/lib/schemas/document";
+import type { DocumentContent, HighlightRecord } from "@/lib/schemas/document";
 import type { ChangeExplanation } from "@/lib/schemas/tailoring";
 import { useDebouncedAutosave } from "@/lib/editor/useDebouncedAutosave";
 import { usePageCount } from "@/lib/editor/usePageCount";
-import { setHighlights } from "@/lib/editor/aiHighlightExtension";
+import { setHighlights as applyHighlightDecorations } from "@/lib/editor/aiHighlightExtension";
 import { DocumentCanvas } from "@/components/editor/DocumentCanvas";
 import { AskAiBubbleMenu } from "@/components/editor/AskAiBubbleMenu";
 import { OriginalComparisonPanel } from "@/components/editor/OriginalComparisonPanel";
@@ -37,6 +37,43 @@ export function ResumeEditorClient({
 }) {
   const [editor, setEditor] = useState<Editor | null>(null);
   const [doc, setDoc] = useState<DocumentContent>(initialDoc);
+  // The document tree TipTap emits (via editor.getJSON()) never carries a
+  // `highlights` key — it's not part of the ProseMirror schema — so the
+  // record of what single Ask-AI edits changed is tracked separately here
+  // and merged back in only at save time (see contentToPersist below).
+  // Without this, accepting an edit would highlight it live but the record
+  // of *that it was AI-changed* would never reach the database, so the
+  // highlight silently wouldn't come back after a reload.
+  const [savedHighlights, setSavedHighlights] = useState<HighlightRecord[]>(initialDoc.highlights ?? []);
+  const [canvasWidth, setCanvasWidth] = useState(720);
+
+  useEffect(() => {
+    // Deliberately read after mount rather than in the useState initializer:
+    // this component is server-rendered, so seeding state from localStorage
+    // during the initial render would desync from the server-rendered HTML
+    // and trigger a hydration mismatch. A one-frame width change after
+    // mount is the correct tradeoff here.
+    try {
+      const stored = Number(window.localStorage.getItem("resumeCanvasWidth"));
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- see comment above
+      if (stored >= 480 && stored <= 1000) setCanvasWidth(stored);
+    } catch {
+      // best-effort only
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem("resumeCanvasWidth", String(canvasWidth));
+    } catch {
+      // best-effort only
+    }
+  }, [canvasWidth]);
+
+  const contentToPersist = useMemo<DocumentContent>(
+    () => ({ ...doc, highlights: savedHighlights.length > 0 ? savedHighlights : undefined }),
+    [doc, savedHighlights],
+  );
 
   const save = useCallback(
     async (value: DocumentContent) => {
@@ -50,26 +87,31 @@ export function ResumeEditorClient({
     [resumeId],
   );
 
-  const saveStatus = useDebouncedAutosave(doc, save);
-  const pageCount = usePageCount(resumeId, doc);
+  const saveStatus = useDebouncedAutosave(contentToPersist, save);
+  const pageCount = usePageCount(resumeId, contentToPersist);
   const isTailored = sourceContent !== null;
 
-  // Mark up everything the bulk tailoring run touched, once, right when the
-  // editor is ready — a client-side-only decoration (see
-  // lib/editor/aiHighlightExtension.ts), never part of the saved document,
-  // so it's simply not there in an exported PDF rather than needing to be
-  // stripped out before export.
+  const handleHighlightAccepted = useCallback((record: HighlightRecord) => {
+    setSavedHighlights((prev) => [...prev, record]);
+  }, []);
+
+  // Mark up everything AI has touched — both the bulk tailoring run's
+  // changes and any single Ask-AI edits from a previous session — once,
+  // right when the editor is ready. These are client-side-only decorations
+  // (see lib/editor/aiHighlightExtension.ts), never part of the saved
+  // document, so they're simply not there in an exported PDF rather than
+  // needing to be stripped out before export.
   const highlightsApplied = useRef(false);
   useEffect(() => {
-    if (!editor || highlightsApplied.current || !changes || changes.length === 0) return;
+    if (!editor || highlightsApplied.current) return;
+    const fromChanges = (changes ?? [])
+      .filter((c) => c.quote)
+      .map((c) => ({ quote: c.quote as string, tone: c.kind === "flagged" ? ("flagged" as const) : ("change" as const), title: c.why }));
+    const all = [...fromChanges, ...savedHighlights];
+    if (all.length === 0) return;
     highlightsApplied.current = true;
-    setHighlights(
-      editor,
-      changes
-        .filter((c) => c.quote)
-        .map((c) => ({ quote: c.quote as string, tone: c.kind === "flagged" ? "flagged" : "change", title: c.why })),
-    );
-  }, [editor, changes]);
+    applyHighlightDecorations(editor, all);
+  }, [editor, changes, savedHighlights]);
 
   const { canUndo, canRedo } = useEditorState({
     editor,
@@ -113,6 +155,20 @@ export function ResumeEditorClient({
             </button>
           </div>
           <SaveStatusLabel status={saveStatus} />
+          <div className="hidden items-center gap-1.5 md:flex">
+            <Icon name="resize-width" size={14} className="text-on-surface-variant" />
+            <input
+              type="range"
+              min={480}
+              max={1000}
+              step={20}
+              value={canvasWidth}
+              onChange={(e) => setCanvasWidth(Number(e.target.value))}
+              className="doc-width-slider w-24"
+              aria-label="Resume canvas width"
+              title={`Canvas width: ${canvasWidth}px`}
+            />
+          </div>
           {pageCount !== null && (
             <span
               className="font-mono text-label-sm text-on-surface-variant"
@@ -147,9 +203,9 @@ export function ResumeEditorClient({
           </aside>
         )}
 
-        <main className="overflow-y-auto p-lg md:p-xl">
-          <DocumentCanvas initialContent={initialDoc} onChange={setDoc} onReady={setEditor} />
-          {editor && <AskAiBubbleMenu editor={editor} resumeId={resumeId} />}
+        <main className="w-full overflow-y-auto p-lg md:p-xl">
+          <DocumentCanvas initialContent={initialDoc} onChange={setDoc} onReady={setEditor} widthPx={canvasWidth} />
+          {editor && <AskAiBubbleMenu editor={editor} resumeId={resumeId} onAccepted={handleHighlightAccepted} />}
         </main>
 
         {isTailored && (

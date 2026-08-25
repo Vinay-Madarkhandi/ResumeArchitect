@@ -15,7 +15,7 @@ export default async function OnboardingUploadPage() {
 
   return (
     <div>
-      <h1 className="mb-1 font-sans text-headline-lg text-primary">
+      <h1 className="mb-1 font-display text-headline-lg text-primary">
         {isReplacement ? "Replace your master resume" : "Add your resume"}
       </h1>
       <p className="mb-lg font-sans text-body-lg text-on-surface-variant">

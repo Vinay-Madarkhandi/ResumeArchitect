@@ -36,7 +36,7 @@ export default function ForgotPasswordPage() {
     return (
       <div className="text-center">
         <Icon name="email" size={32} className="mx-auto mb-md text-secondary" />
-        <h1 className="mb-1 font-sans text-headline-lg text-primary">Check your email</h1>
+        <h1 className="mb-1 font-display text-headline-lg text-primary">Check your email</h1>
         <p className="font-sans text-body-lg text-on-surface-variant">
           If an account exists for <span className="font-medium text-on-surface">{email}</span>, we sent a link
           to reset your password.
@@ -50,7 +50,7 @@ export default function ForgotPasswordPage() {
 
   return (
     <div>
-      <h1 className="mb-1 font-sans text-headline-lg text-primary">Reset your password</h1>
+      <h1 className="mb-1 font-display text-headline-lg text-primary">Reset your password</h1>
       <p className="mb-lg font-sans text-body-lg text-on-surface-variant">
         Enter your email and we&rsquo;ll send you a reset link.
       </p>

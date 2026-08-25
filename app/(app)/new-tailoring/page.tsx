@@ -23,7 +23,7 @@ export default async function NewTailoringPage() {
 
   return (
     <div className="mx-auto max-w-max-width-doc px-margin-mobile py-lg md:px-0 md:py-xl">
-      <h1 className="mb-1 font-sans text-headline-lg text-primary">New Tailoring</h1>
+      <h1 className="mb-1 font-display text-headline-lg text-primary">New Tailoring</h1>
       <p className="mb-lg font-sans text-body-lg text-on-surface-variant">
         Pick a resume, paste the job description, and we&rsquo;ll tailor it for this role.
       </p>

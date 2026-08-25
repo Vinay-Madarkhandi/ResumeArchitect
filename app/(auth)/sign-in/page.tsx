@@ -47,7 +47,7 @@ function SignInForm() {
 
   return (
     <div>
-      <h1 className="mb-1 font-sans text-headline-lg text-primary">Sign in</h1>
+      <h1 className="mb-1 font-display text-headline-lg text-primary">Sign in</h1>
       <p className="mb-lg font-sans text-body-lg text-on-surface-variant">
         Welcome back. Let&rsquo;s get you tailoring.
       </p>

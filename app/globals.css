@@ -1,72 +1,85 @@
 @import "tailwindcss";
 
 /*
- * "Executive Precision" design system — ported from
- * public/UI template/executive_precision/DESIGN.md
- * Philosophy: "Intellectual Calm" — corporate-modern, tactile-minimalist.
- * Primary (near-black) carries structure/typography; Secondary (teal) is
- * used surgically for CTAs and interactive states only.
+ * "Warm Editorial" design system — a from-scratch visual identity replacing
+ * the earlier near-black/teal "Executive Precision" scheme after direct
+ * feedback that it felt flat and generic. Drafted as a Claude Design canvas
+ * (six real app screens + two alternate directions) before implementation —
+ * see the design canvas for the source mockups.
+ * Philosophy: an editorial, paper-and-ink warmth — fitting for a tool about
+ * writing and documents, and deliberately distinct from generic dark-teal
+ * SaaS. Warm ivory surfaces carry structure; a terracotta accent marks
+ * interactive/CTA moments; a deep olive-green secondary accent marks
+ * AI-related content (highlights, the "what changed" panel) so it reads as
+ * its own category, not just "more orange."
+ *
+ * Every token below keeps its EXISTING NAME from the previous scheme (only
+ * the values changed) — Tailwind utility classes like `bg-secondary` or
+ * `text-on-surface-variant` throughout the app repaint automatically, with
+ * no component file needing to reference a new class name.
  */
 
 :root {
-  /* Colors */
-  --color-surface: #f8f9ff;
-  --color-surface-dim: #cbdbf5;
-  --color-surface-bright: #f8f9ff;
-  --color-surface-container-lowest: #ffffff;
-  --color-surface-container-low: #eff4ff;
-  --color-surface-container: #e5eeff;
-  --color-surface-container-high: #dce9ff;
-  --color-surface-container-highest: #d3e4fe;
-  --color-on-surface: #0b1c30;
-  --color-on-surface-variant: #45464d;
-  --color-inverse-surface: #213145;
-  --color-inverse-on-surface: #eaf1ff;
-  --color-outline: #76777d;
-  --color-outline-variant: #c6c6cd;
-  --color-surface-tint: #565e74;
+  /* Colors — oklch throughout: warm near-neutral surfaces/ink, terracotta
+   * secondary (interactive/CTA), olive tertiary (AI/informational). */
+  --color-surface: oklch(97% 0.012 75);
+  --color-surface-dim: oklch(90% 0.016 72);
+  --color-surface-bright: oklch(97% 0.012 75);
+  --color-surface-container-lowest: oklch(99% 0.006 75);
+  --color-surface-container-low: oklch(95% 0.012 75);
+  --color-surface-container: oklch(94% 0.014 75);
+  --color-surface-container-high: oklch(91% 0.016 73);
+  --color-surface-container-highest: oklch(88% 0.018 72);
+  --color-on-surface: oklch(22% 0.02 55);
+  --color-on-surface-variant: oklch(45% 0.02 55);
+  --color-inverse-surface: oklch(22% 0.02 55);
+  --color-inverse-on-surface: oklch(97% 0.012 75);
+  --color-outline: oklch(60% 0.02 65);
+  --color-outline-variant: oklch(88% 0.015 70);
+  --color-surface-tint: oklch(58% 0.15 45);
 
-  --color-primary: #000000;
-  --color-on-primary: #ffffff;
-  --color-primary-container: #131b2e;
-  --color-on-primary-container: #7c839b;
-  --color-inverse-primary: #bec6e0;
-  --color-primary-fixed: #dae2fd;
-  --color-primary-fixed-dim: #bec6e0;
-  --color-on-primary-fixed: #131b2e;
-  --color-on-primary-fixed-variant: #3f465c;
+  --color-primary: oklch(22% 0.02 55);
+  --color-on-primary: oklch(99% 0.006 75);
+  --color-primary-container: oklch(30% 0.025 55);
+  --color-on-primary-container: oklch(78% 0.02 60);
+  --color-inverse-primary: oklch(80% 0.02 60);
+  --color-primary-fixed: oklch(90% 0.02 60);
+  --color-primary-fixed-dim: oklch(75% 0.02 60);
+  --color-on-primary-fixed: oklch(22% 0.02 55);
+  --color-on-primary-fixed-variant: oklch(40% 0.02 55);
 
-  --color-secondary: #006a61;
-  --color-on-secondary: #ffffff;
-  --color-secondary-container: #86f2e4;
-  --color-on-secondary-container: #006f66;
-  --color-secondary-fixed: #89f5e7;
-  --color-secondary-fixed-dim: #6bd8cb;
-  --color-on-secondary-fixed: #00201d;
-  --color-on-secondary-fixed-variant: #005049;
+  --color-secondary: oklch(58% 0.15 45);
+  --color-on-secondary: oklch(99% 0.006 75);
+  --color-secondary-container: oklch(93% 0.04 50);
+  --color-on-secondary-container: oklch(40% 0.13 45);
+  --color-secondary-fixed: oklch(90% 0.05 48);
+  --color-secondary-fixed-dim: oklch(80% 0.08 46);
+  --color-on-secondary-fixed: oklch(25% 0.05 45);
+  --color-on-secondary-fixed-variant: oklch(38% 0.12 42);
 
-  --color-tertiary: #000000;
-  --color-on-tertiary: #ffffff;
-  --color-tertiary-container: #271901;
-  --color-on-tertiary-container: #98805d;
-  --color-tertiary-fixed: #fcdeb5;
-  --color-tertiary-fixed-dim: #dec29a;
-  --color-on-tertiary-fixed: #271901;
-  --color-on-tertiary-fixed-variant: #574425;
+  --color-tertiary: oklch(38% 0.06 155);
+  --color-on-tertiary: oklch(99% 0.006 75);
+  --color-tertiary-container: oklch(90% 0.05 150);
+  --color-on-tertiary-container: oklch(30% 0.05 150);
+  --color-tertiary-fixed: oklch(88% 0.05 150);
+  --color-tertiary-fixed-dim: oklch(70% 0.06 152);
+  --color-on-tertiary-fixed: oklch(22% 0.04 155);
+  --color-on-tertiary-fixed-variant: oklch(35% 0.05 155);
 
-  --color-error: #ba1a1a;
-  --color-on-error: #ffffff;
-  --color-error-container: #ffdad6;
-  --color-on-error-container: #93000a;
+  --color-error: oklch(55% 0.18 25);
+  --color-on-error: oklch(99% 0.006 75);
+  --color-error-container: oklch(92% 0.06 30);
+  --color-on-error-container: oklch(35% 0.15 25);
 
-  --color-background: #f8f9ff;
-  --color-on-background: #0b1c30;
-  --color-surface-variant: #d3e4fe;
+  --color-background: oklch(97% 0.012 75);
+  --color-on-background: oklch(22% 0.02 55);
+  --color-surface-variant: oklch(88% 0.018 72);
 
-  /* Shadow */
-  --shadow-crisp: 0px 4px 12px rgba(15, 23, 42, 0.08);
-  --shadow-soft: 0px 1px 2px rgba(15, 23, 42, 0.04), 0px 6px 20px rgba(15, 23, 42, 0.06);
-  --shadow-lifted: 0px 4px 8px rgba(15, 23, 42, 0.06), 0px 16px 40px rgba(15, 23, 42, 0.12);
+  /* Shadow — warm-toned (vs. the old cool blue-black) to match the ivory
+   * surfaces they sit on. */
+  --shadow-crisp: 0px 4px 12px rgba(60, 40, 20, 0.1);
+  --shadow-soft: 0px 1px 2px rgba(60, 40, 20, 0.05), 0px 6px 20px rgba(60, 40, 20, 0.07);
+  --shadow-lifted: 0px 4px 8px rgba(60, 40, 20, 0.07), 0px 16px 40px rgba(60, 40, 20, 0.14);
 }
 
 @theme inline {
@@ -127,10 +140,14 @@
   --shadow-soft: var(--shadow-soft);
   --shadow-lifted: var(--shadow-lifted);
 
-  /* Fonts */
-  --font-sans: var(--font-hanken), ui-sans-serif, system-ui, sans-serif;
+  /* Fonts — Archivo (UI) + Instrument Serif (display/headlines) + Space
+   * Mono (labels) is the app-chrome identity. --font-doc (Source Serif 4)
+   * is deliberately untouched: it's the resume DOCUMENT's typography, not
+   * app chrome — see lib/fonts.ts's doc comment for why it stays separate. */
+  --font-sans: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-instrument-serif), ui-serif, Georgia, serif;
   --font-doc: var(--font-source-serif), ui-serif, Georgia, serif;
-  --font-mono: var(--font-jetbrains-mono), ui-monospace, "SFMono-Regular", monospace;
+  --font-mono: var(--font-space-mono), ui-monospace, "SFMono-Regular", monospace;
 
   /* Named spacing rhythm (4px scale) — matches the mockups' semantic utilities.
    * Gotcha: Tailwind v4 derives sizing utilities such as max-width, width,
@@ -200,6 +217,15 @@
 body {
   background: var(--color-background);
   color: var(--color-on-surface);
+}
+
+/* Tailwind v4's preflight no longer sets `cursor: pointer` on <button> (it
+ * matches the browser default of `cursor: default` instead) — this
+ * restores the expected hand cursor on every interactive control, including
+ * Radix's native <button>-based triggers (Tabs/Dialog/DropdownMenu). */
+button:not(:disabled),
+[role="button"]:not([aria-disabled="true"]) {
+  cursor: pointer;
 }
 
 /* The live rich-text resume canvas (components/editor/DocumentCanvas.tsx).
@@ -314,11 +340,40 @@ body {
   mask-image: radial-gradient(ellipse 70% 60% at 50% 0%, black 40%, transparent 100%);
 }
 
+/* Resume canvas width slider (ResumeEditorClient) — minimal custom track/
+ * thumb since range inputs render unstyled per-browser otherwise. */
+.doc-width-slider {
+  appearance: none;
+  height: 3px;
+  border-radius: 999px;
+  background: var(--color-outline-variant);
+  outline: none;
+}
+.doc-width-slider::-webkit-slider-thumb {
+  appearance: none;
+  width: 13px;
+  height: 13px;
+  border-radius: 999px;
+  background: var(--color-secondary);
+  cursor: pointer;
+  border: 2px solid var(--color-surface-container-lowest);
+  box-shadow: 0 0 0 1px var(--color-secondary);
+}
+.doc-width-slider::-moz-range-thumb {
+  width: 13px;
+  height: 13px;
+  border-radius: 999px;
+  background: var(--color-secondary);
+  cursor: pointer;
+  border: 2px solid var(--color-surface-container-lowest);
+  box-shadow: 0 0 0 1px var(--color-secondary);
+}
+
 /* AI-tailoring highlights — client-side-only decorations (never part of the
  * saved document, see lib/editor/aiHighlightExtension.ts), so they only
  * ever exist while editing and can never appear in an exported PDF. */
 .ai-highlight {
-  background-color: color-mix(in srgb, var(--color-secondary) 22%, transparent);
+  background-color: color-mix(in srgb, var(--color-tertiary) 22%, transparent);
   border-radius: 2px;
 }
 

@@ -92,9 +92,27 @@ export const OrderedListNodeSchema: z.ZodType<OrderedListNode> = z.lazy(() =>
   }),
 );
 
+/**
+ * A record of AI-changed text kept alongside the document so it can be
+ * re-highlighted on every load — the highlight itself (see
+ * lib/editor/aiHighlightExtension.ts) is a ProseMirror decoration, never
+ * part of the document tree or the exported PDF, but the *record* of what
+ * changed has to be saved somewhere or it's gone the moment the page
+ * reloads. Bulk tailoring's highlights don't need this (they're re-derived
+ * from tailoring_sessions.change_explanations on every load); this is for
+ * single selection-scoped Ask AI edits, which have no other record.
+ */
+export const HighlightRecordSchema = z.object({
+  quote: z.string(),
+  tone: z.union([z.literal("change"), z.literal("flagged")]),
+  title: z.string().optional(),
+});
+export type HighlightRecord = z.infer<typeof HighlightRecordSchema>;
+
 export const DocumentContentSchema = z.object({
   type: z.literal("doc"),
   content: z.array(BlockNodeSchema).default([]),
+  highlights: z.array(HighlightRecordSchema).optional(),
 });
 export type DocumentContent = z.infer<typeof DocumentContentSchema>;
 

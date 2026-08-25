@@ -6,6 +6,7 @@ import { BubbleMenu } from "@tiptap/react/menus";
 import { Icon } from "@/components/icon/Icon";
 import { Button } from "@/components/ui/Button";
 import { addHighlight } from "@/lib/editor/aiHighlightExtension";
+import type { HighlightRecord } from "@/lib/schemas/document";
 
 interface CapturedSelection {
   from: number;
@@ -30,7 +31,19 @@ const CONTEXT_CHARS = 300;
  * behavior is to hide on blur. `shouldShow` returning true whenever we've
  * already captured a selection keeps the menu open through that, instead
  * of it vanishing the instant you click into the instruction field. */
-export function AskAiBubbleMenu({ editor, resumeId }: { editor: Editor; resumeId: string }) {
+export function AskAiBubbleMenu({
+  editor,
+  resumeId,
+  onAccepted,
+}: {
+  editor: Editor;
+  resumeId: string;
+  /** Called with the persistable record of an accepted edit, so the caller
+   * can save it alongside the document — otherwise this edit's highlight
+   * would vanish the next time the resume is opened (see
+   * lib/schemas/document.ts's HighlightRecordSchema doc comment). */
+  onAccepted?: (record: HighlightRecord) => void;
+}) {
   const [captured, setCaptured] = useState<CapturedSelection | null>(null);
   const [instruction, setInstruction] = useState("");
   const [status, setStatus] = useState<"idle" | "loading" | "preview" | "error">("idle");
@@ -83,7 +96,9 @@ export function AskAiBubbleMenu({ editor, resumeId }: { editor: Editor; resumeId
     // tailoring change is (see lib/editor/aiHighlightExtension.ts).
     const to = editor.state.selection.from;
     const from = Math.max(0, to - preview.replacementText.length);
-    addHighlight(editor, from, to, preview.flagged ? "flagged" : "change", preview.flagReason ?? undefined);
+    const tone = preview.flagged ? "flagged" : "change";
+    addHighlight(editor, from, to, tone, preview.flagReason ?? undefined);
+    onAccepted?.({ quote: preview.replacementText, tone, title: preview.flagReason ?? undefined });
     close();
   }
 
