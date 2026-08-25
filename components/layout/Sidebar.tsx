@@ -27,7 +27,7 @@ export function Sidebar() {
   return (
     <nav className="fixed left-0 top-0 z-40 hidden h-screen w-64 flex-col border-r border-outline-variant bg-surface p-md md:flex">
       <div className="mb-lg">
-        <Link href="/library" className="font-sans text-headline-md font-bold text-primary">
+        <Link href="/library" className="font-sans text-headline-md font-bold tracking-tight text-primary">
           ResumeArchitect
         </Link>
       </div>
@@ -45,12 +45,15 @@ export function Sidebar() {
               <Link
                 href={item.href}
                 className={cn(
-                  "flex items-center gap-2 rounded p-sm font-sans text-body-lg transition-colors",
+                  "relative flex items-center gap-2 rounded p-sm font-sans text-body-lg transition-colors",
                   active
                     ? "bg-secondary-container font-medium text-on-secondary-container"
                     : "text-on-surface-variant hover:bg-surface-container-high",
                 )}
               >
+                {active && (
+                  <span className="absolute left-0 top-1/2 h-4 w-0.5 -translate-x-2 -translate-y-1/2 rounded-full bg-secondary" aria-hidden />
+                )}
                 <Icon name={item.icon} size={18} />
                 {item.label}
               </Link>

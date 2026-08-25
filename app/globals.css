@@ -65,6 +65,8 @@
 
   /* Shadow */
   --shadow-crisp: 0px 4px 12px rgba(15, 23, 42, 0.08);
+  --shadow-soft: 0px 1px 2px rgba(15, 23, 42, 0.04), 0px 6px 20px rgba(15, 23, 42, 0.06);
+  --shadow-lifted: 0px 4px 8px rgba(15, 23, 42, 0.06), 0px 16px 40px rgba(15, 23, 42, 0.12);
 }
 
 @theme inline {
@@ -122,6 +124,8 @@
   --color-surface-variant: var(--color-surface-variant);
 
   --shadow-crisp: var(--shadow-crisp);
+  --shadow-soft: var(--shadow-soft);
+  --shadow-lifted: var(--shadow-lifted);
 
   /* Fonts */
   --font-sans: var(--font-hanken), ui-sans-serif, system-ui, sans-serif;
@@ -289,6 +293,25 @@ body {
 .resume-doc-canvas--compact p,
 .resume-doc-canvas--compact li {
   font-size: 10.5px;
+}
+
+/* Decorative dot-grid background — cheap CSS, no image asset. Used behind
+ * hero/section headers for visual texture without adding weight. Fades via
+ * a radial mask so it recedes toward the edges instead of tiling flatly.
+ *
+ * Deliberately its own absolutely-positioned layer, never applied directly
+ * to a container that also holds real content: `mask-image` clips the
+ * *entire* element it's set on (not just its background-image), so putting
+ * it on a content-bearing container silently fades out any children that
+ * fall outside the mask's radius. */
+.bg-dot-grid {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: radial-gradient(circle, var(--color-outline-variant) 1px, transparent 1px);
+  background-size: 22px 22px;
+  -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 0%, black 40%, transparent 100%);
+  mask-image: radial-gradient(ellipse 70% 60% at 50% 0%, black 40%, transparent 100%);
 }
 
 /* AI-tailoring highlights — client-side-only decorations (never part of the

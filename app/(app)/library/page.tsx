@@ -52,8 +52,11 @@ export default async function LibraryPage() {
       </div>
 
       {list.length === 0 ? (
-        <div className="rounded-lg border-2 border-dashed border-outline-variant p-xxl text-center">
-          <Icon name="document" size={28} className="mx-auto mb-md text-on-surface-variant" />
+        <div className="relative overflow-hidden rounded-xl border border-outline-variant bg-surface-container-lowest p-xxl text-center shadow-[var(--shadow-soft)]">
+          <div className="bg-dot-grid -z-10" aria-hidden />
+          <div className="mx-auto mb-md flex h-14 w-14 items-center justify-center rounded-full border border-outline-variant bg-surface-container-lowest shadow-[var(--shadow-soft)]">
+            <Icon name="document" size={24} className="text-secondary" />
+          </div>
           <h2 className="mb-1 font-sans text-headline-md text-on-surface">No resumes yet</h2>
           <p className="mb-md font-sans text-body-lg text-on-surface-variant">
             Upload your resume to create your master profile.

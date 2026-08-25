@@ -31,7 +31,10 @@ export default async function SettingsPage() {
 
   return (
     <div className="mx-auto max-w-max-width-doc px-margin-mobile py-lg md:px-0 md:py-xl">
-      <h1 className="mb-lg font-sans text-headline-lg text-primary">Settings</h1>
+      <h1 className="mb-1 font-sans text-headline-lg text-primary">Settings</h1>
+      <p className="mb-lg font-sans text-body-lg text-on-surface-variant">
+        Manage your profile, your Gemini key, and your data.
+      </p>
 
       <Tabs defaultValue="profile">
         <TabsList>

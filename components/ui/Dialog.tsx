@@ -17,7 +17,7 @@ export function DialogContent({
       <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-inverse-surface/40 data-[state=open]:animate-in data-[state=open]:fade-in data-[state=closed]:animate-out data-[state=closed]:fade-out" />
       <DialogPrimitive.Content
         className={cn(
-          "fixed left-1/2 top-1/2 z-50 w-full max-w-[28rem] -translate-x-1/2 -translate-y-1/2 rounded-lg border border-outline-variant bg-surface-container-lowest p-lg shadow-[var(--shadow-crisp)] focus:outline-none",
+          "fixed left-1/2 top-1/2 z-50 w-full max-w-[28rem] -translate-x-1/2 -translate-y-1/2 rounded-xl border border-outline-variant bg-surface-container-lowest p-lg shadow-[var(--shadow-lifted)] focus:outline-none",
           className
         )}
         {...props}

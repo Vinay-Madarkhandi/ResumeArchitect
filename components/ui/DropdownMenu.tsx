@@ -16,7 +16,7 @@ export function DropdownMenuContent({
         align="end"
         sideOffset={4}
         className={cn(
-          "z-50 min-w-[10rem] rounded-lg border border-outline-variant bg-surface-container-lowest p-1 shadow-[var(--shadow-crisp)]",
+          "z-50 min-w-[10rem] rounded-lg border border-outline-variant bg-surface-container-lowest p-1 shadow-[var(--shadow-lifted)] data-[state=open]:animate-in data-[state=open]:fade-in data-[state=open]:zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out data-[state=closed]:zoom-out-95",
           className,
         )}
         {...props}
