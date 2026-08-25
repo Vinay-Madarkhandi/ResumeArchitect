@@ -35,7 +35,14 @@ export const AiHighlight = Extension.create({
             const meta = tr.getMeta(AiHighlightPluginKey);
             if (meta?.clear) return DecorationSet.empty;
             if (meta?.decorations) return meta.decorations as DecorationSet;
-            const mapped = old.map(tr.mapping, tr.doc);
+            let mapped = old.map(tr.mapping, tr.doc);
+            // The "pending selection" marker (AskAiBubbleMenu, while the
+            // instruction input is open) is tagged with spec.pending so it
+            // can be swapped out or removed without touching the separate,
+            // persistent ai-highlight/ai-highlight-flagged decorations.
+            if (meta?.removePending) {
+              mapped = mapped.remove(mapped.find(undefined, undefined, (spec) => spec?.pending === true));
+            }
             if (meta?.add) return mapped.add(tr.doc, meta.add as Decoration[]);
             return mapped;
           },
@@ -123,4 +130,25 @@ export function addHighlight(editor: Editor, from: number, to: number, tone: "ch
     ...(title ? { title } : {}),
   });
   editor.view.dispatch(editor.state.tr.setMeta(AiHighlightPluginKey, { add: [decoration] }));
+}
+
+/**
+ * Marks the range AskAiBubbleMenu has captured as "about to be edited" —
+ * unlike the browser's native text-selection highlight, this stays visible
+ * regardless of DOM focus, so it doesn't disappear the moment the user
+ * clicks into the instruction input (a native `<input>` outside the
+ * ProseMirror contenteditable, whose focus naturally clears the browser's
+ * own selection paint). Calling this again replaces the previous pending
+ * marker rather than stacking another one.
+ */
+export function setPendingSelection(editor: Editor, from: number, to: number): void {
+  const decoration = Decoration.inline(from, to, { class: "ai-pending-selection" }, { pending: true });
+  editor.view.dispatch(editor.state.tr.setMeta(AiHighlightPluginKey, { removePending: true, add: [decoration] }));
+}
+
+/** Removes the pending-selection marker — called once the Ask AI flow
+ * closes (cancelled, rejected, or accepted), leaving any persistent
+ * ai-highlight decorations untouched. */
+export function clearPendingSelection(editor: Editor): void {
+  editor.view.dispatch(editor.state.tr.setMeta(AiHighlightPluginKey, { removePending: true }));
 }

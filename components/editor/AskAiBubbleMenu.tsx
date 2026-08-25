@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { Editor } from "@tiptap/react";
 import { BubbleMenu } from "@tiptap/react/menus";
 import { Icon } from "@/components/icon/Icon";
 import { Button } from "@/components/ui/Button";
-import { addHighlight } from "@/lib/editor/aiHighlightExtension";
+import { addHighlight, clearPendingSelection, setPendingSelection } from "@/lib/editor/aiHighlightExtension";
 import type { HighlightRecord } from "@/lib/schemas/document";
 
 interface CapturedSelection {
@@ -26,11 +26,28 @@ const CONTEXT_CHARS = 300;
  * preview, then accept or reject — never applied silently. Works on any
  * resume being edited, master or tailored.
  *
- * The tricky part of a custom interactive TipTap bubble menu: focusing our
- * own <input> blurs the ProseMirror editor, and the plugin's default
- * behavior is to hide on blur. `shouldShow` returning true whenever we've
- * already captured a selection keeps the menu open through that, instead
- * of it vanishing the instant you click into the instruction field. */
+ * Two things make a custom interactive TipTap bubble menu tricky, both
+ * fixed here:
+ *
+ * 1. Focusing our own <input> blurs the ProseMirror editor, and the
+ *    browser's native text-selection paint disappears the moment focus
+ *    leaves the contenteditable — even though nothing about the captured
+ *    range actually changed. `shouldShow` returning true whenever we've
+ *    already captured a selection keeps the menu itself open through that;
+ *    setPendingSelection (lib/editor/aiHighlightExtension.ts) additionally
+ *    paints the captured range with its own decoration, independent of DOM
+ *    focus, so it stays visibly highlighted the whole time the input is
+ *    open — not just up to the moment you click into it.
+ * 2. Capturing used to happen once in the bubble menu's own onShow and
+ *    then never again — so re-selecting different text while the
+ *    instruction box was still open (without explicitly cancelling first)
+ *    left `captured` silently pointing at the *original* range. Typing a
+ *    new instruction and asking then edited text the user could no longer
+ *    even see was selected. Capturing now instead follows the editor's own
+ *    selectionUpdate event (real ProseMirror transactions only — clicking
+ *    into our <input> never fires one), so any new in-document selection
+ *    while idle replaces the old capture; it's locked only while a request
+ *    is in flight or a preview is up for review. */
 export function AskAiBubbleMenu({
   editor,
   resumeId,
@@ -49,6 +66,37 @@ export function AskAiBubbleMenu({
   const [status, setStatus] = useState<"idle" | "loading" | "preview" | "error">("idle");
   const [error, setError] = useState<string | null>(null);
   const [preview, setPreview] = useState<PreviewResult | null>(null);
+
+  // Track the live document selection as the source of truth for what
+  // "captured" means — locked only while a request is in flight or its
+  // result is up for review, so a stray click can't yank the range out
+  // from under an active ask, but a genuinely new selection made while
+  // idle (or after an error) always takes over from the old one.
+  useEffect(() => {
+    function handleSelectionUpdate() {
+      if (status === "loading" || status === "preview") return;
+      const { from, to } = editor.state.selection;
+      if (from === to) return;
+      const text = editor.state.doc.textBetween(from, to, " ");
+      if (!text.trim()) return;
+      setCaptured((prev) => (prev && prev.from === from && prev.to === to ? prev : { from, to, text }));
+    }
+    editor.on("selectionUpdate", handleSelectionUpdate);
+    return () => {
+      editor.off("selectionUpdate", handleSelectionUpdate);
+    };
+  }, [editor, status]);
+
+  // The captured range stays visibly marked for as long as it's captured —
+  // via a decoration, not the browser's native selection paint, since that
+  // disappears the instant focus moves to our own <input> below.
+  useEffect(() => {
+    if (captured) {
+      setPendingSelection(editor, captured.from, captured.to);
+    } else {
+      clearPendingSelection(editor);
+    }
+  }, [editor, captured]);
 
   function close() {
     setCaptured(null);
@@ -109,14 +157,6 @@ export function AskAiBubbleMenu({
       shouldShow={({ editor: ed, from, to }) => {
         if (captured) return true;
         return from !== to && ed.isEditable && ed.state.doc.textBetween(from, to).trim().length > 0;
-      }}
-      options={{
-        onShow: () => {
-          if (captured) return;
-          const { from, to } = editor.state.selection;
-          if (from === to) return;
-          setCaptured({ from, to, text: editor.state.doc.textBetween(from, to, " ") });
-        },
       }}
     >
       <div className="w-72 rounded-lg border border-outline-variant bg-surface-container-lowest p-sm shadow-crisp">

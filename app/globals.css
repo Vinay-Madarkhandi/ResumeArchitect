@@ -380,3 +380,44 @@ button:not(:disabled),
 .ai-highlight-flagged {
   background-color: color-mix(in srgb, var(--color-error) 20%, transparent);
 }
+
+/* Visual page-break marker (lib/editor/pageBreakExtension.ts) — an
+ * approximation of where the exported PDF will actually break to a new
+ * page, shown as a labeled divider between the two document blocks it
+ * falls between. Never part of the saved document (a widget decoration,
+ * same non-persisted mechanism as .ai-highlight) and never appears in the
+ * export — there's nothing to strip, the PDF simply already has that page
+ * break for real. */
+.page-break-marker {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 20px calc(-1 * var(--spacing-margin-desktop));
+  padding: 0 var(--spacing-margin-desktop);
+  user-select: none;
+}
+.page-break-marker::before,
+.page-break-marker::after {
+  content: "";
+  flex: 1;
+  height: 0;
+  border-top: 1px dashed var(--color-outline);
+}
+.page-break-marker-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-on-surface-variant);
+  white-space: nowrap;
+}
+
+/* The range AskAiBubbleMenu has captured for editing — stays visible while
+ * the instruction input is focused (a native <input> outside the editor,
+ * so the browser's own text-selection paint disappears the moment it's
+ * clicked, per lib/editor/aiHighlightExtension.ts's setPendingSelection). */
+.ai-pending-selection {
+  background-color: color-mix(in srgb, var(--color-secondary) 28%, transparent);
+  border-radius: 2px;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-secondary) 45%, transparent);
+}
