@@ -8,6 +8,7 @@ import type { ChangeExplanation } from "@/lib/schemas/tailoring";
 import { useDebouncedAutosave } from "@/lib/editor/useDebouncedAutosave";
 import { usePageCount } from "@/lib/editor/usePageCount";
 import { setHighlights as applyHighlightDecorations } from "@/lib/editor/aiHighlightExtension";
+import { setPageBreaks, clearPageBreaks } from "@/lib/editor/pageBreakExtension";
 import { DocumentCanvas } from "@/components/editor/DocumentCanvas";
 import { AskAiBubbleMenu } from "@/components/editor/AskAiBubbleMenu";
 import { OriginalComparisonPanel } from "@/components/editor/OriginalComparisonPanel";
@@ -88,8 +89,20 @@ export function ResumeEditorClient({
   );
 
   const saveStatus = useDebouncedAutosave(contentToPersist, save);
-  const pageCount = usePageCount(resumeId, contentToPersist);
+  const pageInfo = usePageCount(resumeId, contentToPersist);
   const isTailored = sourceContent !== null;
+
+  // Re-derive the visual page-break markers every time the real pagination
+  // changes — cheap (just decoration positions, not a document mutation)
+  // and correct even after edits shift where the anchors land.
+  useEffect(() => {
+    if (!editor) return;
+    if (pageInfo && pageInfo.pageBreakAnchors.length > 0) {
+      setPageBreaks(editor, pageInfo.pageBreakAnchors);
+    } else {
+      clearPageBreaks(editor);
+    }
+  }, [editor, pageInfo]);
 
   const handleHighlightAccepted = useCallback((record: HighlightRecord) => {
     setSavedHighlights((prev) => [...prev, record]);
@@ -169,12 +182,12 @@ export function ResumeEditorClient({
               title={`Canvas width: ${canvasWidth}px`}
             />
           </div>
-          {pageCount !== null && (
+          {pageInfo !== null && (
             <span
               className="font-mono text-label-sm text-on-surface-variant"
               title="Estimated length of the exported PDF"
             >
-              {pageCount} {pageCount === 1 ? "page" : "pages"}
+              {pageInfo.pageCount} {pageInfo.pageCount === 1 ? "page" : "pages"}
             </span>
           )}
           <Link

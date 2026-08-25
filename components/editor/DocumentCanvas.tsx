@@ -6,6 +6,7 @@ import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
 import Link from "@tiptap/extension-link";
 import { AiHighlight } from "@/lib/editor/aiHighlightExtension";
+import { PageBreak } from "@/lib/editor/pageBreakExtension";
 import type { DocumentContent } from "@/lib/schemas/document";
 
 /**
@@ -58,6 +59,7 @@ export function DocumentCanvas({
       Placeholder.configure({ placeholder: "Start typing your resume…" }),
       Link.configure({ openOnClick: false, autolink: false }),
       AiHighlight,
+      PageBreak,
     ],
     content: initialContent,
     onUpdate: ({ editor }) => {
