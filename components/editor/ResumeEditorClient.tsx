@@ -13,6 +13,7 @@ import { DocumentCanvas } from "@/components/editor/DocumentCanvas";
 import { AskAiBubbleMenu } from "@/components/editor/AskAiBubbleMenu";
 import { OriginalComparisonPanel } from "@/components/editor/OriginalComparisonPanel";
 import { ChangeExplanationsPanel } from "@/components/editor/ChangeExplanationsPanel";
+import { MatchAnalysisPanel } from "@/components/editor/MatchAnalysisPanel";
 import { Badge } from "@/components/ui/Badge";
 import { Icon } from "@/components/icon/Icon";
 import { cn } from "@/lib/cn";
@@ -23,6 +24,7 @@ export function ResumeEditorClient({
   isDefault,
   initialDoc,
   sourceContent,
+  hasJobDescription,
   jobTitleSnapshot,
   jobCompanySnapshot,
   changes,
@@ -32,11 +34,13 @@ export function ResumeEditorClient({
   isDefault: boolean;
   initialDoc: DocumentContent;
   sourceContent: DocumentContent | null;
+  hasJobDescription: boolean;
   jobTitleSnapshot: string | null;
   jobCompanySnapshot: string | null;
   changes: ChangeExplanation[] | null;
 }) {
   const [editor, setEditor] = useState<Editor | null>(null);
+  const [matchDialogOpen, setMatchDialogOpen] = useState(false);
   const [doc, setDoc] = useState<DocumentContent>(initialDoc);
   // The document tree TipTap emits (via editor.getJSON()) never carries a
   // `highlights` key — it's not part of the ProseMirror schema — so the
@@ -190,6 +194,14 @@ export function ResumeEditorClient({
               {pageInfo.pageCount} {pageInfo.pageCount === 1 ? "page" : "pages"}
             </span>
           )}
+          <button
+            type="button"
+            onClick={() => setMatchDialogOpen(true)}
+            className="inline-flex h-9 items-center gap-1.5 rounded border border-outline-variant px-sm font-sans text-button text-on-surface hover:bg-surface-container-high"
+          >
+            <Icon name="verified" size={16} />
+            <span className="hidden sm:inline">Job match &amp; ATS</span>
+          </button>
           <Link
             href={`/resumes/${resumeId}/export`}
             className="inline-flex h-9 items-center gap-1.5 rounded bg-secondary px-md font-sans text-button text-on-secondary hover:bg-on-secondary-container"
@@ -199,6 +211,14 @@ export function ResumeEditorClient({
           </Link>
         </div>
       </header>
+
+      <MatchAnalysisPanel
+        resumeId={resumeId}
+        doc={contentToPersist}
+        hasJobDescription={hasJobDescription}
+        open={matchDialogOpen}
+        onOpenChange={setMatchDialogOpen}
+      />
 
       <div
         className={cn(
