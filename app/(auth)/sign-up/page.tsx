@@ -68,7 +68,7 @@ export default function SignUpPage() {
     return (
       <div className="text-center">
         <Icon name="email" size={32} className="mx-auto mb-md text-secondary" />
-        <h1 className="mb-1 font-sans text-headline-lg text-primary">Check your email</h1>
+        <h1 className="mb-1 font-display text-headline-lg text-primary">Check your email</h1>
         <p className="font-sans text-body-lg text-on-surface-variant">
           We sent a confirmation link to <span className="font-medium text-on-surface">{email}</span>. Follow it
           to activate your account, then sign in.
@@ -82,7 +82,7 @@ export default function SignUpPage() {
 
   return (
     <div>
-      <h1 className="mb-1 font-sans text-headline-lg text-primary">Create your account</h1>
+      <h1 className="mb-1 font-display text-headline-lg text-primary">Create your account</h1>
       <p className="mb-lg font-sans text-body-lg text-on-surface-variant">
         You already have the experience. Let&rsquo;s set up your workspace.
       </p>

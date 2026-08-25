@@ -38,7 +38,7 @@ export default async function LibraryPage() {
     <div className="mx-auto max-w-6xl px-margin-mobile py-lg md:px-margin-desktop md:py-xl">
       <div className="mb-xl flex flex-col items-start justify-between gap-md md:flex-row md:items-center">
         <div>
-          <h1 className="font-sans text-headline-lg text-primary">Your resumes</h1>
+          <h1 className="font-display text-headline-lg text-primary">Your resumes</h1>
           <p className="font-sans text-body-lg text-on-surface-variant">
             {hasMaster ? "Pick up an old application or start a new one." : "Upload a resume to get started."}
           </p>

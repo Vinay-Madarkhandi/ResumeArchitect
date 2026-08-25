@@ -1,15 +1,32 @@
-import { Hanken_Grotesk, JetBrains_Mono, Source_Serif_4 } from "next/font/google";
+import { Archivo, Instrument_Serif, Source_Serif_4, Space_Mono } from "next/font/google";
 
 /**
- * Typeface strategy: Hanken Grotesk for interface UI, Source Serif 4 for
- * document/resume content, JetBrains Mono for metadata/labels. Self-hosted
- * at build time via next/font (no external request, no CLS).
+ * Typeface strategy: two separate identities, deliberately kept apart.
+ *
+ * App chrome (nav, buttons, headings, marketing copy) uses Archivo for UI
+ * text, Instrument Serif for display headlines/the wordmark, and Space Mono
+ * for metadata/labels — the app's own editorial visual identity.
+ *
+ * The resume DOCUMENT itself (the editor canvas and the exported PDF) keeps
+ * Source Serif 4 regardless of app-chrome redesigns: it's the actual
+ * deliverable a hiring manager reads, and lib/pdf/fonts.ts embeds this same
+ * family as real font files for @react-pdf/renderer — changing it means
+ * sourcing and embedding new font assets, not just swapping a CSS variable,
+ * so it's out of scope for a chrome-only redesign.
  */
 
-export const hankenGrotesk = Hanken_Grotesk({
-  variable: "--font-hanken",
+export const archivo = Archivo({
+  variable: "--font-archivo",
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
+  display: "swap",
+});
+
+export const instrumentSerif = Instrument_Serif({
+  variable: "--font-instrument-serif",
+  subsets: ["latin"],
+  weight: ["400"],
+  style: ["normal", "italic"],
   display: "swap",
 });
 
@@ -21,11 +38,11 @@ export const sourceSerif4 = Source_Serif_4({
   display: "swap",
 });
 
-export const jetBrainsMono = JetBrains_Mono({
-  variable: "--font-jetbrains-mono",
+export const spaceMono = Space_Mono({
+  variable: "--font-space-mono",
   subsets: ["latin"],
-  weight: ["400", "500"],
+  weight: ["400", "700"],
   display: "swap",
 });
 
-export const fontVariables = `${hankenGrotesk.variable} ${sourceSerif4.variable} ${jetBrainsMono.variable}`;
+export const fontVariables = `${archivo.variable} ${instrumentSerif.variable} ${sourceSerif4.variable} ${spaceMono.variable}`;

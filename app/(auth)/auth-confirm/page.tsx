@@ -54,7 +54,7 @@ export default function AuthConfirmPage() {
   if (status === "invalid") {
     return (
       <div className="text-center">
-        <h1 className="mb-1 font-sans text-headline-lg text-primary">This link isn&rsquo;t valid</h1>
+        <h1 className="mb-1 font-display text-headline-lg text-primary">This link isn&rsquo;t valid</h1>
         <p className="font-sans text-body-lg text-on-surface-variant">
           Confirmation links expire after a while. Try signing in — if your email still isn&rsquo;t confirmed,
           sign up again to get a new link.

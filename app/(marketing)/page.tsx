@@ -48,7 +48,7 @@ export default function LandingPage() {
     <div className="bg-background text-on-surface selection:bg-secondary-container selection:text-on-secondary-container">
       <header className="fixed top-0 z-50 w-full border-b border-outline-variant bg-background/80 backdrop-blur-md">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-margin-mobile md:px-margin-desktop">
-          <span className="font-sans text-headline-md font-bold tracking-tight text-primary">
+          <span className="font-display text-2xl italic text-primary">
             ResumeArchitect
           </span>
           <nav className="hidden items-center gap-xl font-sans text-body-lg md:flex">
@@ -75,13 +75,13 @@ export default function LandingPage() {
           <div className="bg-dot-grid -z-10" aria-hidden />
           <div className="relative mx-auto max-w-max-width-doc px-margin-mobile py-xxl text-center md:px-0">
             <span className="inline-flex items-center gap-1.5 rounded-full border border-outline-variant bg-surface-container-lowest px-3 py-1 font-mono text-label-sm text-on-surface-variant shadow-[var(--shadow-soft)]">
-              <Icon name="ai-suggestion" size={12} className="text-secondary" />
+              <Icon name="ai-suggestion" size={12} className="text-tertiary" />
               LIVE, AI-ASSISTED RESUME EDITING
             </span>
-            <h1 className="mt-lg font-sans text-display-lg text-primary">
+            <h1 className="mt-lg font-display text-display-lg text-primary">
               Keep your experience.
               <br />
-              Tailor how you present it.
+              <span className="italic text-secondary">Tailor</span> how you present it.
             </h1>
             <p className="mx-auto mt-lg max-w-2xl font-doc text-body-doc text-on-surface-variant">
               You already have the experience. Build a resume once, then adapt it for every
@@ -130,28 +130,18 @@ export default function LandingPage() {
         <section id="how-it-works" className="border-y border-outline-variant bg-surface-container-low py-xxl">
           <div className="mx-auto max-w-6xl px-margin-mobile md:px-margin-desktop">
             <div className="mb-xl text-center">
-              <span className="font-mono text-label-sm uppercase tracking-widest text-secondary">
+              <span className="font-mono text-label-sm uppercase tracking-widest text-tertiary">
                 Process
               </span>
-              <h2 className="mt-sm font-sans text-headline-lg text-primary">
+              <h2 className="mt-sm font-display text-headline-lg text-primary">
                 One profile. Many job-specific resumes.
               </h2>
             </div>
-            <div className="relative grid grid-cols-1 gap-lg md:grid-cols-3">
-              <div
-                className="absolute top-6 hidden h-px w-full bg-outline-variant md:block"
-                aria-hidden
-                style={{ left: 0 }}
-              />
+            <div className="grid grid-cols-1 gap-lg md:grid-cols-3">
               {STEPS.map((step) => (
-                <div
-                  key={step.number}
-                  className="relative rounded-lg border border-outline-variant bg-surface-container-lowest p-lg shadow-[var(--shadow-soft)] transition-all duration-200 hover:-translate-y-1 hover:border-secondary hover:shadow-[var(--shadow-lifted)]"
-                >
-                  <div className="mb-md flex h-12 w-12 items-center justify-center rounded-full border border-outline-variant bg-surface-container-lowest font-mono text-label-sm text-primary shadow-[var(--shadow-soft)]">
-                    {step.number}
-                  </div>
-                  <h3 className="mb-sm font-sans text-headline-md text-primary">{step.title}</h3>
+                <div key={step.number}>
+                  <div className="font-display text-5xl italic leading-none text-secondary">{step.number}</div>
+                  <h3 className="mb-sm mt-md font-sans text-headline-md font-semibold text-primary">{step.title}</h3>
                   <p className="font-sans text-body-lg text-on-surface-variant">{step.body}</p>
                 </div>
               ))}
@@ -161,10 +151,10 @@ export default function LandingPage() {
 
         <section id="features" className="mx-auto max-w-6xl px-margin-mobile py-xxl md:px-margin-desktop">
           <div className="mb-xl text-center">
-            <span className="font-mono text-label-sm uppercase tracking-widest text-secondary">
+            <span className="font-mono text-label-sm uppercase tracking-widest text-tertiary">
               Why it&rsquo;s different
             </span>
-            <h2 className="mt-sm font-sans text-headline-lg text-primary">
+            <h2 className="mt-sm font-display text-headline-lg text-primary">
               Built to feel like editing the resume, not a spreadsheet of it.
             </h2>
           </div>
@@ -186,11 +176,11 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <section className="border-t border-outline-variant bg-surface-container-low py-xxl">
+        <section className="bg-primary py-xxl">
           <div className="mx-auto max-w-max-width-doc px-margin-mobile text-center md:px-0">
             <Icon name="api-key" size={28} className="mx-auto mb-md text-secondary" />
-            <h2 className="font-sans text-headline-lg text-primary">Your Gemini key. Your data.</h2>
-            <p className="mx-auto mt-md max-w-2xl font-sans text-body-lg text-on-surface-variant">
+            <h2 className="font-display text-headline-lg italic text-on-primary">Your Gemini key. Your data.</h2>
+            <p className="mx-auto mt-md max-w-2xl font-sans text-body-lg text-on-primary/70">
               ResumeArchitect uses your own Google Gemini API key to tailor resumes — we never run AI
               generation on our own account, and your key is encrypted and never shown again after you
               save it.
@@ -209,7 +199,7 @@ export default function LandingPage() {
 
       <footer className="border-t border-outline-variant bg-surface-container-low">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-md px-margin-mobile py-lg md:flex-row md:px-margin-desktop">
-          <span className="font-sans text-headline-md font-bold tracking-tight text-primary">
+          <span className="font-display text-xl italic text-primary">
             ResumeArchitect
           </span>
           <p className="font-mono text-label-sm text-on-surface-variant">

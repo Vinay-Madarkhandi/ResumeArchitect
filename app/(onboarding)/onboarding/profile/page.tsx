@@ -18,7 +18,7 @@ export default async function OnboardingProfilePage() {
 
   return (
     <div>
-      <h1 className="mb-1 font-sans text-headline-lg text-primary">Set up your profile</h1>
+      <h1 className="mb-1 font-display text-headline-lg text-primary">Set up your profile</h1>
       <p className="mb-lg font-sans text-body-lg text-on-surface-variant">
         Your basic professional identity. You can change this anytime in Settings.
       </p>

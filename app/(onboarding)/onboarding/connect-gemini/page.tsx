@@ -18,7 +18,7 @@ export default async function OnboardingConnectGeminiPage() {
 
   return (
     <div>
-      <h1 className="mb-1 font-sans text-headline-lg text-primary">Connect Gemini</h1>
+      <h1 className="mb-1 font-display text-headline-lg text-primary">Connect Gemini</h1>
       <p className="mb-lg font-sans text-body-lg text-on-surface-variant">
         This is what powers tailoring — you bring your own key, and it&rsquo;s a one-time setup. You can also do
         this later from Settings.

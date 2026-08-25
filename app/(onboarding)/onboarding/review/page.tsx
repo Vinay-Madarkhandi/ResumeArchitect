@@ -38,7 +38,7 @@ export default async function OnboardingReviewPage({
 
   return (
     <div>
-      <h1 className="mb-1 font-sans text-headline-lg text-primary">Review your resume</h1>
+      <h1 className="mb-1 font-display text-headline-lg text-primary">Review your resume</h1>
       <p className="mb-lg font-sans text-body-lg text-on-surface-variant">
         This is what we found. Fix anything that&rsquo;s wrong — this becomes your master resume.
       </p>
