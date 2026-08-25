@@ -47,9 +47,21 @@ export default function SignUpPage() {
     if (data.session) {
       router.push("/onboarding");
       router.refresh();
-    } else {
-      setNeedsEmailConfirmation(true);
+      return;
     }
+
+    // Supabase never errors on signUp for an email that's already registered
+    // — to avoid leaking which emails exist, it silently returns a
+    // fake-looking user (no session, no email sent) instead. The one
+    // reliable signal is `identities`: empty for an existing account,
+    // populated for a genuinely new one. See
+    // https://supabase.com/docs/reference/javascript/auth-signup
+    if (data.user && data.user.identities && data.user.identities.length === 0) {
+      setError("An account with this email already exists. Try signing in instead.");
+      return;
+    }
+
+    setNeedsEmailConfirmation(true);
   }
 
   if (needsEmailConfirmation) {
