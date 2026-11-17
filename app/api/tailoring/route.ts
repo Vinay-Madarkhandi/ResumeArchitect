@@ -4,6 +4,7 @@ import { createClient } from "@/utils/supabase/server";
 import { resolveDocument } from "@/lib/documentConversion";
 import { geminiModel } from "@/lib/gemini/model";
 import { loadGeminiKey } from "@/lib/server/geminiKey";
+import { RUNS_PER_HOUR, tailoringRateLimit } from "@/lib/server/rateLimit";
 import {
   MAX_JOB_DESCRIPTION_LENGTH,
   MIN_JOB_DESCRIPTION_LENGTH,
@@ -84,6 +85,15 @@ export async function POST(request: Request) {
 
   const key = await loadGeminiKey(supabase, user.id);
   if (!key.ok) return fail(400, key.code, key.message);
+
+  const waitMinutes = await tailoringRateLimit(supabase, user.id);
+  if (waitMinutes !== null) {
+    return fail(
+      429,
+      "rate_limited",
+      `You've started ${RUNS_PER_HOUR} runs in the last hour. Try again in about ${waitMinutes} minute${waitMinutes === 1 ? "" : "s"}.`,
+    );
+  }
 
   if (!jobDescriptionId) {
     const { data: jd, error } = await supabase

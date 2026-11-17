@@ -5,9 +5,8 @@ import { redirect } from "next/navigation";
 import { ArrowRight, CircleAlert, FileText, Plus, RefreshCw } from "lucide-react";
 import { createClient } from "@/utils/supabase/server";
 import { buttonVariants } from "@/components/ui/Button";
-import { Badge } from "@/components/ui/Badge";
-import { ScoreDelta } from "@/components/dashboard/ScoreDelta";
 import { ResumeActions } from "@/components/dashboard/ResumeActions";
+import { ApplicationsTable, type ApplicationRow } from "@/components/dashboard/ApplicationsTable";
 import { formatRelativeTime } from "@/lib/formatRelativeTime";
 import type { TailoredChange } from "@/lib/schemas/tailoring";
 import { cn } from "@/lib/cn";
@@ -28,7 +27,7 @@ export default async function DashboardPage() {
   const [{ data: resumes }, { data: profile }] = await Promise.all([
     supabase
       .from("resumes")
-      .select("id, kind, title, status, is_default, updated_at, job_title_snapshot, job_company_snapshot, tailoring_session_id")
+      .select("id, kind, title, status, is_default, updated_at, job_title_snapshot, job_company_snapshot, tailoring_session_id, application_status")
       .eq("user_id", user.id)
       .order("updated_at", { ascending: false }),
     supabase.from("profiles").select("gemini_key_status").eq("id", user.id).single(),
@@ -53,6 +52,27 @@ export default async function DashboardPage() {
 
   const keyMissing = profile?.gemini_key_status !== "valid";
 
+  const rows: ApplicationRow[] = applications.map((a) => {
+    const s = a.tailoring_session_id ? byId.get(a.tailoring_session_id) : undefined;
+    const changes = (s?.changes ?? []) as TailoredChange[];
+    return {
+      id: a.id,
+      title: a.title,
+      role: a.job_title_snapshot ?? a.title,
+      company: a.job_company_snapshot,
+      status: a.application_status,
+      before: s?.score_before ?? null,
+      after: s?.score_after ?? null,
+      changes: changes.length,
+      toVerify: changes.filter((c) => c.flags.length > 0).length,
+      updatedLabel: formatRelativeTime(a.updated_at),
+    };
+  });
+  const scored = rows.filter((r) => r.before !== null && r.after !== null);
+  const avgLift = scored.length ? Math.round(scored.reduce((sum, r) => sum + (r.after! - r.before!), 0) / scored.length) : null;
+  const active = rows.filter((r) => r.status === "applied" || r.status === "interviewing").length;
+  const interviews = rows.filter((r) => r.status === "interviewing" || r.status === "offer").length;
+
   return (
     <div className="flex flex-col gap-10">
       <div className="flex flex-wrap items-end justify-between gap-4">
@@ -61,6 +81,27 @@ export default async function DashboardPage() {
           <p className="mt-1.5 text-body text-ink-2">One tailored resume per job, each measured against its posting.</p>
         </div>
       </div>
+
+      {rows.length > 0 && (
+        <dl className="grid grid-cols-2 overflow-hidden rounded-lg border border-line bg-line [&>div]:bg-panel sm:grid-cols-4 gap-px">
+          {[
+            { label: "Applications", value: String(rows.length), note: `${active} in progress` },
+            { label: "Average score lift", value: avgLift === null ? "—" : `${avgLift > 0 ? "+" : ""}${avgLift}`, note: "points after tailoring" },
+            { label: "Interviews", value: String(interviews), note: "interviewing or offer" },
+            {
+              label: "To verify",
+              value: String(rows.reduce((n, r) => n + r.toVerify, 0)),
+              note: "changes to double-check",
+            },
+          ].map((stat) => (
+            <div key={stat.label} className="px-4 py-3.5">
+              <dt className="text-label text-ink-3">{stat.label}</dt>
+              <dd className="mt-1 font-mono text-[22px] leading-none text-ink tabular">{stat.value}</dd>
+              <dd className="mt-1.5 text-label text-ink-3">{stat.note}</dd>
+            </div>
+          ))}
+        </dl>
+      )}
 
       {keyMissing && (
         <div className="flex flex-wrap items-center gap-3 rounded-lg border border-brass/40 bg-brass-soft px-4 py-3 text-body">
@@ -139,47 +180,7 @@ export default async function DashboardPage() {
             </Link>
           </div>
         ) : (
-          <div className="overflow-hidden rounded-lg border border-line">
-            <div className="hidden grid-cols-[minmax(0,1fr)_9rem_8rem_7rem_2.5rem] gap-4 border-b border-line bg-sunken px-4 py-2 text-label font-medium text-ink-3 md:grid">
-              <span>Role</span>
-              <span>Match score</span>
-              <span>Review</span>
-              <span>Updated</span>
-              <span className="sr-only">Actions</span>
-            </div>
-            <ul className="divide-y divide-line bg-panel">
-              {applications.map((a) => {
-                const s = a.tailoring_session_id ? byId.get(a.tailoring_session_id) : undefined;
-                const changes = (s?.changes ?? []) as TailoredChange[];
-                const toVerify = changes.filter((c) => c.flags.length > 0).length;
-                return (
-                  <li
-                    key={a.id}
-                    className="group relative grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1 px-4 py-3.5 transition-colors hover:bg-hover md:grid-cols-[minmax(0,1fr)_9rem_8rem_7rem_2.5rem]"
-                  >
-                    <div className="min-w-0">
-                      <Link href={`/resumes/${a.id}`} className="block truncate text-body font-medium text-ink after:absolute after:inset-0">
-                        {a.job_title_snapshot ?? a.title}
-                      </Link>
-                      <p className="truncate text-small text-ink-3">{a.job_company_snapshot ?? "Company not named"}</p>
-                    </div>
-                    <ScoreDelta before={s?.score_before ?? null} after={s?.score_after ?? null} className="text-body" />
-                    <div className="hidden md:block">
-                      {toVerify > 0 ? (
-                        <Badge tone="query">{toVerify} to verify</Badge>
-                      ) : (
-                        <span className="text-small text-ink-3">{changes.length} changes</span>
-                      )}
-                    </div>
-                    <span className="hidden text-small text-ink-3 md:block">{formatRelativeTime(a.updated_at)}</span>
-                    <div className="relative z-10 hidden justify-end md:flex">
-                      <ResumeActions id={a.id} title={a.title} />
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
+          <ApplicationsTable rows={rows} />
         )}
         {applications.length > 0 && (
           <Link href="/new" className="mt-4 inline-flex items-center gap-1.5 text-small text-brass hover:underline">

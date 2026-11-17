@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowRight, ChevronDown, CircleAlert, RefreshCw } from "lucide-react";
+import { ArrowRight, ChevronDown, CircleAlert, Link2, RefreshCw } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/Button";
 import { Field, Input, Select, Textarea } from "@/components/ui/Field";
 import { Pipeline, STAGES, type StageState } from "@/components/tailor/Pipeline";
@@ -30,6 +30,30 @@ export function NewApplication({ sources, hasKey, retryId }: { sources: Source[]
   const [stages, setStages] = useState(initialStages);
   const [error, setError] = useState<{ message: string; sessionId?: string } | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
+  const [jobUrl, setJobUrl] = useState("");
+  const [importing, setImporting] = useState(false);
+  const [importNote, setImportNote] = useState<{ ok: boolean; text: string } | null>(null);
+
+  async function importFromLink() {
+    if (!jobUrl.trim()) return;
+    setImporting(true);
+    setImportNote(null);
+    const res = await fetch("/api/job-import", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url: jobUrl }),
+    }).catch(() => null);
+    const data = await res?.json().catch(() => null);
+    setImporting(false);
+    if (!res?.ok || !data?.text) {
+      return setImportNote({ ok: false, text: data?.error ?? "Couldn't import that page. Paste the job post instead." });
+    }
+    setJd(data.text);
+    if (data.title) setTitle(data.title);
+    if (data.company) setCompany(data.company);
+    if (data.title || data.company) setShowDetails(true);
+    setImportNote({ ok: true, text: "Imported. Check it below and trim anything that isn't the job." });
+  }
   const startedRetry = useRef(false);
 
   /** The stream dropped but the server keeps running: poll the run until it settles. */
@@ -157,6 +181,35 @@ export function NewApplication({ sources, hasKey, retryId }: { sources: Source[]
         <div>
           <h1 className="text-page font-semibold tracking-[-0.015em]">New application</h1>
           <p className="mt-2 text-body text-ink-2">Paste the job post. You&rsquo;ll review every change before you download.</p>
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="job-url" className="text-small font-medium text-ink-2">
+            Import from a link <span className="text-label font-normal text-ink-3">Optional</span>
+          </label>
+          <div className="flex gap-2">
+            <Input
+              id="job-url"
+              type="url"
+              inputMode="url"
+              value={jobUrl}
+              onChange={(e) => setJobUrl(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  void importFromLink();
+                }
+              }}
+              placeholder="https://jobs.example.com/senior-engineer"
+            />
+            <Button onClick={() => void importFromLink()} loading={importing} disabled={!jobUrl.trim()}>
+              <Link2 aria-hidden /> Import
+            </Button>
+          </div>
+          {importNote && (
+            <p role="status" className={importNote.ok ? "text-small text-add" : "text-small text-danger"}>
+              {importNote.text}
+            </p>
+          )}
         </div>
         <Field
           label="Job post"

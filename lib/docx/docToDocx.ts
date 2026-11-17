@@ -160,3 +160,36 @@ export async function documentToDocx(doc: DocumentContent, template: Template, t
   });
   return Packer.toBuffer(file);
 }
+
+/** A cover letter as a Word document: plain paragraphs in the template's body face. */
+export async function letterToDocx(text: string, template: Template, title?: string): Promise<Buffer> {
+  const paragraphs = text
+    .replace(/\r\n/g, "\n")
+    .split(/\n{2,}/)
+    .map((p) => p.trim())
+    .filter(Boolean);
+  const file = new Document({
+    title,
+    creator: "ResumeArchitect",
+    styles: {
+      default: {
+        document: {
+          run: { font: template.docxBodyFont, size: pt(11), color: hex(template.color.ink) },
+          paragraph: { spacing: { line: 300, after: 200 } },
+        },
+      },
+    },
+    sections: [
+      {
+        properties: { page: { margin: { top: 1300, bottom: 1300, left: 1300, right: 1300 } } },
+        children: paragraphs.map(
+          (p) =>
+            new Paragraph({
+              children: p.split("\n").map((line, i) => new TextRun({ text: line, break: i > 0 ? 1 : 0 })),
+            }),
+        ),
+      },
+    ],
+  });
+  return Packer.toBuffer(file);
+}

@@ -77,8 +77,31 @@ test("sign up, tailor a resume, review every change, edit, and download", async 
   await expect(rail.getByText("Everything reviewed")).toBeVisible();
 
   // The score tab explains the number.
-  await rail.getByRole("tab", { name: /How it/ }).click();
+  await rail.getByRole("tab", { name: "Score" }).click();
   await expect(rail.getByText("Must-have requirements")).toBeVisible();
+
+  // Each change shows what it's worth.
+  await rail.getByRole("tab", { name: "Changes" }).click();
+  await expect(rail.getByText(/^\+\d+ pts$/).first()).toBeVisible();
+
+  // The job post panel marks what the resume shows and what it doesn't.
+  await rail.getByRole("tab", { name: "Job post" }).click();
+  await expect(rail.getByText("The posting")).toBeVisible();
+  await expect(rail.locator("mark", { hasText: "Kafka" }).first()).toHaveAttribute("title", /in your resume/);
+
+  // Track the application's stage.
+  await page.getByRole("button", { name: /Application status: Saved/ }).click();
+  await page.getByRole("menuitem", { name: "Applied" }).click();
+  await expect(page.getByRole("button", { name: /Application status: Applied/ })).toBeVisible();
+
+  // Write and download a cover letter.
+  await page.getByRole("tab", { name: "Cover letter" }).click();
+  await page.getByRole("button", { name: "Write cover letter" }).click();
+  await expect(page.getByLabel("Cover letter")).toHaveValue(/Dear Hiring Manager/);
+  await page.getByRole("button", { name: "Download" }).last().click();
+  const letterDownload = page.waitForEvent("download");
+  await page.getByRole("menuitem", { name: "Word (.docx)" }).click();
+  expect((await letterDownload).suggestedFilename()).toMatch(/Cover letter\.docx$/);
 
   // Edit in place; the change autosaves.
   await page.getByRole("tab", { name: "Edit" }).click();
@@ -108,6 +131,14 @@ test("sign up, tailor a resume, review every change, edit, and download", async 
   await page.goto("/dashboard");
   await expect(page.getByRole("link", { name: "Senior Backend Engineer" })).toBeVisible();
   await expect(page.getByLabel(/Match score \d+ to \d+/)).toBeVisible();
+  await expect(page.getByText("Average score lift")).toBeVisible();
+  await expect(page.getByRole("button", { name: /Application status: Applied/ })).toBeVisible();
+
+  // Job import refuses private network addresses.
+  await page.goto("/new");
+  await page.getByLabel(/Import from a link/).fill("http://127.0.0.1:4010/");
+  await page.getByRole("button", { name: "Import" }).click();
+  await expect(page.getByText("That link isn't supported.")).toBeVisible();
 });
 
 test("a rejected key is explained and nothing is saved", async ({ page }) => {

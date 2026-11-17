@@ -10,10 +10,12 @@ const PatchSchema = z
     title: z.string().trim().min(1).max(160).optional(),
     template: z.enum(["classic", "modern"]).optional(),
     reviewedChangeIds: z.array(z.string().max(32)).max(500).optional(),
+    applicationStatus: z.enum(["saved", "applied", "interviewing", "offer", "rejected"]).optional(),
+    coverLetter: z.string().max(20_000).optional(),
   })
   .refine((v) => Object.values(v).some((x) => x !== undefined), "Nothing to update.");
 
-/** Saves editor state: content (autosave), title, template, and kept-change ids. */
+/** Saves editor state: content (autosave), title, template, kept-change ids, tracker status, cover letter. */
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const supabase = createClient(await cookies());
@@ -24,7 +26,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
   const parsed = PatchSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "That update wasn't valid." }, { status: 400 });
-  const { content, title, template, reviewedChangeIds } = parsed.data;
+  const { content, title, template, reviewedChangeIds, applicationStatus, coverLetter } = parsed.data;
 
   const { data, error } = await supabase
     .from("resumes")
@@ -33,6 +35,10 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       ...(title ? { title } : {}),
       ...(template ? { template } : {}),
       ...(reviewedChangeIds ? { reviewed_change_ids: reviewedChangeIds } : {}),
+      ...(applicationStatus
+        ? { application_status: applicationStatus, application_status_updated_at: new Date().toISOString() }
+        : {}),
+      ...(coverLetter !== undefined ? { cover_letter: coverLetter } : {}),
     })
     .eq("id", id)
     .eq("user_id", user.id)

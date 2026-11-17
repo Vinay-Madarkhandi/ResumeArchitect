@@ -98,5 +98,5 @@ export async function tailorLines(
     .filter(Boolean)
     .join("\n\n");
 
-  return generateStructured(model, { system: SYSTEM, prompt, schema: TailorResponseSchema, temperature: 0.5 });
+  return generateStructured(model, { label: "tailorLines", system: SYSTEM, prompt, schema: TailorResponseSchema, temperature: 0.5 });
 }

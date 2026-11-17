@@ -24,7 +24,7 @@ export default async function ResumePage({ params, searchParams }: PageProps<"/r
 
   const { data: resume } = await supabase
     .from("resumes")
-    .select("id, title, kind, content, template, reviewed_change_ids, tailoring_session_id")
+    .select("id, title, kind, content, template, reviewed_change_ids, tailoring_session_id, application_status, cover_letter, job_description_id")
     .eq("id", id)
     .eq("user_id", user.id)
     .maybeSingle();
@@ -51,7 +51,13 @@ export default async function ResumePage({ params, searchParams }: PageProps<"/r
     if (parsed.success) session = parsed.data;
   }
 
-  const initialView = view === "review" || view === "edit" || view === "compare" ? view : null;
+  let jobText: string | null = null;
+  if (resume.job_description_id) {
+    const { data } = await supabase.from("job_descriptions").select("raw_text").eq("id", resume.job_description_id).maybeSingle();
+    jobText = data?.raw_text ?? null;
+  }
+
+  const initialView = view === "review" || view === "edit" || view === "compare" || view === "letter" ? view : null;
 
   return (
     <Workspace
@@ -62,8 +68,11 @@ export default async function ResumePage({ params, searchParams }: PageProps<"/r
         content,
         template: resume.template,
         reviewedChangeIds: resume.reviewed_change_ids,
+        applicationStatus: resume.application_status,
+        coverLetter: resume.cover_letter,
       }}
       session={session}
+      jobText={jobText}
       initialView={initialView}
     />
   );

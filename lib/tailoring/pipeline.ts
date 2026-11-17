@@ -34,6 +34,7 @@ export interface SessionPatch {
   result_resume_id?: string;
   result_resume_title_snapshot?: string;
   completed_at?: string;
+  usage?: Record<string, { prompt: number; output: number; total: number }>;
 }
 
 /** Persistence the pipeline needs, kept behind an interface so tests can run it in memory. */
@@ -155,6 +156,7 @@ export async function* runPipeline(
     try {
       await store.updateSession(sessionId, {
         status: "completed",
+        usage: model.usage,
         result_resume_id: resumeId,
         result_resume_title_snapshot: title,
         completed_at: new Date().toISOString(),
@@ -170,7 +172,14 @@ export async function* runPipeline(
     const message =
       error instanceof AiError ? error.message : "Something unexpected went wrong. Your resume wasn't changed; try again.";
     await store
-      .updateSession(sessionId, { status: "failed", stage, error_code: code, error_message: message, completed_at: new Date().toISOString() })
+      .updateSession(sessionId, {
+        status: "failed",
+        stage,
+        error_code: code,
+        error_message: message,
+        usage: model.usage,
+        completed_at: new Date().toISOString(),
+      })
       .catch(() => {});
     yield { type: "error", code, message, sessionId, stage };
   }

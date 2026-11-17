@@ -17,6 +17,8 @@ import type { PipelineStage, TailoredChange } from "@/lib/schemas/tailoring";
  */
 type ResumeContentColumn = DocumentContent | ResumeContent;
 
+export type ApplicationStatus = "saved" | "applied" | "interviewing" | "offer" | "rejected";
+
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
 
 export interface Database {
@@ -88,6 +90,9 @@ export interface Database {
           low_confidence_fields: string[];
           template: "classic" | "modern";
           reviewed_change_ids: string[];
+          application_status: ApplicationStatus;
+          application_status_updated_at: string | null;
+          cover_letter: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -134,6 +139,7 @@ export interface Database {
           summary: string | null;
           score_before: number | null;
           score_after: number | null;
+          usage: Json | null;
           gemini_model: string | null;
           started_at: string | null;
           completed_at: string | null;

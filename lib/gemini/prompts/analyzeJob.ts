@@ -27,6 +27,7 @@ benefits, equal-opportunity statements, and company history.`;
 
 export async function analyzeJob(model: JsonModel, jobDescription: string): Promise<JobAnalysis> {
   const result = await generateStructured(model, {
+    label: "analyzeJob",
     system: SYSTEM,
     prompt: `# Job description\n\n${jobDescription.trim()}`,
     schema: JobAnalysisSchema,

@@ -3,8 +3,8 @@ import { NextResponse } from "next/server";
 import { renderToBuffer } from "@react-pdf/renderer";
 import { createClient } from "@/utils/supabase/server";
 import { resolveDocument } from "@/lib/documentConversion";
-import { DocumentPdf } from "@/lib/pdf/docToPdfTree";
-import { documentToDocx } from "@/lib/docx/docToDocx";
+import { DocumentPdf, LetterPdf } from "@/lib/pdf/docToPdfTree";
+import { documentToDocx, letterToDocx } from "@/lib/docx/docToDocx";
 import { DocumentContentSchema, type DocumentContent } from "@/lib/schemas/document";
 import { getTemplate } from "@/lib/resume/templates";
 
@@ -18,14 +18,20 @@ function fileName(title: string, format: Format): string {
   return `${base}.${format}`;
 }
 
-async function render(doc: DocumentContent, format: Format, templateId: string | null, title: string) {
+type Body = { kind: "resume"; doc: DocumentContent } | { kind: "letter"; text: string };
+
+async function render(body: Body, format: Format, templateId: string | null, title: string) {
   const template = getTemplate(templateId);
-  const body =
-    format === "pdf"
-      ? await renderToBuffer(<DocumentPdf doc={doc} template={template} title={title} />)
-      : await documentToDocx(doc, template, title);
+  const bytes =
+    body.kind === "letter"
+      ? format === "pdf"
+        ? await renderToBuffer(<LetterPdf text={body.text} template={template} title={title} />)
+        : await letterToDocx(body.text, template, title)
+      : format === "pdf"
+        ? await renderToBuffer(<DocumentPdf doc={body.doc} template={template} title={title} />)
+        : await documentToDocx(body.doc, template, title);
   const name = fileName(title, format);
-  return new Response(new Uint8Array(body), {
+  return new Response(new Uint8Array(bytes), {
     headers: {
       "Content-Type":
         format === "pdf" ? "application/pdf" : "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -64,7 +70,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   const doc = resolveDocument(resume.content);
   if (!doc) return NextResponse.json({ error: "This resume couldn't be read." }, { status: 422 });
   try {
-    return await render(doc, format, resume.template, resume.title);
+    return await render({ kind: "resume", doc }, format, resume.template, resume.title);
   } catch {
     return NextResponse.json({ error: "Couldn't build the file. Try again." }, { status: 500 });
   }
@@ -72,18 +78,26 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
 /**
  * Downloads exactly what the editor shows, including edits not saved yet.
- * Body: { format, content, template? }
+ * Body: { format, content, template? } for the resume, or
+ * { format, kind: "letter", text, template? } for the cover letter.
  */
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const body = await request.json().catch(() => null);
   const format = parseFormat(body?.format);
-  const parsed = DocumentContentSchema.safeParse(body?.content);
-  if (!format || !parsed.success) return NextResponse.json({ error: "Invalid export request." }, { status: 400 });
+  if (!format) return NextResponse.json({ error: "Invalid export request." }, { status: 400 });
   const resume = await load(id);
   if (!resume) return NextResponse.json({ error: "Resume not found." }, { status: 404 });
+  const template = typeof body?.template === "string" ? body.template : resume.template;
   try {
-    return await render(parsed.data, format, typeof body?.template === "string" ? body.template : resume.template, resume.title);
+    if (body?.kind === "letter") {
+      const text = typeof body.text === "string" ? body.text.slice(0, 20_000) : "";
+      if (!text.trim()) return NextResponse.json({ error: "The letter is empty." }, { status: 400 });
+      return await render({ kind: "letter", text }, format, template, `${resume.title} — Cover letter`);
+    }
+    const parsed = DocumentContentSchema.safeParse(body?.content);
+    if (!parsed.success) return NextResponse.json({ error: "Invalid export request." }, { status: 400 });
+    return await render({ kind: "resume", doc: parsed.data }, format, template, resume.title);
   } catch {
     return NextResponse.json({ error: "Couldn't build the file. Try again." }, { status: 500 });
   }
