@@ -3,7 +3,7 @@
 import { useCallback, useDeferredValue, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import type { Editor } from "@tiptap/react";
-import { ArrowLeft, Check, CircleAlert, Columns2, FileCheck2, LoaderCircle, PenLine, RotateCcw } from "lucide-react";
+import { ArrowLeft, Check, CircleAlert, Columns2, FileCheck2, LoaderCircle, Mail, PenLine, RotateCcw } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/Tabs";
 import { Button } from "@/components/ui/Button";
 import { Select } from "@/components/ui/Field";
@@ -17,6 +17,11 @@ import { Redline } from "@/components/workspace/Redline";
 import { ChangeList, type ChangeEntry } from "@/components/workspace/ChangeList";
 import { AtsList, ScoreLockup, ScorePanel } from "@/components/workspace/ScorePanel";
 import { ExportMenu } from "@/components/workspace/ExportMenu";
+import { CoverLetter } from "@/components/workspace/CoverLetter";
+import { JobPostPanel } from "@/components/workspace/JobPostPanel";
+import { StatusSelect } from "@/components/tracker/StatusSelect";
+import { changeImpact } from "@/lib/resume/impact";
+import type { ApplicationStatus } from "@/lib/supabase/database.types";
 import { setOriginalLines, setPageBreaks } from "@/lib/editor/extensions";
 import { useAutosave, type SaveStatus } from "@/lib/editor/useAutosave";
 import { usePageCount } from "@/lib/editor/usePageCount";
@@ -30,7 +35,8 @@ import type { DocumentContent } from "@/lib/schemas/document";
 import type { SessionArtifacts } from "@/lib/schemas/tailoring";
 import { cn } from "@/lib/cn";
 
-type View = "review" | "edit" | "compare";
+type View = "review" | "edit" | "compare" | "letter";
+type Rail = "changes" | "score" | "job";
 
 export interface WorkspaceProps {
   resume: {
@@ -40,8 +46,12 @@ export interface WorkspaceProps {
     content: DocumentContent;
     template: TemplateId;
     reviewedChangeIds: string[];
+    applicationStatus: ApplicationStatus;
+    coverLetter: string | null;
   };
   session: SessionArtifacts | null;
+  /** The original job post text, for the keyword panel. */
+  jobText: string | null;
   initialView: View | null;
 }
 
@@ -78,7 +88,7 @@ function SaveIndicator({ status, onRetry }: { status: SaveStatus; onRetry: () =>
   );
 }
 
-export function Workspace({ resume, session, initialView }: WorkspaceProps) {
+export function Workspace({ resume, session, jobText, initialView }: WorkspaceProps) {
   const toast = useToast();
   const tailored = !!session;
   const original = session?.sourceSnapshot ?? null;
@@ -90,7 +100,7 @@ export function Workspace({ resume, session, initialView }: WorkspaceProps) {
   const [view, setView] = useState<View>(initialView ?? (tailored ? "review" : "edit"));
   const [focusedId, setFocusedId] = useState<string | null>(null);
   const [editor, setEditor] = useState<Editor | null>(null);
-  const [rail, setRail] = useState<"changes" | "score">("changes");
+  const [rail, setRail] = useState<Rail>("changes");
 
   const { status, flush } = useAutosave(doc, (content) => patch(resume.id, { content }));
   const deferredDoc = useDeferredValue(doc);
@@ -98,13 +108,19 @@ export function Workspace({ resume, session, initialView }: WorkspaceProps) {
   const originalUnits = useMemo(() => (original ? toUnits(original) : null), [original]);
   const units = useMemo(() => toUnits(deferredDoc), [deferredDoc]);
   const hunks = useMemo(() => (originalUnits ? diffUnits(originalUnits, units) : []), [originalUnits, units]);
+  const scoreNowEarly = useMemo(() => (job ? scoreResume(deferredDoc, job) : null), [deferredDoc, job]);
   const entries: ChangeEntry[] = useMemo(
-    () => hunks.map((hunk) => ({ hunk, change: matchChange(hunk, session?.changes ?? []) })),
-    [hunks, session],
+    () =>
+      hunks.map((hunk) => ({
+        hunk,
+        change: matchChange(hunk, session?.changes ?? []),
+        impact: job && scoreNowEarly ? changeImpact(units, hunk, job, scoreNowEarly) : null,
+      })),
+    [hunks, session, job, units, scoreNowEarly],
   );
   const redline = useMemo(() => buildRedline(units, hunks), [units, hunks]);
   const scoreBefore = useMemo(() => (original && job ? scoreResume(original, job) : null), [original, job]);
-  const scoreNow = useMemo(() => (job ? scoreResume(deferredDoc, job) : null), [deferredDoc, job]);
+  const scoreNow = scoreNowEarly;
   const ats = useMemo(() => atsChecks(units), [units]);
   const pages = usePageCount(resume.id, deferredDoc, template);
 
@@ -223,6 +239,11 @@ export function Workspace({ resume, session, initialView }: WorkspaceProps) {
             <h1 className="truncate text-body font-semibold text-ink">{resume.title}</h1>
             <p className="truncate text-label text-ink-3">{tailored ? "Tailored application" : "Master resume"}</p>
           </div>
+          {tailored && (
+            <span className="ml-1 hidden sm:block">
+              <StatusSelect resumeId={resume.id} initial={resume.applicationStatus} compact />
+            </span>
+          )}
           <div className="ml-auto flex items-center gap-2 sm:gap-3">
             <span className="hidden sm:block">
               <SaveIndicator status={status} onRetry={() => void flush().catch(() => {})} />
@@ -264,6 +285,9 @@ export function Workspace({ resume, session, initialView }: WorkspaceProps) {
                   <TabsTrigger value="compare">
                     <Columns2 aria-hidden /> Compare
                   </TabsTrigger>
+                  <TabsTrigger value="letter">
+                    <Mail aria-hidden /> Cover letter
+                  </TabsTrigger>
                 </TabsList>
               </Tabs>
             ) : (
@@ -303,6 +327,10 @@ export function Workspace({ resume, session, initialView }: WorkspaceProps) {
             </Paper>
           )}
 
+          {view === "letter" && (
+            <CoverLetter resumeId={resume.id} doc={deferredDoc} template={template} initial={resume.coverLetter} />
+          )}
+
           {view === "compare" && original && (
             <div className="mx-auto grid max-w-[1400px] gap-5 xl:grid-cols-2">
               <section aria-label="Original resume">
@@ -328,12 +356,13 @@ export function Workspace({ resume, session, initialView }: WorkspaceProps) {
                 <ScoreLockup job={job} before={scoreBefore.total} now={scoreNow.total} />
               </div>
               <div className="flex items-center gap-1 border-b border-line px-4 py-2.5">
-                <Tabs value={rail} onValueChange={(v) => setRail(v as "changes" | "score")}>
+                <Tabs value={rail} onValueChange={(v) => setRail(v as Rail)}>
                   <TabsList>
                     <TabsTrigger value="changes">
                       Changes <span className="font-mono text-label tabular">{entries.length}</span>
                     </TabsTrigger>
-                    <TabsTrigger value="score">How it&rsquo;s scored</TabsTrigger>
+                    <TabsTrigger value="score">Score</TabsTrigger>
+                    <TabsTrigger value="job">Job post</TabsTrigger>
                   </TabsList>
                 </Tabs>
               </div>
@@ -372,9 +401,13 @@ export function Workspace({ resume, session, initialView }: WorkspaceProps) {
                     onRevert={revert}
                   />
                 </div>
-              ) : (
+              ) : rail === "score" ? (
                 <div className="p-4">
                   <ScorePanel before={scoreBefore} now={scoreNow} onAddSkill={onAddSkill} />
+                </div>
+              ) : (
+                <div className="p-4">
+                  <JobPostPanel text={jobText} job={job} report={scoreNow} />
                 </div>
               )}
             </div>

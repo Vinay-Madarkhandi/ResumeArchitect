@@ -33,6 +33,8 @@ export class AiError extends Error {
 }
 
 export interface JsonRequest {
+  /** Names the step in usage accounting ("analyzeJob", "tailorLines", …). */
+  label: string;
   system: string;
   prompt: string;
   /** JSON Schema the reply must follow. */
@@ -40,10 +42,18 @@ export interface JsonRequest {
   temperature?: number;
 }
 
+export interface TokenUsage {
+  prompt: number;
+  output: number;
+  total: number;
+}
+
 /** A model that answers with a JSON string. The Gemini client in production; a fake in tests. */
 export interface JsonModel {
   name: string;
   generate(request: JsonRequest): Promise<string>;
+  /** Tokens used so far, per step label. */
+  usage?: Record<string, TokenUsage>;
 }
 
 const CALL_TIMEOUT_MS = 50_000;
@@ -67,9 +77,11 @@ function classify(error: unknown): AiError {
 
 export function geminiModel(apiKey: string): JsonModel {
   const client = createGeminiClient(apiKey);
+  const usage: Record<string, TokenUsage> = {};
   return {
     name: TAILOR_MODEL,
-    async generate({ system, prompt, jsonSchema, temperature }) {
+    usage,
+    async generate({ label, system, prompt, jsonSchema, temperature }) {
       const response = await client.models.generateContent({
         model: TAILOR_MODEL,
         contents: prompt,
@@ -81,6 +93,15 @@ export function geminiModel(apiKey: string): JsonModel {
           abortSignal: AbortSignal.timeout(CALL_TIMEOUT_MS),
         },
       });
+      const meta = response.usageMetadata;
+      if (meta) {
+        const prev = usage[label] ?? { prompt: 0, output: 0, total: 0 };
+        usage[label] = {
+          prompt: prev.prompt + (meta.promptTokenCount ?? 0),
+          output: prev.output + (meta.candidatesTokenCount ?? 0) + (meta.thoughtsTokenCount ?? 0),
+          total: prev.total + (meta.totalTokenCount ?? 0),
+        };
+      }
       const text = response.text;
       if (!text) throw new AiError("gemini_error", "Gemini returned an empty answer. Try again.");
       return text;
@@ -95,6 +116,8 @@ function sanitize(node: unknown): unknown {
     const out: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(node)) {
       if (key === "$schema" || key === "additionalProperties" || key === "default") continue;
+      // z.int() emits ±2^53 bounds; they add nothing and only risk a rejection.
+      if ((key === "minimum" || key === "maximum") && Math.abs(Number(value)) >= Number.MAX_SAFE_INTEGER) continue;
       out[key] = sanitize(value);
     }
     return out;
@@ -110,7 +133,7 @@ const RETRYABLE: AiErrorCode[] = ["rate_limited", "gemini_error", "schema_valida
 
 export async function generateStructured<T>(
   model: JsonModel,
-  request: { system: string; prompt: string; schema: z.ZodType<T>; temperature?: number },
+  request: { label: string; system: string; prompt: string; schema: z.ZodType<T>; temperature?: number },
   { attempts = 2, backoffMs = 1200 }: { attempts?: number; backoffMs?: number } = {},
 ): Promise<T> {
   const jsonSchema = toGeminiSchema(request.schema);
@@ -119,6 +142,7 @@ export async function generateStructured<T>(
   for (let attempt = 1; attempt <= attempts; attempt++) {
     try {
       const text = await model.generate({
+        label: request.label,
         system: request.system,
         prompt: request.prompt,
         jsonSchema,

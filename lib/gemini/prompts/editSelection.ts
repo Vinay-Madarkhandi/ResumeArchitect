@@ -64,6 +64,7 @@ export async function editSelection(
   input: { contextBefore: string; selectedText: string; contextAfter: string; instruction: string },
 ): Promise<SelectionEditResult> {
   return generateStructured(model, {
+    label: "editSelection",
     system: SYSTEM_INSTRUCTION,
     prompt: buildPrompt(input.contextBefore, input.selectedText, input.contextAfter, input.instruction),
     schema: SelectionEditResultSchema,

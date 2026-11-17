@@ -27,6 +27,7 @@ Rules:
 
 export async function parseResume(model: JsonModel, extractedText: string): Promise<ParsedResume> {
   return generateStructured(model, {
+    label: "parseResume",
     system: SYSTEM,
     prompt: `# Extracted resume text\n\n${extractedText.slice(0, 30_000)}`,
     schema: ParsedResumeSchema,

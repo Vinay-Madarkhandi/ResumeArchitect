@@ -10,7 +10,8 @@
     "typecheck": "next typegen && tsc --noEmit",
     "test": "vitest run",
     "test:e2e": "playwright test",
-    "fake-gemini": "node e2e/fake-gemini.mjs"
+    "fake-gemini": "node e2e/fake-gemini.mjs",
+    "smoke:gemini": "vitest run lib/gemini/live.test.ts"
   },
   "dependencies": {
     "@google/genai": "^2.18.0",

@@ -59,3 +59,13 @@ The end-to-end suite starts `e2e/fake-gemini.mjs` and runs the app with `GEMINI_
 - Apply `supabase/migrations/` to your project (`npx supabase db push`).
 - Set `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, and `GEMINI_KEY_ENCRYPTION_SECRET`. Leave `GEMINI_API_BASE_URL` unset.
 - `/api/tailoring` streams for up to 300 seconds (`maxDuration`). On Vercel this needs Fluid compute or a plan that allows it.
+
+## Checking against real Gemini
+
+The test suites use a fake model. To prove the prompts, schemas, and model name work against Google's API with your own key (uses a few thousand tokens):
+
+```bash
+GEMINI_API_KEY=AIza... npm run smoke:gemini
+```
+
+Set `GEMINI_MODEL` (server env) to switch models without a code change; it defaults to `gemini-2.5-flash`.

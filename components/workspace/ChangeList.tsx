@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { Check, CircleHelp, RotateCcw, UserRound } from "lucide-react";
 import { Slug } from "@/components/workspace/Redline";
+import type { ChangeImpact } from "@/lib/resume/impact";
 import type { Hunk } from "@/lib/resume/diff";
 import type { JobAnalysis } from "@/lib/schemas/jobAnalysis";
 import type { TailoredChange } from "@/lib/schemas/tailoring";
@@ -13,6 +14,7 @@ import { cn } from "@/lib/cn";
 export interface ChangeEntry {
   hunk: Hunk;
   change: TailoredChange | null;
+  impact: ChangeImpact | null;
 }
 
 const KIND_LABEL: Record<Hunk["kind"], string> = { modified: "Rewritten", added: "Added", removed: "Removed" };
@@ -57,7 +59,7 @@ export function ChangeList({
   return (
     <ul className="flex flex-col gap-2">
       {entries.map((entry) => {
-        const { hunk, change } = entry;
+        const { hunk, change, impact } = entry;
         const isReviewed = reviewed.has(hunk.id);
         const focused = focusedId === hunk.id;
         const flags = change?.flags ?? [];
@@ -91,6 +93,14 @@ export function ChangeList({
                     </span>
                   </>
                 )}
+                {impact && impact.points !== 0 && (
+                  <span
+                    className={cn("font-mono text-label tabular", impact.points > 0 ? "text-add" : "text-del")}
+                    title="Points this change adds to the match score"
+                  >
+                    {impact.points > 0 ? `+${impact.points}` : impact.points} pts
+                  </span>
+                )}
                 {flags.length > 0 && (
                   <Badge tone="query" className="ml-auto">
                     <CircleHelp aria-hidden /> Verify
@@ -110,6 +120,15 @@ export function ChangeList({
             {focused && (
               <div className="slug-in flex flex-col gap-3 border-t border-line px-3.5 py-3">
                 {change?.reason && <p className="text-small text-ink-2">{change.reason}</p>}
+                {impact && (impact.gained.length > 0 || impact.lost.length > 0) && (
+                  <p className="text-label text-ink-3">
+                    {impact.gained.length > 0 && <>Now shows {impact.gained.join(", ")}. </>}
+                    {impact.lost.length > 0 && <span className="text-del">No longer shows {impact.lost.join(", ")}.</span>}
+                  </p>
+                )}
+                {change && flags.length === 0 && hunk.before.length > 0 && (
+                  <p className="text-label text-ink-3">Rewritten from your original line; nothing new was added.</p>
+                )}
                 {change && change.requirementIds.length > 0 && (
                   <div className="flex flex-wrap gap-1">
                     {change.requirementIds.map((id) => reqLabel(id)).filter(Boolean).map((label) => (

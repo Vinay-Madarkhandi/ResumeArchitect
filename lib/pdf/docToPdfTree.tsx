@@ -139,3 +139,21 @@ export function DocumentPdf({ doc, template, title }: { doc: DocumentContent; te
     </Document>
   );
 }
+
+export function LetterPdf({ text, template, title }: { text: string; template: Template; title?: string }) {
+  const paragraphs = text.replace(/\r\n/g, "\n").split(/\n{2,}/).map((p) => p.trim()).filter(Boolean);
+  return (
+    <Document title={title} creator="ResumeArchitect" producer="ResumeArchitect">
+      <Page
+        size="A4"
+        style={{ paddingVertical: 64, paddingHorizontal: 64, fontFamily: template.bodyFont, fontSize: 10.5, lineHeight: 1.55, color: template.color.ink }}
+      >
+        {paragraphs.map((p, i) => (
+          <Text key={i} style={{ marginBottom: 11 }}>
+            {p}
+          </Text>
+        ))}
+      </Page>
+    </Document>
+  );
+}

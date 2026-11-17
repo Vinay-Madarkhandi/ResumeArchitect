@@ -17,3 +17,13 @@ describe("documentToDocx", () => {
     }
   });
 });
+
+describe("letterToDocx", () => {
+  it("writes each paragraph of the letter", async () => {
+    const { letterToDocx } = await import("@/lib/docx/docToDocx");
+    const buffer = await letterToDocx("Dear Hiring Manager,\n\nI built payment services.\n\nAda Lovelace", TEMPLATES.classic);
+    const { value } = await mammoth.extractRawText({ buffer });
+    expect(value).toContain("I built payment services.");
+    expect(value).toContain("Ada Lovelace");
+  });
+});
