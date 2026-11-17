@@ -2,47 +2,34 @@
 
 import { cookies } from "next/headers";
 import { createClient } from "@/utils/supabase/server";
-import { ResumeContentSchema } from "@/lib/schemas/resume";
-import { resumeContentToDoc } from "@/lib/documentConversion";
+import { DocumentContentSchema } from "@/lib/schemas/document";
 
 export type ActionResult = { ok: true } | { ok: false; error: string };
 
-/** Confirms the reviewed content, promotes this resume to the user's master,
- * and archives whichever resume was previously the default master (see
- * "replacing the master resume" in the plan — a new row, not an in-place
- * edit, so prior tailored resumes' source links stay valid).
- *
- * The onboarding review step still edits the parser's typed ResumeContent
- * output (ResumeContentEditor, unchanged) — it's reviewing structured
- * extraction results, a different job from ongoing document editing. This
- * is the one place that content gets converted into the freeform document
- * shape the editor (/resumes/[id]/edit) actually works with, so a freshly
- * onboarded user's master resume is already in the new shape from the
- * start, with no separate migration step. */
-export async function finalizeMasterResume(resumeId: string, content: unknown): Promise<ActionResult> {
-  const parsedContent = ResumeContentSchema.safeParse(content);
-  if (!parsedContent.success) {
-    return { ok: false, error: "Resume content didn't match the expected shape." };
-  }
-  const doc = resumeContentToDoc(parsedContent.data);
+/**
+ * Promotes a reviewed draft to the user's master resume, archiving the
+ * previous master (a new row, so earlier applications keep their source
+ * link), and marks onboarding complete.
+ */
+export async function finalizeMasterResume(resumeId: string, content: unknown, title: string): Promise<ActionResult> {
+  const doc = DocumentContentSchema.safeParse(content);
+  if (!doc.success) return { ok: false, error: "That resume couldn't be read. Reload and try again." };
 
   const supabase = createClient(await cookies());
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return { ok: false, error: "Not signed in." };
+  if (!user) return { ok: false, error: "Your session expired. Sign in again." };
 
-  const { data: resume, error: fetchError } = await supabase
+  const { data: resume } = await supabase
     .from("resumes")
-    .select("id, kind, user_id")
+    .select("id, kind")
     .eq("id", resumeId)
+    .eq("user_id", user.id)
     .single();
+  if (!resume || resume.kind !== "master") return { ok: false, error: "That resume could not be found." };
 
-  if (fetchError || !resume || resume.user_id !== user.id || resume.kind !== "master") {
-    return { ok: false, error: "That resume could not be found." };
-  }
-
-  const { data: previousDefault } = await supabase
+  const { data: previous } = await supabase
     .from("resumes")
     .select("id")
     .eq("user_id", user.id)
@@ -50,48 +37,21 @@ export async function finalizeMasterResume(resumeId: string, content: unknown): 
     .eq("is_default", true)
     .neq("id", resumeId)
     .maybeSingle();
-
-  if (previousDefault) {
-    await supabase
-      .from("resumes")
-      .update({ is_default: false, status: "archived" })
-      .eq("id", previousDefault.id);
+  if (previous) {
+    await supabase.from("resumes").update({ is_default: false, status: "archived" }).eq("id", previous.id);
   }
 
-  const { error: updateError } = await supabase
+  const { error } = await supabase
     .from("resumes")
-    .update({ content: doc, is_default: true })
+    .update({ content: doc.data, is_default: true, title: title.trim().slice(0, 160) || "Master resume" })
     .eq("id", resumeId);
-  if (updateError) return { ok: false, error: updateError.message };
+  if (error) return { ok: false, error: "Couldn't save your resume. Try again." };
 
   const { error: profileError } = await supabase
     .from("profiles")
-    .update({ default_resume_id: resumeId })
+    .update({ default_resume_id: resumeId, onboarding_completed_at: new Date().toISOString() })
     .eq("id", user.id);
-  if (profileError) return { ok: false, error: profileError.message };
+  if (profileError) return { ok: false, error: "Saved, but couldn't finish setup. Try again." };
 
-  return { ok: true };
-}
-
-export async function completeOnboarding(): Promise<ActionResult> {
-  const supabase = createClient(await cookies());
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { ok: false, error: "Not signed in." };
-
-  const { error } = await supabase
-    .from("profiles")
-    .update({ onboarding_completed_at: new Date().toISOString() })
-    .eq("id", user.id);
-
-  if (error) return { ok: false, error: error.message };
-  // Deliberately no redirect() here — the caller does a hard navigation once
-  // it has confirmed this returned { ok: true }, rather than relying on
-  // Next's action-redirect signal being intercepted correctly for an action
-  // invoked from a bare onClick (not a <form action>). That guarantees the
-  // browser's next request to /library is a genuinely fresh one that sees
-  // this update, instead of depending on router-cache/soft-navigation
-  // internals that reportedly weren't taking users there reliably.
   return { ok: true };
 }

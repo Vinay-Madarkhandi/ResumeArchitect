@@ -1,0 +1,102 @@
+import { z } from "zod";
+import { generateStructured, type JsonModel } from "@/lib/gemini/model";
+import type { JobAnalysis } from "@/lib/schemas/jobAnalysis";
+import type { ScoreReport } from "@/lib/scoring/score";
+import { isLocked, type Unit } from "@/lib/resume/units";
+
+/**
+ * Tailoring works line by line: the resume is shown to the model as numbered
+ * lines, and the model answers with edits that point at those numbers. That
+ * anchors every change to a real line, so the app can explain, verify, and
+ * revert each one, and the model cannot silently drop or restructure content.
+ */
+export const LineEditSchema = z.object({
+  op: z.enum(["rewrite", "insert_after", "remove"]),
+  /** Line number from the numbered resume. */
+  line: z.number().int(),
+  /** New inline Markdown for rewrite/insert_after; empty for remove. */
+  text: z.string().default(""),
+  /** One sentence tied to the job: why this edit helps. */
+  reason: z.string(),
+  /** Requirement ids from the job analysis this edit addresses. */
+  requirementIds: z.array(z.string()).default([]),
+});
+export type LineEdit = z.infer<typeof LineEditSchema>;
+
+export const TailorResponseSchema = z.object({
+  /** Two or three sentences for the user: the overall strategy. */
+  summary: z.string(),
+  edits: z.array(LineEditSchema),
+});
+export type TailorResponse = z.infer<typeof TailorResponseSchema>;
+
+const SYSTEM = `You are an expert resume writer tailoring a candidate's real resume to one job.
+You receive the resume as numbered lines, the job's requirements, and which of
+them the resume already shows. Answer with targeted line edits.
+
+Edit operations:
+- rewrite: replace line N with new text. Keep the line's role: a bullet stays a
+  bullet, a heading stays a heading.
+- insert_after: add a new line after line N, of the same kind as line N. Use it
+  for a new bullet or a new skills line, and only for content the resume
+  already supports somewhere else.
+- remove: delete line N. Use it rarely, only for content that is clearly
+  irrelevant to this job and costs space.
+Lines marked "locked" contain nested content: never rewrite or remove them
+(you may insert_after them).
+
+Hard rules, no exceptions:
+1. Never invent experience. Do not add employers, titles, dates, degrees,
+   certifications, tools, skills, projects, or achievements that the resume
+   does not already state or directly imply.
+2. Never invent or change numbers. Keep every existing metric exactly; never
+   add a metric that is not in the resume.
+3. Use the job's vocabulary only when the underlying claim is already true
+   ("JS" → "JavaScript" is fine; adding Kubernetes the resume never mentions is not).
+4. If a requirement is missing from the resume, do not fake it. Leave it for
+   the candidate.
+5. Leave the name, contact details, dates, employers, and section headings
+   unchanged unless a heading is non-standard ("My Journey" → "Experience").
+6. Inline formatting only: **bold**, _italic_, [text](url). No line breaks.
+
+Craft:
+- Lead bullets with a strong, specific verb. Cut filler ("responsible for",
+  "worked on", "team player").
+- Surface the experience this job cares about: make the connection explicit.
+- A sharp 15-word bullet beats a padded 30-word one.
+- Rewrite the summary/profile paragraph, if there is one, to speak to this role.
+- Prefer 6–20 meaningful edits. Skip cosmetic rewrites that add nothing.
+
+Each edit's reason is one plain sentence a candidate can check, tied to the
+job ("The posting asks for incident response; this bullet already shows it, now
+it says so"). Never mention scores or percentages.`;
+
+function kindLabel(u: Unit): string {
+  if (u.kind === "heading") return `heading ${u.level}`;
+  return isLocked(u) ? `${u.kind}, locked` : u.kind;
+}
+
+export function numberedResume(units: Unit[]): string {
+  return units.map((u, i) => `[${i + 1}] (${kindLabel(u)}) ${u.markdown}`).join("\n");
+}
+
+export async function tailorLines(
+  model: JsonModel,
+  input: { units: Unit[]; job: JobAnalysis; before: ScoreReport },
+): Promise<TailorResponse> {
+  const { units, job, before } = input;
+  const reqLines = before.requirements.map(
+    (r) => `- ${r.id} · ${r.label} · ${r.importance === "must" ? "must-have" : "nice-to-have"} · ${r.matched ? "shown in resume" : "NOT shown in resume"}`,
+  );
+  const prompt = [
+    `# Role\n${job.title}${job.company ? ` at ${job.company}` : ""}${job.seniority ? ` (${job.seniority})` : ""}\n${job.summary}`,
+    `# Requirements\n${reqLines.join("\n")}`,
+    job.keywords.length ? `# Keywords recruiters search for\n${job.keywords.map((k) => k.term).join(", ")}` : "",
+    `# Resume (numbered lines)\n${numberedResume(units)}`,
+    "Return the summary and the edits as JSON.",
+  ]
+    .filter(Boolean)
+    .join("\n\n");
+
+  return generateStructured(model, { system: SYSTEM, prompt, schema: TailorResponseSchema, temperature: 0.5 });
+}

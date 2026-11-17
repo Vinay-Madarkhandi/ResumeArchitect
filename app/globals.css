@@ -1,423 +1,501 @@
 @import "tailwindcss";
 
 /*
- * "Warm Editorial" design system — a from-scratch visual identity replacing
- * the earlier near-black/teal "Executive Precision" scheme after direct
- * feedback that it felt flat and generic. Drafted as a Claude Design canvas
- * (six real app screens + two alternate directions) before implementation —
- * see the design canvas for the source mockups.
- * Philosophy: an editorial, paper-and-ink warmth — fitting for a tool about
- * writing and documents, and deliberately distinct from generic dark-teal
- * SaaS. Warm ivory surfaces carry structure; a terracotta accent marks
- * interactive/CTA moments; a deep olive-green secondary accent marks
- * AI-related content (highlights, the "what changed" panel) so it reads as
- * its own category, not just "more orange."
- *
- * Every token below keeps its EXISTING NAME from the previous scheme (only
- * the values changed) — Tailwind utility classes like `bg-secondary` or
- * `text-on-surface-variant` throughout the app repaint automatically, with
- * no component file needing to reference a new class name.
+ * ResumeArchitect: the compositor's room.
+ * Dark (default): lead graphite ground, bone text, one brass accent.
+ * Light: the same press in daylight. Diff inks are vermilion (removed,
+ * struck) and verdigris (added, underlined); blue pencil marks a query the
+ * user must verify. Meaning is always carried by line form as well as hue.
+ * See .impeccable/surfaces/ for the direction contract and DESIGN.md.
  */
 
-:root {
-  /* Colors — oklch throughout: warm near-neutral surfaces/ink, terracotta
-   * secondary (interactive/CTA), olive tertiary (AI/informational). */
-  --color-surface: oklch(97% 0.012 75);
-  --color-surface-dim: oklch(90% 0.016 72);
-  --color-surface-bright: oklch(97% 0.012 75);
-  --color-surface-container-lowest: oklch(99% 0.006 75);
-  --color-surface-container-low: oklch(95% 0.012 75);
-  --color-surface-container: oklch(94% 0.014 75);
-  --color-surface-container-high: oklch(91% 0.016 73);
-  --color-surface-container-highest: oklch(88% 0.018 72);
-  --color-on-surface: oklch(22% 0.02 55);
-  --color-on-surface-variant: oklch(45% 0.02 55);
-  --color-inverse-surface: oklch(22% 0.02 55);
-  --color-inverse-on-surface: oklch(97% 0.012 75);
-  --color-outline: oklch(60% 0.02 65);
-  --color-outline-variant: oklch(88% 0.015 70);
-  --color-surface-tint: oklch(58% 0.15 45);
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
-  --color-primary: oklch(22% 0.02 55);
-  --color-on-primary: oklch(99% 0.006 75);
-  --color-primary-container: oklch(30% 0.025 55);
-  --color-on-primary-container: oklch(78% 0.02 60);
-  --color-inverse-primary: oklch(80% 0.02 60);
-  --color-primary-fixed: oklch(90% 0.02 60);
-  --color-primary-fixed-dim: oklch(75% 0.02 60);
-  --color-on-primary-fixed: oklch(22% 0.02 55);
-  --color-on-primary-fixed-variant: oklch(40% 0.02 55);
+:root,
+[data-theme="dark"] {
+  color-scheme: dark;
+  --ground: oklch(16.5% 0.006 75);
+  --sunken: oklch(14% 0.005 75);
+  --panel: oklch(19.5% 0.007 75);
+  --raised: oklch(23% 0.008 75);
+  --hover: oklch(26% 0.009 75);
+  --line: oklch(29% 0.008 75);
+  --line-strong: oklch(38% 0.009 75);
 
-  --color-secondary: oklch(58% 0.15 45);
-  --color-on-secondary: oklch(99% 0.006 75);
-  --color-secondary-container: oklch(93% 0.04 50);
-  --color-on-secondary-container: oklch(40% 0.13 45);
-  --color-secondary-fixed: oklch(90% 0.05 48);
-  --color-secondary-fixed-dim: oklch(80% 0.08 46);
-  --color-on-secondary-fixed: oklch(25% 0.05 45);
-  --color-on-secondary-fixed-variant: oklch(38% 0.12 42);
+  --ink: oklch(92% 0.012 85);
+  --ink-2: oklch(76% 0.012 80);
+  --ink-3: oklch(63% 0.01 80);
 
-  --color-tertiary: oklch(38% 0.06 155);
-  --color-on-tertiary: oklch(99% 0.006 75);
-  --color-tertiary-container: oklch(90% 0.05 150);
-  --color-on-tertiary-container: oklch(30% 0.05 150);
-  --color-tertiary-fixed: oklch(88% 0.05 150);
-  --color-tertiary-fixed-dim: oklch(70% 0.06 152);
-  --color-on-tertiary-fixed: oklch(22% 0.04 155);
-  --color-on-tertiary-fixed-variant: oklch(35% 0.05 155);
+  --brass: oklch(80% 0.095 82);
+  --brass-strong: oklch(86% 0.095 85);
+  --brass-soft: oklch(80% 0.095 82 / 0.13);
+  --on-brass: oklch(19% 0.02 75);
 
-  --color-error: oklch(55% 0.18 25);
-  --color-on-error: oklch(99% 0.006 75);
-  --color-error-container: oklch(92% 0.06 30);
-  --color-on-error-container: oklch(35% 0.15 25);
+  --add: oklch(80% 0.1 165);
+  --add-soft: oklch(80% 0.1 165 / 0.14);
+  --del: oklch(73% 0.13 32);
+  --del-soft: oklch(73% 0.13 32 / 0.13);
+  --query: oklch(77% 0.09 250);
+  --query-soft: oklch(77% 0.09 250 / 0.13);
+  --danger: oklch(70% 0.15 28);
 
-  --color-background: oklch(97% 0.012 75);
-  --color-on-background: oklch(22% 0.02 55);
-  --color-surface-variant: oklch(88% 0.018 72);
+  /* Proof paper: warm but dimmed a step so it never glares on a dark desk. */
+  --paper: oklch(94.5% 0.01 85);
+  --paper-ink: oklch(22% 0.01 70);
+  --paper-muted: oklch(44% 0.01 70);
+  --paper-rule: oklch(83% 0.012 80);
+  --paper-shadow: 0 1px 0 oklch(100% 0 0 / 0.04), 0 18px 48px -12px oklch(0% 0 0 / 0.55);
 
-  /* Shadow — warm-toned (vs. the old cool blue-black) to match the ivory
-   * surfaces they sit on. */
-  --shadow-crisp: 0px 4px 12px rgba(60, 40, 20, 0.1);
-  --shadow-soft: 0px 1px 2px rgba(60, 40, 20, 0.05), 0px 6px 20px rgba(60, 40, 20, 0.07);
-  --shadow-lifted: 0px 4px 8px rgba(60, 40, 20, 0.07), 0px 16px 40px rgba(60, 40, 20, 0.14);
+  --shadow-pop: 0 12px 32px -8px oklch(0% 0 0 / 0.6), 0 2px 6px oklch(0% 0 0 / 0.35);
+  --focus: oklch(86% 0.095 85);
+}
+
+[data-theme="light"] {
+  color-scheme: light;
+  --ground: oklch(96% 0.006 85);
+  --sunken: oklch(93.6% 0.008 85);
+  --panel: oklch(99.2% 0.003 85);
+  --raised: oklch(100% 0 0);
+  --hover: oklch(93.5% 0.008 85);
+  --line: oklch(89.5% 0.008 80);
+  --line-strong: oklch(80% 0.01 80);
+
+  --ink: oklch(21% 0.01 70);
+  --ink-2: oklch(40% 0.01 70);
+  --ink-3: oklch(51% 0.01 70);
+
+  --brass: oklch(52% 0.1 72);
+  --brass-strong: oklch(45% 0.1 70);
+  --brass-soft: oklch(62% 0.1 75 / 0.14);
+  --on-brass: oklch(98% 0.01 85);
+
+  --add: oklch(47% 0.1 165);
+  --add-soft: oklch(70% 0.11 165 / 0.18);
+  --del: oklch(51% 0.17 30);
+  --del-soft: oklch(70% 0.14 30 / 0.15);
+  --query: oklch(48% 0.13 255);
+  --query-soft: oklch(70% 0.1 250 / 0.16);
+  --danger: oklch(52% 0.18 28);
+
+  --paper: oklch(98.6% 0.008 85);
+  --paper-ink: oklch(20% 0.01 70);
+  --paper-muted: oklch(44% 0.01 70);
+  --paper-rule: oklch(86% 0.01 80);
+  --paper-shadow: 0 1px 2px oklch(30% 0.02 70 / 0.08), 0 14px 40px -14px oklch(30% 0.02 70 / 0.22);
+
+  --shadow-pop: 0 12px 32px -10px oklch(30% 0.02 70 / 0.25), 0 2px 6px oklch(30% 0.02 70 / 0.1);
+  --focus: oklch(52% 0.1 72);
 }
 
 @theme inline {
-  --color-surface: var(--color-surface);
-  --color-surface-dim: var(--color-surface-dim);
-  --color-surface-bright: var(--color-surface-bright);
-  --color-surface-container-lowest: var(--color-surface-container-lowest);
-  --color-surface-container-low: var(--color-surface-container-low);
-  --color-surface-container: var(--color-surface-container);
-  --color-surface-container-high: var(--color-surface-container-high);
-  --color-surface-container-highest: var(--color-surface-container-highest);
-  --color-on-surface: var(--color-on-surface);
-  --color-on-surface-variant: var(--color-on-surface-variant);
-  --color-inverse-surface: var(--color-inverse-surface);
-  --color-inverse-on-surface: var(--color-inverse-on-surface);
-  --color-outline: var(--color-outline);
-  --color-outline-variant: var(--color-outline-variant);
-  --color-surface-tint: var(--color-surface-tint);
+  --color-ground: var(--ground);
+  --color-sunken: var(--sunken);
+  --color-panel: var(--panel);
+  --color-raised: var(--raised);
+  --color-hover: var(--hover);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-brass: var(--brass);
+  --color-brass-strong: var(--brass-strong);
+  --color-brass-soft: var(--brass-soft);
+  --color-on-brass: var(--on-brass);
+  --color-add: var(--add);
+  --color-add-soft: var(--add-soft);
+  --color-del: var(--del);
+  --color-del-soft: var(--del-soft);
+  --color-query: var(--query);
+  --color-query-soft: var(--query-soft);
+  --color-danger: var(--danger);
+  --color-paper: var(--paper);
+  --color-paper-ink: var(--paper-ink);
+  --color-paper-muted: var(--paper-muted);
+  --color-paper-rule: var(--paper-rule);
 
-  --color-primary: var(--color-primary);
-  --color-on-primary: var(--color-on-primary);
-  --color-primary-container: var(--color-primary-container);
-  --color-on-primary-container: var(--color-on-primary-container);
-  --color-inverse-primary: var(--color-inverse-primary);
-  --color-primary-fixed: var(--color-primary-fixed);
-  --color-primary-fixed-dim: var(--color-primary-fixed-dim);
-  --color-on-primary-fixed: var(--color-on-primary-fixed);
-  --color-on-primary-fixed-variant: var(--color-on-primary-fixed-variant);
+  --font-sans: var(--font-schibsted), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+  --font-display: var(--font-bodoni), "Bodoni 72", Didot, serif;
+  --font-paper-serif: var(--font-source-serif), Georgia, serif;
+  --font-paper-sans: var(--font-hanken), ui-sans-serif, sans-serif;
 
-  --color-secondary: var(--color-secondary);
-  --color-on-secondary: var(--color-on-secondary);
-  --color-secondary-container: var(--color-secondary-container);
-  --color-on-secondary-container: var(--color-on-secondary-container);
-  --color-secondary-fixed: var(--color-secondary-fixed);
-  --color-secondary-fixed-dim: var(--color-secondary-fixed-dim);
-  --color-on-secondary-fixed: var(--color-on-secondary-fixed);
-  --color-on-secondary-fixed-variant: var(--color-on-secondary-fixed-variant);
+  /* Six-step UI scale; rank comes from weight before size. */
+  --text-label: 0.75rem;
+  --text-label--line-height: 1rem;
+  --text-small: 0.8125rem;
+  --text-small--line-height: 1.25rem;
+  --text-body: 0.875rem;
+  --text-body--line-height: 1.375rem;
+  --text-lead: 1rem;
+  --text-lead--line-height: 1.5rem;
+  --text-title: 1.25rem;
+  --text-title--line-height: 1.75rem;
+  --text-page: 1.75rem;
+  --text-page--line-height: 2.125rem;
 
-  --color-tertiary: var(--color-tertiary);
-  --color-on-tertiary: var(--color-on-tertiary);
-  --color-tertiary-container: var(--color-tertiary-container);
-  --color-on-tertiary-container: var(--color-on-tertiary-container);
-  --color-tertiary-fixed: var(--color-tertiary-fixed);
-  --color-tertiary-fixed-dim: var(--color-tertiary-fixed-dim);
-  --color-on-tertiary-fixed: var(--color-on-tertiary-fixed);
-  --color-on-tertiary-fixed-variant: var(--color-on-tertiary-fixed-variant);
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
 
-  --color-error: var(--color-error);
-  --color-on-error: var(--color-on-error);
-  --color-error-container: var(--color-error-container);
-  --color-on-error-container: var(--color-on-error-container);
+  --shadow-pop: var(--shadow-pop);
+  --shadow-paper: var(--paper-shadow);
 
-  --color-background: var(--color-background);
-  --color-on-background: var(--color-on-background);
-  --color-surface-variant: var(--color-surface-variant);
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+}
 
-  --shadow-crisp: var(--shadow-crisp);
-  --shadow-soft: var(--shadow-soft);
-  --shadow-lifted: var(--shadow-lifted);
-
-  /* Fonts — Archivo (UI) + Instrument Serif (display/headlines) + Space
-   * Mono (labels) is the app-chrome identity. --font-doc (Source Serif 4)
-   * is deliberately untouched: it's the resume DOCUMENT's typography, not
-   * app chrome — see lib/fonts.ts's doc comment for why it stays separate. */
-  --font-sans: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
-  --font-display: var(--font-instrument-serif), ui-serif, Georgia, serif;
-  --font-doc: var(--font-source-serif), ui-serif, Georgia, serif;
-  --font-mono: var(--font-space-mono), ui-monospace, "SFMono-Regular", monospace;
-
-  /* Named spacing rhythm (4px scale) — matches the mockups' semantic utilities.
-   * Gotcha: Tailwind v4 derives sizing utilities such as max-width, width,
-   * height and min-width from this same spacing namespace, so the "md" and
-   * "xl" sizing utilities now resolve to these small rhythm values instead
-   * of Tailwind's default content-width scale. For "reading width" content
-   * constraints use the 2xl-and-up sizing utilities (untouched, still map
-   * to Tailwind's container scale) or an arbitrary pixel/rem value — never
-   * the xs, sm, md, lg or xl sizing utilities for that purpose. */
-  --spacing-base: 4px;
-  --spacing-xs: 4px;
-  --spacing-sm: 8px;
-  --spacing-md: 16px;
-  --spacing-lg: 24px;
-  --spacing-xl: 40px;
-  --spacing-xxl: 80px;
-  --spacing-gutter: 24px;
-  --spacing-margin-mobile: 16px;
-  --spacing-margin-desktop: 48px;
-  --spacing-max-width-doc: 720px;
-
-  /* Radii */
-  --radius-sm: 0.125rem;
-  --radius: 0.25rem;
-  --radius-md: 0.375rem;
-  --radius-lg: 0.5rem;
-  --radius-xl: 0.75rem;
-  --radius-full: 9999px;
-
-  /* Typography scale */
-  --text-display-lg: 48px;
-  --text-display-lg--line-height: 1.1;
-  --text-display-lg--font-weight: 600;
-  --text-display-lg--letter-spacing: -0.02em;
-
-  --text-headline-lg: 32px;
-  --text-headline-lg--line-height: 1.2;
-  --text-headline-lg--font-weight: 600;
-  --text-headline-lg--letter-spacing: -0.01em;
-
-  --text-headline-lg-mobile: 24px;
-  --text-headline-lg-mobile--line-height: 1.2;
-  --text-headline-lg-mobile--font-weight: 600;
-
-  --text-headline-md: 20px;
-  --text-headline-md--line-height: 1.4;
-  --text-headline-md--font-weight: 500;
-
-  --text-body-lg: 16px;
-  --text-body-lg--line-height: 1.6;
-  --text-body-lg--font-weight: 400;
-
-  --text-body-doc: 18px;
-  --text-body-doc--line-height: 1.7;
-  --text-body-doc--font-weight: 400;
-
-  --text-label-sm: 12px;
-  --text-label-sm--line-height: 1.0;
-  --text-label-sm--font-weight: 500;
-  --text-label-sm--letter-spacing: 0.05em;
-
-  --text-button: 14px;
-  --text-button--line-height: 1.0;
-  --text-button--font-weight: 600;
+@layer base {
+html {
+  background: var(--ground);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
 body {
-  background: var(--color-background);
-  color: var(--color-on-surface);
+  font-family: var(--font-sans);
+  font-size: var(--text-body);
+  line-height: 1.375rem;
+  font-feature-settings: "ss01", "cv11";
 }
 
-/* Tailwind v4's preflight no longer sets `cursor: pointer` on <button> (it
- * matches the browser default of `cursor: default` instead) — this
- * restores the expected hand cursor on every interactive control, including
- * Radix's native <button>-based triggers (Tabs/Dialog/DropdownMenu). */
-button:not(:disabled),
-[role="button"]:not([aria-disabled="true"]) {
-  cursor: pointer;
+::selection {
+  background: var(--brass-soft);
+  color: var(--ink);
 }
 
-/* The live rich-text resume canvas (components/editor/DocumentCanvas.tsx).
- * Mirrors lib/pdf/tokens.ts's visual hierarchy at screen scale so what you
- * edit here looks like what gets exported, without needing a separate PDF
- * preview during editing. */
-.resume-doc-canvas {
-  outline: none;
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: 3px;
 }
 
-.resume-doc-canvas h1 {
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-strong) transparent;
+}
+
+input,
+textarea {
+  caret-color: var(--brass);
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+a {
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
+}
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Proof paper: the resume as it will print. Shared by the editor, the */
+/* review redline, and the compare view.                               */
+/* ------------------------------------------------------------------ */
+
+.paper {
+  background: var(--paper);
+  color: var(--paper-ink);
+  box-shadow: var(--paper-shadow);
+  border-radius: 2px;
+  --paper-body: var(--font-paper-serif);
+  --paper-head: var(--font-paper-sans);
+  --paper-accent: var(--paper-ink);
+  font-family: var(--paper-body);
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+
+.paper[data-template="modern"] {
+  --paper-body: var(--font-paper-sans);
+  --paper-accent: oklch(48% 0.1 72);
+  font-size: 13px;
+}
+
+.paper ::selection {
+  background: oklch(80% 0.1 82 / 0.45);
+  color: var(--paper-ink);
+}
+
+.paper-flow h1 {
+  font-family: var(--paper-head);
   font-size: 28px;
+  line-height: 1.15;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  margin: 0 0 6px;
+}
+
+.paper-flow h2 {
+  font-family: var(--paper-head);
+  font-size: 12.5px;
+  font-weight: 650;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  margin: 18px 0 7px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--paper-rule);
+  color: var(--paper-accent);
+}
+
+.paper[data-template="modern"] .paper-flow h2 {
+  border-bottom: 0;
+  padding-bottom: 0;
+  letter-spacing: 0.12em;
+  font-weight: 700;
+}
+
+.paper-flow h3 {
+  font-family: var(--paper-head);
+  font-size: 13.5px;
   font-weight: 600;
-  line-height: 1.2;
-  margin-bottom: var(--spacing-xs);
-  color: var(--color-primary);
+  margin: 9px 0 2px;
 }
 
-.resume-doc-canvas h2 {
-  font-size: 16px;
-  font-weight: 600;
-  line-height: 1.3;
-  margin-top: var(--spacing-lg);
-  margin-bottom: var(--spacing-sm);
-  padding-bottom: var(--spacing-xs);
-  border-bottom: 1px solid var(--color-outline-variant);
-  color: var(--color-primary);
+.paper-flow p {
+  margin: 0 0 5px;
 }
 
-.resume-doc-canvas h2:first-child {
-  margin-top: 0;
+.paper-flow ul,
+.paper-flow ol {
+  margin: 0 0 6px;
+  padding-left: 18px;
 }
 
-.resume-doc-canvas h3 {
-  font-size: 14px;
-  font-weight: 600;
-  line-height: 1.3;
-  margin-top: var(--spacing-md);
-  color: var(--color-on-surface);
-}
-
-.resume-doc-canvas p {
-  font-size: 14px;
-  line-height: 1.5;
-  color: var(--color-on-surface);
-  margin-bottom: var(--spacing-xs);
-}
-
-.resume-doc-canvas ul {
+.paper-flow ul {
   list-style: disc;
-  padding-left: var(--spacing-md);
-  margin-bottom: var(--spacing-sm);
 }
 
-.resume-doc-canvas li {
-  font-size: 14px;
-  line-height: 1.5;
-  margin-bottom: var(--spacing-xs);
+.paper-flow ol {
+  list-style: decimal;
 }
 
-.resume-doc-canvas a {
-  color: var(--color-secondary);
-  text-decoration: none;
+.paper-flow li {
+  margin: 0 0 2.5px;
+  padding-left: 2px;
 }
 
-.resume-doc-canvas a:hover {
+.paper-flow li::marker {
+  color: var(--paper-muted);
+}
+
+.paper-flow li > p {
+  margin: 0;
+}
+
+.paper-flow a {
+  color: inherit;
   text-decoration: underline;
+  text-decoration-color: var(--paper-rule);
 }
 
-.resume-doc-canvas p.is-editor-empty:first-child::before {
+.paper-flow strong {
+  font-weight: 650;
+}
+
+.paper .ProseMirror {
+  outline: none;
+  min-height: 100%;
+}
+
+.paper .ProseMirror p.is-editor-empty:first-child::before {
   content: attr(data-placeholder);
-  color: var(--color-on-surface-variant);
+  color: var(--paper-muted);
   float: left;
   height: 0;
   pointer-events: none;
 }
 
-/* Compact variant: the read-only comparison sidebar (OriginalComparisonPanel)
- * is ~280px wide, far narrower than the full document canvas. */
-.resume-doc-canvas--compact h1 {
-  font-size: 15px;
-}
-.resume-doc-canvas--compact h2 {
-  font-size: 11px;
-  margin-top: var(--spacing-sm);
-}
-.resume-doc-canvas--compact h3 {
-  font-size: 10.5px;
-  margin-top: var(--spacing-xs);
-}
-.resume-doc-canvas--compact p,
-.resume-doc-canvas--compact li {
-  font-size: 10.5px;
+/* Lines that differ from the original carry a brass margin rule while unreviewed. */
+.paper-flow [data-changed="true"] {
+  position: relative;
 }
 
-/* Decorative dot-grid background — cheap CSS, no image asset. Used behind
- * hero/section headers for visual texture without adding weight. Fades via
- * a radial mask so it recedes toward the edges instead of tiling flatly.
- *
- * Deliberately its own absolutely-positioned layer, never applied directly
- * to a container that also holds real content: `mask-image` clips the
- * *entire* element it's set on (not just its background-image), so putting
- * it on a content-bearing container silently fades out any children that
- * fall outside the mask's radius. */
-.bg-dot-grid {
+.paper-flow [data-changed="true"]::after {
+  content: "";
   position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background-image: radial-gradient(circle, var(--color-outline-variant) 1px, transparent 1px);
-  background-size: 22px 22px;
-  -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 0%, black 40%, transparent 100%);
-  mask-image: radial-gradient(ellipse 70% 60% at 50% 0%, black 40%, transparent 100%);
+  left: -22px;
+  top: 3px;
+  bottom: 3px;
+  width: 2px;
+  border-radius: 1px;
+  background: oklch(68% 0.12 78);
 }
 
-/* Resume canvas width slider (ResumeEditorClient) — minimal custom track/
- * thumb since range inputs render unstyled per-browser otherwise. */
-.doc-width-slider {
-  appearance: none;
-  height: 3px;
-  border-radius: 999px;
-  background: var(--color-outline-variant);
-  outline: none;
-}
-.doc-width-slider::-webkit-slider-thumb {
-  appearance: none;
-  width: 13px;
-  height: 13px;
-  border-radius: 999px;
-  background: var(--color-secondary);
-  cursor: pointer;
-  border: 2px solid var(--color-surface-container-lowest);
-  box-shadow: 0 0 0 1px var(--color-secondary);
-}
-.doc-width-slider::-moz-range-thumb {
-  width: 13px;
-  height: 13px;
-  border-radius: 999px;
-  background: var(--color-secondary);
-  cursor: pointer;
-  border: 2px solid var(--color-surface-container-lowest);
-  box-shadow: 0 0 0 1px var(--color-secondary);
-}
-
-/* AI-tailoring highlights — client-side-only decorations (never part of the
- * saved document, see lib/editor/aiHighlightExtension.ts), so they only
- * ever exist while editing and can never appear in an exported PDF. */
-.ai-highlight {
-  background-color: color-mix(in srgb, var(--color-tertiary) 22%, transparent);
+/* Redline marks: color AND line form, never color alone. */
+.mark-del {
+  color: var(--del);
+  text-decoration: line-through;
+  text-decoration-thickness: 1.5px;
+  background: var(--del-soft);
   border-radius: 2px;
 }
 
-.ai-highlight-flagged {
-  background-color: color-mix(in srgb, var(--color-error) 20%, transparent);
+.mark-add {
+  color: var(--add);
+  text-decoration: underline;
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 3px;
+  background: var(--add-soft);
+  border-radius: 2px;
 }
 
-/* Visual page-break marker (lib/editor/pageBreakExtension.ts) — an
- * approximation of where the exported PDF will actually break to a new
- * page, shown as a labeled divider between the two document blocks it
- * falls between. Never part of the saved document (a widget decoration,
- * same non-persisted mechanism as .ai-highlight) and never appears in the
- * export — there's nothing to strip, the PDF simply already has that page
- * break for real. */
+.paper .mark-del {
+  color: oklch(48% 0.17 30);
+  background: oklch(70% 0.14 30 / 0.14);
+}
+
+.paper .mark-add {
+  color: oklch(40% 0.1 165);
+  background: oklch(70% 0.11 165 / 0.2);
+}
+
+/* Ask-AI pending selection */
+.ai-pending {
+  background: oklch(80% 0.1 82 / 0.35);
+  border-radius: 2px;
+}
+
+/* Page-break marker (lib/editor/pageBreakExtension.ts) */
 .page-break-marker {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin: 20px calc(-1 * var(--spacing-margin-desktop));
-  padding: 0 var(--spacing-margin-desktop);
+  gap: 8px;
+  margin: 10px -46px;
   user-select: none;
+  pointer-events: none;
 }
+
 .page-break-marker::before,
 .page-break-marker::after {
   content: "";
   flex: 1;
-  height: 0;
-  border-top: 1px dashed var(--color-outline);
+  border-top: 1px dashed var(--paper-rule);
 }
+
 .page-break-marker-label {
   font-family: var(--font-mono);
   font-size: 10px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--color-on-surface-variant);
-  white-space: nowrap;
+  letter-spacing: 0.06em;
+  color: var(--paper-muted);
 }
 
-/* The range AskAiBubbleMenu has captured for editing — stays visible while
- * the instruction input is focused (a native <input> outside the editor,
- * so the browser's own text-selection paint disappears the moment it's
- * clicked, per lib/editor/aiHighlightExtension.ts's setPendingSelection). */
-.ai-pending-selection {
-  background-color: color-mix(in srgb, var(--color-secondary) 28%, transparent);
+/* Composing-stick progress: a slug slides into place. */
+@keyframes slug-in {
+  from {
+    transform: translateX(-12px);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+@keyframes shimmer {
+  from {
+    background-position: -200% 0;
+  }
+  to {
+    background-position: 200% 0;
+  }
+}
+
+.slug-in {
+  animation: slug-in 280ms var(--ease-out-expo) both;
+}
+
+.working-rule {
+  background: linear-gradient(90deg, transparent, var(--brass), transparent);
+  background-size: 200% 100%;
+  animation: shimmer 1.6s linear infinite;
+}
+
+.skeleton {
+  background: linear-gradient(90deg, var(--panel), var(--raised), var(--panel));
+  background-size: 200% 100%;
+  animation: shimmer 1.8s linear infinite;
+  border-radius: var(--radius-sm);
+}
+
+/* Redline page: lines rendered one by one, so bullets are drawn per line. */
+.paper-flow .rl-bullet {
+  position: relative;
+  padding-left: 20px;
+  margin: 0 0 2.5px;
+}
+
+.paper-flow .rl-bullet::before {
+  content: "•";
+  position: absolute;
+  left: 6px;
+  color: var(--paper-muted);
+}
+
+.paper-flow .rl-hunk {
+  position: relative;
+  border-radius: 3px;
+  margin-left: -8px;
+  margin-right: -8px;
+  padding-left: 8px;
+  padding-right: 8px;
+  cursor: pointer;
+  transition: background-color 150ms, opacity 200ms;
+}
+
+.paper-flow .rl-hunk::after {
+  content: "";
+  position: absolute;
+  left: -14px;
+  top: 4px;
+  bottom: 4px;
+  width: 2px;
+  border-radius: 1px;
+  background: oklch(68% 0.12 78);
+}
+
+.paper-flow .rl-hunk[data-reviewed="true"]::after {
+  background: var(--paper-rule);
+}
+
+.paper-flow .rl-hunk[data-focused="true"] {
+  background: oklch(80% 0.1 82 / 0.16);
+}
+
+.paper-flow[data-focusing="true"] .rl-hunk:not([data-focused="true"]),
+.paper-flow[data-focusing="true"] .rl-equal {
+  opacity: 0.45;
+}
+
+.mark-del + .mark-add {
+  margin-left: 2px;
+}
+
+.paper-flow li[data-changed="true"]::after {
+  left: -40px;
+}
+
+/* Compare: changed lines on the tailored page carry a wash plus the margin mark. */
+.paper-flow[data-compare="true"] [data-changed="true"] {
+  background: oklch(70% 0.11 165 / 0.12);
   border-radius: 2px;
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-secondary) 45%, transparent);
+}
+
+/* Redline inside rail cards: the strike carries the meaning, no muddy fill. */
+.slug-card .mark-del {
+  background: transparent;
+  text-decoration-color: currentColor;
 }

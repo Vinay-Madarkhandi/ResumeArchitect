@@ -7,7 +7,7 @@ import path from "node:path";
  * Static TTFs are committed under public/fonts/ (see that folder's origin
  * notes) and resolved differently per environment: the server build reads
  * them straight off disk, while the browser build (used for the live
- * preview via usePDF()) fetches them as ordinary same-origin URLs.
+ * preview would fetch them as ordinary same-origin URLs.
  */
 
 function fontPath(filename: string): string {

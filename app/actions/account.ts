@@ -3,31 +3,8 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
-import { ProfilePreferencesSchema } from "@/lib/schemas/profile";
 import { RESUME_EXPORTS_BUCKET, RESUME_UPLOADS_BUCKET } from "@/lib/storage/paths";
 import type { ActionResult } from "./onboarding";
-
-export async function updatePreferences(input: unknown): Promise<ActionResult> {
-  const parsed = ProfilePreferencesSchema.partial().safeParse(input);
-  if (!parsed.success) return { ok: false, error: "Invalid preferences." };
-
-  const supabase = createClient(await cookies());
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { ok: false, error: "Not signed in." };
-
-  const { data: profile } = await supabase.from("profiles").select("preferences").eq("id", user.id).single();
-  const existing =
-    profile?.preferences && typeof profile.preferences === "object" && !Array.isArray(profile.preferences)
-      ? profile.preferences
-      : {};
-  const merged = { ...existing, ...parsed.data };
-
-  const { error } = await supabase.from("profiles").update({ preferences: merged }).eq("id", user.id);
-  if (error) return { ok: false, error: error.message };
-  return { ok: true };
-}
 
 /**
  * Wipes every resume, job description, tailoring session, and profile field

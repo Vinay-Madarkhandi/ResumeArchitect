@@ -20,13 +20,9 @@ export async function POST(request: Request) {
 
   const result = await testGeminiApiKey(apiKey);
   if (!result.valid) {
-    // Record the failed attempt so the UI can show "invalid" rather than
-    // silently leaving a stale "valid" status from a previous key.
-    await supabase
-      .from("profiles")
-      .update({ gemini_key_status: "invalid", gemini_key_validated_at: new Date().toISOString() })
-      .eq("id", user.id);
-    return NextResponse.json({ error: result.message }, { status: 422 });
+    // A rejected replacement key is simply not saved: the key already on
+    // file (if any) keeps working, so its status is left alone.
+    return NextResponse.json({ error: result.message }, { status: result.rejected ? 422 : 503 });
   }
 
   // The key validated against Gemini above; everything past this point is

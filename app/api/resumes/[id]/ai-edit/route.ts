@@ -1,9 +1,8 @@
-import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
-import { createClient } from "@/utils/supabase/server";
-import { decryptApiKey } from "@/lib/crypto/keyCipher";
-import { pgByteaToBuffer } from "@/lib/crypto/bytea";
+import { requireOwnedResume } from "@/lib/server/ownedResume";
+import { AiError, geminiModel } from "@/lib/gemini/model";
 import { editSelection } from "@/lib/gemini/prompts/editSelection";
+import { loadGeminiKey } from "@/lib/server/geminiKey";
 import { MAX_SELECTION_LENGTH } from "@/lib/schemas/selectionEdit";
 
 export const runtime = "nodejs";
@@ -16,14 +15,9 @@ export const maxDuration = 30;
  * directly rather than being re-fetched here. */
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const supabase = createClient(await cookies());
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
-
-  const { data: resume } = await supabase.from("resumes").select("id").eq("id", id).eq("user_id", user.id).single();
-  if (!resume) return NextResponse.json({ error: "Resume not found." }, { status: 404 });
+  const owned = await requireOwnedResume(id);
+  if (!owned.ok) return owned.response;
+  const { supabase, user } = owned;
 
   const body = await request.json().catch(() => null);
   const selectedText = typeof body?.selectedText === "string" ? body.selectedText : "";
@@ -41,27 +35,14 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: "Tell it what to change." }, { status: 400 });
   }
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("gemini_key_ciphertext, gemini_key_status")
-    .eq("id", user.id)
-    .single();
+  const key = await loadGeminiKey(supabase, user.id);
+  if (!key.ok) return NextResponse.json({ error: key.message }, { status: 400 });
 
-  if (!profile?.gemini_key_ciphertext || profile.gemini_key_status === "not_configured") {
-    return NextResponse.json({ error: "Connect your Gemini API key in Settings first." }, { status: 400 });
-  }
-
-  let apiKey: string;
   try {
-    apiKey = decryptApiKey(pgByteaToBuffer(profile.gemini_key_ciphertext));
-  } catch {
-    return NextResponse.json({ error: "Your saved key couldn't be read. Please re-enter it in Settings." }, { status: 400 });
+    const result = await editSelection(geminiModel(key.apiKey), { contextBefore, selectedText, contextAfter, instruction });
+    return NextResponse.json(result);
+  } catch (error) {
+    const message = error instanceof AiError ? error.message : "Something went wrong. Try again.";
+    return NextResponse.json({ error: message }, { status: 422 });
   }
-
-  const result = await editSelection(apiKey, contextBefore, selectedText, contextAfter, instruction);
-  if (!result.ok) {
-    return NextResponse.json({ error: result.message }, { status: 422 });
-  }
-
-  return NextResponse.json(result.result);
 }

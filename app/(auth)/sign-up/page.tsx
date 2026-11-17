@@ -3,139 +3,83 @@
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { MailCheck } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 import { Button } from "@/components/ui/Button";
-import { Input, Label, FieldError, FieldHint } from "@/components/ui/Input";
-import { Icon } from "@/components/icon/Icon";
+import { Field, Input } from "@/components/ui/Field";
+import { AuthHeading, FormError } from "@/components/auth/AuthHeading";
 
 export default function SignUpPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [needsEmailConfirmation, setNeedsEmailConfirmation] = useState(false);
+  const [pending, setPending] = useState(false);
+  const [checkEmail, setCheckEmail] = useState(false);
 
-  async function handleSubmit(e: FormEvent) {
+  async function onSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
+    if (password.length < 8) return setError("Use at least 8 characters for your password.");
 
-    if (password.length < 8) {
-      setError("Password must be at least 8 characters.");
-      return;
-    }
-    if (password !== confirmPassword) {
-      setError("Passwords don't match.");
-      return;
-    }
-
-    setIsSubmitting(true);
-    const supabase = createClient();
-    const { data, error: signUpError } = await supabase.auth.signUp({
+    setPending(true);
+    const { data, error: signUpError } = await createClient().auth.signUp({
       email,
       password,
       options: { emailRedirectTo: `${window.location.origin}/auth-confirm` },
     });
-    setIsSubmitting(false);
+    setPending(false);
 
-    if (signUpError) {
-      setError(signUpError.message);
-      return;
-    }
-
+    if (signUpError) return setError(signUpError.message);
     if (data.session) {
       router.push("/onboarding");
       router.refresh();
       return;
     }
-
-    // Supabase never errors on signUp for an email that's already registered
-    // — to avoid leaking which emails exist, it silently returns a
-    // fake-looking user (no session, no email sent) instead. The one
-    // reliable signal is `identities`: empty for an existing account,
-    // populated for a genuinely new one. See
-    // https://supabase.com/docs/reference/javascript/auth-signup
-    if (data.user && data.user.identities && data.user.identities.length === 0) {
-      setError("An account with this email already exists. Try signing in instead.");
-      return;
-    }
-
-    setNeedsEmailConfirmation(true);
+    // Supabase returns a user with no identities for an existing email instead of an error.
+    if (data.user?.identities?.length === 0) return setError("An account with this email already exists. Sign in instead.");
+    setCheckEmail(true);
   }
 
-  if (needsEmailConfirmation) {
+  if (checkEmail) {
     return (
-      <div className="text-center">
-        <Icon name="email" size={32} className="mx-auto mb-md text-secondary" />
-        <h1 className="mb-1 font-display text-headline-lg text-primary">Check your email</h1>
-        <p className="font-sans text-body-lg text-on-surface-variant">
-          We sent a confirmation link to <span className="font-medium text-on-surface">{email}</span>. Follow it
-          to activate your account, then sign in.
-        </p>
-        <Link href="/sign-in" className="mt-lg inline-block font-sans text-body-lg text-secondary hover:underline">
+      <>
+        <MailCheck className="mb-5 size-7 text-brass" aria-hidden />
+        <AuthHeading title="Check your email">
+          We sent a confirmation link to <span className="text-ink">{email}</span>. Open it to activate your account.
+        </AuthHeading>
+        <Link href="/sign-in" className="text-small text-brass hover:underline">
           Back to sign in
         </Link>
-      </div>
+      </>
     );
   }
 
   return (
-    <div>
-      <h1 className="mb-1 font-display text-headline-lg text-primary">Create your account</h1>
-      <p className="mb-lg font-sans text-body-lg text-on-surface-variant">
-        You already have the experience. Let&rsquo;s set up your workspace.
-      </p>
-
-      <form onSubmit={handleSubmit} className="space-y-md" noValidate>
-        <div>
-          <Label htmlFor="email">Email</Label>
-          <Input
-            id="email"
-            type="email"
-            autoComplete="email"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-        </div>
-        <div>
-          <Label htmlFor="password">Password</Label>
-          <Input
-            id="password"
-            type="password"
-            autoComplete="new-password"
-            required
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-          <FieldHint>At least 8 characters.</FieldHint>
-        </div>
-        <div>
-          <Label htmlFor="confirm-password">Confirm password</Label>
-          <Input
-            id="confirm-password"
-            type="password"
-            autoComplete="new-password"
-            required
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-          />
-        </div>
-
-        <FieldError>{error ?? undefined}</FieldError>
-
-        <Button type="submit" variant="primary" className="w-full" disabled={isSubmitting}>
-          {isSubmitting ? "Creating account…" : "Create account"}
+    <>
+      <AuthHeading title="Create your account">
+        You&rsquo;ll connect your own Gemini key next. Your resumes stay private to you.
+      </AuthHeading>
+      <form onSubmit={onSubmit} className="flex flex-col gap-4" noValidate>
+        <Field label="Email">
+          {(p) => <Input {...p} type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} />}
+        </Field>
+        <Field label="Password" hint="At least 8 characters.">
+          {(p) => (
+            <Input {...p} type="password" autoComplete="new-password" required value={password} onChange={(e) => setPassword(e.target.value)} />
+          )}
+        </Field>
+        <FormError>{error}</FormError>
+        <Button type="submit" variant="primary" size="lg" loading={pending} className="mt-1 w-full">
+          Create account
         </Button>
       </form>
-
-      <p className="mt-lg text-center font-sans text-body-lg text-on-surface-variant">
+      <p className="mt-6 text-small text-ink-2">
         Already have an account?{" "}
-        <Link href="/sign-in" className="text-secondary hover:underline">
+        <Link href="/sign-in" className="text-brass hover:underline">
           Sign in
         </Link>
       </p>
-    </div>
+    </>
   );
 }

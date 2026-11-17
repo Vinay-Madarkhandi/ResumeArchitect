@@ -1,0 +1,756 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-17T17:24:59+00:00",
+  "title": "Design System: ResumeArchitect",
+  "extensions": {
+    "colorMeta": {
+      "brass": {
+        "role": "primary",
+        "displayName": "Brass Line",
+        "canonical": "oklch(80% 0.095 82)",
+        "light": "oklch(52% 0.1 72)",
+        "tonalRamp": [
+          "oklch(15% 0.033 82)",
+          "oklch(25% 0.066 82)",
+          "oklch(35% 0.095 82)",
+          "oklch(48% 0.095 82)",
+          "oklch(60% 0.095 82)",
+          "oklch(72% 0.095 82)",
+          "oklch(84% 0.066 82)",
+          "oklch(95% 0.033 82)"
+        ]
+      },
+      "brass-strong": {
+        "role": "primary",
+        "displayName": "Bright Brass",
+        "canonical": "oklch(86% 0.095 85)",
+        "light": "oklch(45% 0.1 70)",
+        "tonalRamp": [
+          "oklch(15% 0.033 85)",
+          "oklch(25% 0.066 85)",
+          "oklch(35% 0.095 85)",
+          "oklch(48% 0.095 85)",
+          "oklch(60% 0.095 85)",
+          "oklch(72% 0.095 85)",
+          "oklch(84% 0.066 85)",
+          "oklch(95% 0.033 85)"
+        ]
+      },
+      "brass-soft": {
+        "role": "primary",
+        "displayName": "Brass Wash",
+        "canonical": "oklch(80% 0.095 82 / 0.13)",
+        "light": "oklch(62% 0.1 75 / 0.14)",
+        "tonalRamp": [
+          "oklch(15% 0.033 82)",
+          "oklch(25% 0.066 82)",
+          "oklch(35% 0.095 82)",
+          "oklch(48% 0.095 82)",
+          "oklch(60% 0.095 82)",
+          "oklch(72% 0.095 82)",
+          "oklch(84% 0.066 82)",
+          "oklch(95% 0.033 82)"
+        ]
+      },
+      "on-brass": {
+        "role": "primary",
+        "displayName": "Press Black",
+        "canonical": "oklch(19% 0.02 75)",
+        "light": "oklch(98% 0.01 85)",
+        "tonalRamp": [
+          "oklch(15% 0.007 75)",
+          "oklch(25% 0.014 75)",
+          "oklch(35% 0.02 75)",
+          "oklch(48% 0.02 75)",
+          "oklch(60% 0.02 75)",
+          "oklch(72% 0.02 75)",
+          "oklch(84% 0.014 75)",
+          "oklch(95% 0.007 75)"
+        ]
+      },
+      "add": {
+        "role": "secondary",
+        "displayName": "Verdigris",
+        "canonical": "oklch(80% 0.1 165)",
+        "light": "oklch(47% 0.1 165)",
+        "tonalRamp": [
+          "oklch(15% 0.035 165)",
+          "oklch(25% 0.07 165)",
+          "oklch(35% 0.1 165)",
+          "oklch(48% 0.1 165)",
+          "oklch(60% 0.1 165)",
+          "oklch(72% 0.1 165)",
+          "oklch(84% 0.07 165)",
+          "oklch(95% 0.035 165)"
+        ]
+      },
+      "add-soft": {
+        "role": "secondary",
+        "displayName": "Verdigris Wash",
+        "canonical": "oklch(80% 0.1 165 / 0.14)",
+        "light": "oklch(70% 0.11 165 / 0.18)",
+        "tonalRamp": [
+          "oklch(15% 0.035 165)",
+          "oklch(25% 0.07 165)",
+          "oklch(35% 0.1 165)",
+          "oklch(48% 0.1 165)",
+          "oklch(60% 0.1 165)",
+          "oklch(72% 0.1 165)",
+          "oklch(84% 0.07 165)",
+          "oklch(95% 0.035 165)"
+        ]
+      },
+      "del": {
+        "role": "secondary",
+        "displayName": "Vermilion",
+        "canonical": "oklch(73% 0.13 32)",
+        "light": "oklch(51% 0.17 30)",
+        "tonalRamp": [
+          "oklch(15% 0.052 31)",
+          "oklch(25% 0.105 31)",
+          "oklch(35% 0.15 31)",
+          "oklch(48% 0.15 31)",
+          "oklch(60% 0.15 31)",
+          "oklch(72% 0.15 31)",
+          "oklch(84% 0.105 31)",
+          "oklch(95% 0.052 31)"
+        ]
+      },
+      "del-soft": {
+        "role": "secondary",
+        "displayName": "Vermilion Wash",
+        "canonical": "oklch(73% 0.13 32 / 0.13)",
+        "light": "oklch(70% 0.14 30 / 0.15)",
+        "tonalRamp": [
+          "oklch(15% 0.049 31)",
+          "oklch(25% 0.098 31)",
+          "oklch(35% 0.14 31)",
+          "oklch(48% 0.14 31)",
+          "oklch(60% 0.14 31)",
+          "oklch(72% 0.14 31)",
+          "oklch(84% 0.098 31)",
+          "oklch(95% 0.049 31)"
+        ]
+      },
+      "query": {
+        "role": "secondary",
+        "displayName": "Blue Pencil",
+        "canonical": "oklch(77% 0.09 250)",
+        "light": "oklch(48% 0.13 255)",
+        "tonalRamp": [
+          "oklch(15% 0.038 252)",
+          "oklch(25% 0.077 252)",
+          "oklch(35% 0.11 252)",
+          "oklch(48% 0.11 252)",
+          "oklch(60% 0.11 252)",
+          "oklch(72% 0.11 252)",
+          "oklch(84% 0.077 252)",
+          "oklch(95% 0.038 252)"
+        ]
+      },
+      "query-soft": {
+        "role": "secondary",
+        "displayName": "Blue Pencil Wash",
+        "canonical": "oklch(77% 0.09 250 / 0.13)",
+        "light": "oklch(70% 0.1 250 / 0.16)",
+        "tonalRamp": [
+          "oklch(15% 0.035 250)",
+          "oklch(25% 0.07 250)",
+          "oklch(35% 0.1 250)",
+          "oklch(48% 0.1 250)",
+          "oklch(60% 0.1 250)",
+          "oklch(72% 0.1 250)",
+          "oklch(84% 0.07 250)",
+          "oklch(95% 0.035 250)"
+        ]
+      },
+      "danger": {
+        "role": "secondary",
+        "displayName": "Error Red",
+        "canonical": "oklch(70% 0.15 28)",
+        "light": "oklch(52% 0.18 28)",
+        "tonalRamp": [
+          "oklch(15% 0.059 28)",
+          "oklch(25% 0.119 28)",
+          "oklch(35% 0.17 28)",
+          "oklch(48% 0.17 28)",
+          "oklch(60% 0.17 28)",
+          "oklch(72% 0.17 28)",
+          "oklch(84% 0.119 28)",
+          "oklch(95% 0.059 28)"
+        ]
+      },
+      "ground": {
+        "role": "neutral",
+        "displayName": "Lead Graphite",
+        "canonical": "oklch(16.5% 0.006 75)",
+        "light": "oklch(96% 0.006 85)",
+        "tonalRamp": [
+          "oklch(14% 0.005 75)",
+          "oklch(16.5% 0.006 75)",
+          "oklch(19.5% 0.007 75)",
+          "oklch(23% 0.008 75)",
+          "oklch(26% 0.009 75)",
+          "oklch(29% 0.008 75)",
+          "oklch(38% 0.009 75)",
+          "oklch(63% 0.01 80)"
+        ]
+      },
+      "sunken": {
+        "role": "neutral",
+        "displayName": "Well",
+        "canonical": "oklch(14% 0.005 75)",
+        "light": "oklch(93.6% 0.008 85)",
+        "tonalRamp": [
+          "oklch(14% 0.005 75)",
+          "oklch(16.5% 0.006 75)",
+          "oklch(19.5% 0.007 75)",
+          "oklch(23% 0.008 75)",
+          "oklch(26% 0.009 75)",
+          "oklch(29% 0.008 75)",
+          "oklch(38% 0.009 75)",
+          "oklch(63% 0.01 80)"
+        ]
+      },
+      "panel": {
+        "role": "neutral",
+        "displayName": "Graphite Panel",
+        "canonical": "oklch(19.5% 0.007 75)",
+        "light": "oklch(99.2% 0.003 85)",
+        "tonalRamp": [
+          "oklch(14% 0.005 75)",
+          "oklch(16.5% 0.006 75)",
+          "oklch(19.5% 0.007 75)",
+          "oklch(23% 0.008 75)",
+          "oklch(26% 0.009 75)",
+          "oklch(29% 0.008 75)",
+          "oklch(38% 0.009 75)",
+          "oklch(63% 0.01 80)"
+        ]
+      },
+      "raised": {
+        "role": "neutral",
+        "displayName": "Raised Graphite",
+        "canonical": "oklch(23% 0.008 75)",
+        "light": "oklch(100% 0 0)",
+        "tonalRamp": [
+          "oklch(14% 0.005 75)",
+          "oklch(16.5% 0.006 75)",
+          "oklch(19.5% 0.007 75)",
+          "oklch(23% 0.008 75)",
+          "oklch(26% 0.009 75)",
+          "oklch(29% 0.008 75)",
+          "oklch(38% 0.009 75)",
+          "oklch(63% 0.01 80)"
+        ]
+      },
+      "hover": {
+        "role": "neutral",
+        "displayName": "Hover Graphite",
+        "canonical": "oklch(26% 0.009 75)",
+        "light": "oklch(93.5% 0.008 85)",
+        "tonalRamp": [
+          "oklch(14% 0.005 75)",
+          "oklch(16.5% 0.006 75)",
+          "oklch(19.5% 0.007 75)",
+          "oklch(23% 0.008 75)",
+          "oklch(26% 0.009 75)",
+          "oklch(29% 0.008 75)",
+          "oklch(38% 0.009 75)",
+          "oklch(63% 0.01 80)"
+        ]
+      },
+      "line": {
+        "role": "neutral",
+        "displayName": "Hairline",
+        "canonical": "oklch(29% 0.008 75)",
+        "light": "oklch(89.5% 0.008 80)",
+        "tonalRamp": [
+          "oklch(14% 0.005 75)",
+          "oklch(16.5% 0.006 75)",
+          "oklch(19.5% 0.007 75)",
+          "oklch(23% 0.008 75)",
+          "oklch(26% 0.009 75)",
+          "oklch(29% 0.008 75)",
+          "oklch(38% 0.009 75)",
+          "oklch(63% 0.01 80)"
+        ]
+      },
+      "line-strong": {
+        "role": "neutral",
+        "displayName": "Strong Hairline",
+        "canonical": "oklch(38% 0.009 75)",
+        "light": "oklch(80% 0.01 80)",
+        "tonalRamp": [
+          "oklch(14% 0.005 75)",
+          "oklch(16.5% 0.006 75)",
+          "oklch(19.5% 0.007 75)",
+          "oklch(23% 0.008 75)",
+          "oklch(26% 0.009 75)",
+          "oklch(29% 0.008 75)",
+          "oklch(38% 0.009 75)",
+          "oklch(63% 0.01 80)"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Bone",
+        "canonical": "oklch(92% 0.012 85)",
+        "light": "oklch(21% 0.01 70)",
+        "tonalRamp": [
+          "oklch(21% 0.01 70)",
+          "oklch(40% 0.01 70)",
+          "oklch(51% 0.01 70)",
+          "oklch(63% 0.01 80)",
+          "oklch(76% 0.012 80)",
+          "oklch(83% 0.012 80)",
+          "oklch(92% 0.012 85)",
+          "oklch(98.6% 0.008 85)"
+        ]
+      },
+      "ink-2": {
+        "role": "neutral",
+        "displayName": "Bone 2",
+        "canonical": "oklch(76% 0.012 80)",
+        "light": "oklch(40% 0.01 70)",
+        "tonalRamp": [
+          "oklch(21% 0.01 70)",
+          "oklch(40% 0.01 70)",
+          "oklch(51% 0.01 70)",
+          "oklch(63% 0.01 80)",
+          "oklch(76% 0.012 80)",
+          "oklch(83% 0.012 80)",
+          "oklch(92% 0.012 85)",
+          "oklch(98.6% 0.008 85)"
+        ]
+      },
+      "ink-3": {
+        "role": "neutral",
+        "displayName": "Bone 3",
+        "canonical": "oklch(63% 0.01 80)",
+        "light": "oklch(51% 0.01 70)",
+        "tonalRamp": [
+          "oklch(21% 0.01 70)",
+          "oklch(40% 0.01 70)",
+          "oklch(51% 0.01 70)",
+          "oklch(63% 0.01 80)",
+          "oklch(76% 0.012 80)",
+          "oklch(83% 0.012 80)",
+          "oklch(92% 0.012 85)",
+          "oklch(98.6% 0.008 85)"
+        ]
+      },
+      "focus": {
+        "role": "primary",
+        "displayName": "Focus Brass",
+        "canonical": "oklch(86% 0.095 85)",
+        "light": "oklch(52% 0.1 72)",
+        "tonalRamp": [
+          "oklch(15% 0.033 85)",
+          "oklch(25% 0.066 85)",
+          "oklch(35% 0.095 85)",
+          "oklch(48% 0.095 85)",
+          "oklch(60% 0.095 85)",
+          "oklch(72% 0.095 85)",
+          "oklch(84% 0.066 85)",
+          "oklch(95% 0.033 85)"
+        ]
+      },
+      "paper": {
+        "role": "neutral",
+        "displayName": "Proof Paper",
+        "canonical": "oklch(94.5% 0.01 85)",
+        "light": "oklch(98.6% 0.008 85)",
+        "tonalRamp": [
+          "oklch(21% 0.01 70)",
+          "oklch(40% 0.01 70)",
+          "oklch(51% 0.01 70)",
+          "oklch(63% 0.01 80)",
+          "oklch(76% 0.012 80)",
+          "oklch(83% 0.012 80)",
+          "oklch(92% 0.012 85)",
+          "oklch(98.6% 0.008 85)"
+        ]
+      },
+      "paper-ink": {
+        "role": "neutral",
+        "displayName": "Paper Ink",
+        "canonical": "oklch(22% 0.01 70)",
+        "light": "oklch(20% 0.01 70)",
+        "tonalRamp": [
+          "oklch(21% 0.01 70)",
+          "oklch(40% 0.01 70)",
+          "oklch(51% 0.01 70)",
+          "oklch(63% 0.01 80)",
+          "oklch(76% 0.012 80)",
+          "oklch(83% 0.012 80)",
+          "oklch(92% 0.012 85)",
+          "oklch(98.6% 0.008 85)"
+        ]
+      },
+      "paper-muted": {
+        "role": "neutral",
+        "displayName": "Paper Muted",
+        "canonical": "oklch(44% 0.01 70)",
+        "light": "oklch(44% 0.01 70)",
+        "tonalRamp": [
+          "oklch(21% 0.01 70)",
+          "oklch(40% 0.01 70)",
+          "oklch(51% 0.01 70)",
+          "oklch(63% 0.01 80)",
+          "oklch(76% 0.012 80)",
+          "oklch(83% 0.012 80)",
+          "oklch(92% 0.012 85)",
+          "oklch(98.6% 0.008 85)"
+        ]
+      },
+      "paper-rule": {
+        "role": "neutral",
+        "displayName": "Paper Rule",
+        "canonical": "oklch(83% 0.012 80)",
+        "light": "oklch(86% 0.01 80)",
+        "tonalRamp": [
+          "oklch(21% 0.01 70)",
+          "oklch(40% 0.01 70)",
+          "oklch(51% 0.01 70)",
+          "oklch(63% 0.01 80)",
+          "oklch(76% 0.012 80)",
+          "oklch(83% 0.012 80)",
+          "oklch(92% 0.012 85)",
+          "oklch(98.6% 0.008 85)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display (Bodoni Moda)",
+        "purpose": "Marketing hero and marketing section heads only; second hero line italic in brass."
+      },
+      "page": {
+        "displayName": "Page",
+        "purpose": "Page and auth titles."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Dialog titles and section heads."
+      },
+      "lead": {
+        "displayName": "Lead",
+        "purpose": "Intros, marketing feature heads, large buttons."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Default UI text; workspace title at 600."
+      },
+      "small": {
+        "displayName": "Small",
+        "purpose": "Rail copy, change reasons, field labels, small buttons."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Change-kind labels, badges, hints, evidence. Sentence case."
+      },
+      "figure": {
+        "displayName": "Figure (Geist Mono)",
+        "purpose": "Scores, counts, page length, key caps. Tabular. Never prose."
+      },
+      "paper-body": {
+        "displayName": "Paper body (Source Serif 4)",
+        "purpose": "Classic template body on the proof page and in exports."
+      },
+      "paper-section": {
+        "displayName": "Paper section head (Hanken Grotesk)",
+        "purpose": "Uppercase tracked section heads on the resume only."
+      }
+    },
+    "themes": {
+      "default": "dark",
+      "selector": "[data-theme=\"light\"] on <html>",
+      "storageKey": "ra-theme",
+      "note": "Frontmatter colors are the dark theme; colorMeta.<token>.light holds the daylight value of the same role."
+    },
+    "paperInks": [
+      {
+        "name": "paper-del",
+        "value": "oklch(48% 0.17 30) on oklch(70% 0.14 30 / 0.14)",
+        "purpose": "Struck removal on the proof sheet, both themes."
+      },
+      {
+        "name": "paper-add",
+        "value": "oklch(40% 0.1 165) on oklch(70% 0.11 165 / 0.2)",
+        "purpose": "Underlined insertion on the proof sheet, both themes."
+      },
+      {
+        "name": "margin-mark",
+        "value": "oklch(68% 0.12 78)",
+        "purpose": "2px brass margin rule on unreviewed changed lines; turns paper-rule once kept."
+      },
+      {
+        "name": "focus-wash",
+        "value": "oklch(80% 0.1 82 / 0.16)",
+        "purpose": "Focused hunk background; other lines dim to 0.45."
+      },
+      {
+        "name": "compare-wash",
+        "value": "oklch(70% 0.11 165 / 0.12)",
+        "purpose": "Changed lines on the tailored page in Compare."
+      },
+      {
+        "name": "modern-accent",
+        "value": "oklch(48% 0.1 72) / #8a6420",
+        "purpose": "Modern template section heads (screen / export)."
+      }
+    ],
+    "shadows": [
+      {
+        "name": "paper",
+        "value": "0 1px 0 oklch(100% 0 0 / 0.04), 0 18px 48px -12px oklch(0% 0 0 / 0.55)",
+        "light": "0 1px 2px oklch(30% 0.02 70 / 0.08), 0 14px 40px -14px oklch(30% 0.02 70 / 0.22)",
+        "purpose": "The proof sheet only."
+      },
+      {
+        "name": "pop",
+        "value": "0 12px 32px -8px oklch(0% 0 0 / 0.6), 0 2px 6px oklch(0% 0 0 / 0.35)",
+        "light": "0 12px 32px -10px oklch(30% 0.02 70 / 0.25), 0 2px 6px oklch(30% 0.02 70 / 0.1)",
+        "purpose": "Menus, toasts, dialogs, Ask-AI popover."
+      },
+      {
+        "name": "seat",
+        "value": "0 1px 2px oklch(0% 0 0 / 0.25)",
+        "purpose": "Active tab trigger."
+      },
+      {
+        "name": "scrim",
+        "value": "oklch(8% 0.005 75 / 0.6) + backdrop-filter: blur(2px)",
+        "purpose": "Dialog overlay."
+      }
+    ],
+    "focus": {
+      "value": "outline: 2px solid var(--focus); outline-offset: 2px",
+      "inputs": "border brass + 2px brass-soft ring, no outline"
+    },
+    "motion": [
+      {
+        "name": "ease-out-expo",
+        "value": "cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "Entrances and score-bar fills."
+      },
+      {
+        "name": "slug-in",
+        "value": "280ms ease-out-expo; translateX(-12px) + fade",
+        "purpose": "Toasts, stage result notes, expanded change detail."
+      },
+      {
+        "name": "state",
+        "value": "150ms",
+        "purpose": "Color, border, background transitions on controls."
+      },
+      {
+        "name": "card",
+        "value": "200ms",
+        "purpose": "Change-card border and opacity; hunk dimming."
+      },
+      {
+        "name": "score-bar",
+        "value": "300ms ease-out-expo (width)",
+        "purpose": "Breakdown bars reranking in place."
+      },
+      {
+        "name": "working-rule",
+        "value": "shimmer 1.6s linear infinite",
+        "purpose": "Running pipeline stage."
+      },
+      {
+        "name": "skeleton",
+        "value": "shimmer 1.8s linear infinite",
+        "purpose": "Loading placeholders."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "all animation/transition durations 0.01ms",
+        "purpose": "prefers-reduced-motion: reduce."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "wordmark",
+        "value": "420px"
+      },
+      {
+        "name": "sm",
+        "value": "640px"
+      },
+      {
+        "name": "md",
+        "value": "768px"
+      },
+      {
+        "name": "lg",
+        "value": "1024px",
+        "note": "Workspace becomes page + 23rem rail."
+      },
+      {
+        "name": "xl",
+        "value": "1280px",
+        "note": "Compare shows pages side by side."
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Brass action; one per region (Download, Keep, New application).",
+      "html": "<button class=\"ds-btn-primary\">Download</button>",
+      "css": ".ds-btn-primary{display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 16px;border:0;border-radius:6px;background:var(--brass,oklch(80% 0.095 82));color:var(--on-brass,oklch(19% 0.02 75));font:500 0.875rem/1.375rem 'Schibsted Grotesk',system-ui,sans-serif;transition:background-color 150ms}.ds-btn-primary:hover{background:var(--brass-strong,oklch(86% 0.095 85))}.ds-btn-primary:active{filter:brightness(.95)}.ds-btn-primary:focus-visible{outline:2px solid var(--focus,oklch(86% 0.095 85));outline-offset:2px}"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Default button: panel fill, strong hairline.",
+      "html": "<button class=\"ds-btn-secondary\">Revert to original</button>",
+      "css": ".ds-btn-secondary{display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 16px;border:1px solid var(--line-strong,oklch(38% 0.009 75));border-radius:6px;background:var(--panel,oklch(19.5% 0.007 75));color:var(--ink,oklch(92% 0.012 85));font:500 0.875rem/1.375rem 'Schibsted Grotesk',system-ui,sans-serif;transition:background-color 150ms,border-color 150ms}.ds-btn-secondary:hover{border-color:var(--ink-3,oklch(63% 0.01 80));background:var(--hover,oklch(26% 0.009 75))}.ds-btn-secondary:focus-visible{outline:2px solid var(--focus,oklch(86% 0.095 85));outline-offset:2px}"
+    },
+    {
+      "name": "Ghost Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Tertiary actions and nav.",
+      "html": "<button class=\"ds-btn-ghost\">Sign in</button>",
+      "css": ".ds-btn-ghost{display:inline-flex;align-items:center;height:32px;padding:0 12px;border:0;border-radius:6px;background:transparent;color:var(--ink-2,oklch(76% 0.012 80));font:500 0.8125rem/1.25rem 'Schibsted Grotesk',system-ui,sans-serif;transition:background-color 150ms,color 150ms}.ds-btn-ghost:hover{background:var(--hover,oklch(26% 0.009 75));color:var(--ink,oklch(92% 0.012 85))}.ds-btn-ghost:focus-visible{outline:2px solid var(--focus,oklch(86% 0.095 85));outline-offset:2px}"
+    },
+    {
+      "name": "Text Field",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Sunken well, brass caret, brass border and soft ring on focus.",
+      "html": "<label class=\"ds-field\"><span class=\"ds-field-label\">Job title</span><input class=\"ds-input\" placeholder=\"Senior Backend Engineer\"></label>",
+      "css": ".ds-field{display:flex;flex-direction:column;gap:6px}.ds-field-label{font:500 0.8125rem/1.25rem 'Schibsted Grotesk',system-ui,sans-serif;color:var(--ink-2,oklch(76% 0.012 80))}.ds-input{height:36px;padding:0 12px;border:1px solid var(--line-strong,oklch(38% 0.009 75));border-radius:6px;background:var(--sunken,oklch(14% 0.005 75));color:var(--ink,oklch(92% 0.012 85));caret-color:var(--brass,oklch(80% 0.095 82));font:400 0.875rem/1.375rem 'Schibsted Grotesk',system-ui,sans-serif;transition:border-color 150ms}.ds-input::placeholder{color:var(--ink-3,oklch(63% 0.01 80))}.ds-input:hover{border-color:var(--ink-3,oklch(63% 0.01 80))}.ds-input:focus{outline:none;border-color:var(--brass,oklch(80% 0.095 82));box-shadow:0 0 0 2px var(--brass-soft,oklch(80% 0.095 82 / .13))}"
+    },
+    {
+      "name": "Top Bar Navigation",
+      "kind": "nav",
+      "refersTo": "",
+      "description": "Sticky glass bar; active link seated on a 2px brass underline.",
+      "html": "<nav class=\"ds-nav\"><a class=\"ds-nav-link\" aria-current=\"page\" href=\"#\">Applications</a><a class=\"ds-nav-link\" href=\"#\">Settings</a></nav>",
+      "css": ".ds-nav{display:flex;gap:4px;height:56px;align-items:center;padding:0 16px;border-bottom:1px solid var(--line,oklch(29% 0.008 75));background:color-mix(in oklch,var(--ground,oklch(16.5% 0.006 75)) 90%,transparent);backdrop-filter:blur(12px)}.ds-nav-link{position:relative;padding:6px 12px;border-radius:6px;color:var(--ink-3,oklch(63% 0.01 80));text-decoration:none;font:400 0.875rem/1.375rem 'Schibsted Grotesk',system-ui,sans-serif;transition:color 150ms}.ds-nav-link:hover{color:var(--ink,oklch(92% 0.012 85))}.ds-nav-link[aria-current=page]{color:var(--ink,oklch(92% 0.012 85))}.ds-nav-link[aria-current=page]::after{content:'';position:absolute;left:12px;right:12px;bottom:-13px;height:2px;border-radius:9999px;background:var(--brass,oklch(80% 0.095 82))}.ds-nav-link:focus-visible{outline:2px solid var(--focus,oklch(86% 0.095 85));outline-offset:2px}"
+    },
+    {
+      "name": "Segmented Tabs",
+      "kind": "nav",
+      "refersTo": "tab-active",
+      "description": "Review / Edit / Compare; active trigger raised and seated, unreviewed count in brass mono.",
+      "html": "<div class=\"ds-tabs\" role=\"tablist\"><button class=\"ds-tab\" aria-selected=\"true\">Review <span class=\"ds-tab-count\">4</span></button><button class=\"ds-tab\" aria-selected=\"false\">Edit</button><button class=\"ds-tab\" aria-selected=\"false\">Compare</button></div>",
+      "css": ".ds-tabs{display:inline-flex;gap:2px;padding:2px;border:1px solid var(--line,oklch(29% 0.008 75));border-radius:6px;background:var(--sunken,oklch(14% 0.005 75))}.ds-tab{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 12px;border:0;border-radius:4px;background:transparent;color:var(--ink-3,oklch(63% 0.01 80));font:500 0.8125rem/1.25rem 'Schibsted Grotesk',system-ui,sans-serif;transition:color 150ms}.ds-tab:hover{color:var(--ink,oklch(92% 0.012 85))}.ds-tab[aria-selected=true]{background:var(--raised,oklch(23% 0.008 75));color:var(--ink,oklch(92% 0.012 85));box-shadow:0 1px 2px oklch(0% 0 0 / .25)}.ds-tab-count{font:400 0.75rem/1rem 'Geist Mono',ui-monospace,monospace;color:var(--brass,oklch(80% 0.095 82))}.ds-tab:focus-visible{outline:2px solid var(--focus,oklch(86% 0.095 85));outline-offset:2px}"
+    },
+    {
+      "name": "Query Badge",
+      "kind": "chip",
+      "refersTo": "badge-query",
+      "description": "Blue-pencil Verify flag on a change the user must check.",
+      "html": "<span class=\"ds-badge-query\"><svg viewBox=\"0 0 24 24\" width=\"12\" height=\"12\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"12\" cy=\"12\" r=\"10\"/><path d=\"M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3\"/><path d=\"M12 17h.01\"/></svg>Verify</span>",
+      "css": ".ds-badge-query{display:inline-flex;align-items:center;gap:4px;padding:1px 6px;border-radius:4px;background:var(--query-soft,oklch(77% 0.09 250 / .13));color:var(--query,oklch(77% 0.09 250));font:500 0.75rem/1rem 'Schibsted Grotesk',system-ui,sans-serif;white-space:nowrap}"
+    },
+    {
+      "name": "Change Card (slug)",
+      "kind": "card",
+      "refersTo": "change-card",
+      "description": "One rail card per change: unreviewed brass dot, kind label, the slug (struck original over underlined new), brass border when focused.",
+      "html": "<div class=\"ds-change\" data-focused=\"true\"><div class=\"ds-change-head\"><span class=\"ds-dot\" aria-label=\"Not reviewed yet\"></span>Rewritten</div><p class=\"ds-slug\"><del class=\"ds-del\">Worked</del> <ins class=\"ds-add\">Led</ins> payment services in Go backed by PostgreSQL</p><div class=\"ds-change-why\">Ties the work to reliability, a stated priority.</div></div>",
+      "css": ".ds-change{border:1px solid var(--line,oklch(29% 0.008 75));border-radius:10px;background:var(--panel,oklch(19.5% 0.007 75));padding:12px 14px;color:var(--ink,oklch(92% 0.012 85));font:400 0.8125rem/1.6 'Schibsted Grotesk',system-ui,sans-serif;transition:border-color 200ms,opacity 200ms;max-width:22rem}.ds-change:hover{border-color:var(--line-strong,oklch(38% 0.009 75))}.ds-change[data-focused=true]{border-color:var(--brass,oklch(80% 0.095 82))}.ds-change-head{display:flex;align-items:center;gap:6px;font:500 0.75rem/1rem 'Schibsted Grotesk',system-ui,sans-serif;color:var(--ink-2,oklch(76% 0.012 80))}.ds-dot{width:6px;height:6px;border-radius:9999px;background:var(--brass,oklch(80% 0.095 82))}.ds-slug{margin:6px 0 0}.ds-del{color:var(--del,oklch(73% 0.13 32));text-decoration:line-through;text-decoration-thickness:1.5px}.ds-add{color:var(--add,oklch(80% 0.1 165));text-decoration:underline;text-decoration-thickness:1.5px;text-underline-offset:3px;background:var(--add-soft,oklch(80% 0.1 165 / .14));border-radius:2px}.ds-change-why{margin-top:10px;padding-top:10px;border-top:1px solid var(--line,oklch(29% 0.008 75));color:var(--ink-2,oklch(76% 0.012 80))}"
+    },
+    {
+      "name": "Score Lock-up",
+      "kind": "custom",
+      "refersTo": "",
+      "description": "Original score struck in vermilion, current score in 40px mono seated on a brass rule, gain in verdigris.",
+      "html": "<div class=\"ds-lockup\"><span class=\"ds-lockup-before\">69</span><span class=\"ds-lockup-now\">95</span><span class=\"ds-lockup-gain\">+26 pts</span></div>",
+      "css": ".ds-lockup{display:flex;align-items:flex-end;gap:16px;font-family:'Geist Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums;width:18rem}.ds-lockup-before{font-size:26px;line-height:1;color:var(--ink-3,oklch(63% 0.01 80));text-decoration:line-through;text-decoration-thickness:1px;text-decoration-color:color-mix(in oklch,var(--del,oklch(73% 0.13 32)) 70%,transparent)}.ds-lockup-now{font-size:40px;font-weight:500;line-height:1;color:var(--ink,oklch(92% 0.012 85));padding-bottom:6px;border-bottom:2px solid var(--brass,oklch(80% 0.095 82))}.ds-lockup-gain{margin:0 0 4px auto;font-size:0.8125rem;color:var(--add,oklch(80% 0.1 165))}"
+    },
+    {
+      "name": "Composing-Stick Stage",
+      "kind": "custom",
+      "refersTo": "",
+      "description": "Pipeline stages: done (brass fill + check), running (brass ring + working rule), waiting (mono numeral).",
+      "html": "<ol class=\"ds-stick\"><li class=\"ds-stage\" data-s=\"done\"><span class=\"ds-node\"><svg viewBox=\"0 0 24 24\" width=\"14\" height=\"14\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M20 6 9 17l-5-5\"/></svg></span><div><p class=\"ds-stage-t\">Read the job</p><p class=\"ds-stage-n\">8 must-haves, 5 nice-to-haves</p></div></li><li class=\"ds-stage\" data-s=\"running\"><span class=\"ds-node\">2</span><div><p class=\"ds-stage-t\">Measure your resume</p><p class=\"ds-stage-n\">Checking which requirements your resume already shows…</p><div class=\"ds-working\"></div></div></li><li class=\"ds-stage\" data-s=\"waiting\"><span class=\"ds-node\">3</span><div><p class=\"ds-stage-t\">Rewrite lines</p></div></li></ol>",
+      "css": ".ds-stick{list-style:none;margin:0;padding:0;font-family:'Schibsted Grotesk',system-ui,sans-serif;width:20rem}.ds-stage{position:relative;display:flex;gap:16px;padding-bottom:24px}.ds-stage:not(:last-child)::before{content:'';position:absolute;left:11px;top:28px;bottom:0;width:1px;background:var(--line-strong,oklch(38% 0.009 75))}.ds-stage[data-s=done]::before{background:var(--brass,oklch(80% 0.095 82))}.ds-node{position:relative;z-index:1;flex:none;display:flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:9999px;border:1px solid var(--line-strong,oklch(38% 0.009 75));color:var(--ink-3,oklch(63% 0.01 80));font:11px/1 'Geist Mono',ui-monospace,monospace}.ds-stage[data-s=done] .ds-node{background:var(--brass,oklch(80% 0.095 82));border-color:var(--brass,oklch(80% 0.095 82));color:var(--on-brass,oklch(19% 0.02 75))}.ds-stage[data-s=running] .ds-node{border-color:var(--brass,oklch(80% 0.095 82));color:var(--brass,oklch(80% 0.095 82))}.ds-stage-t{margin:2px 0 0;font:500 0.875rem/1.375rem inherit;color:var(--ink,oklch(92% 0.012 85))}.ds-stage[data-s=waiting] .ds-stage-t{color:var(--ink-3,oklch(63% 0.01 80))}.ds-stage-n{margin:2px 0 0;font-size:0.8125rem;line-height:1.25rem;color:var(--ink-2,oklch(76% 0.012 80))}.ds-working{margin-top:8px;height:1px;max-width:16rem;background:linear-gradient(90deg,transparent,var(--brass,oklch(80% 0.095 82)),transparent);background-size:200% 100%;animation:ds-shimmer 1.6s linear infinite}@keyframes ds-shimmer{from{background-position:-200% 0}to{background-position:200% 0}}@media (prefers-reduced-motion:reduce){.ds-working{animation:none}}"
+    },
+    {
+      "name": "Proof Page Redline",
+      "kind": "custom",
+      "refersTo": "proof-page",
+      "description": "Paper sheet with paper-strength diff inks, brass margin marks on unreviewed hunks, focused hunk washed in brass while the rest dims.",
+      "html": "<div class=\"ds-paper\"><h2 class=\"ds-paper-h2\">Experience</h2><div class=\"ds-hunk\"><del class=\"ds-pdel\">Worked on</del> <ins class=\"ds-padd\">Led</ins> migration of the billing service to Kafka pipelines</div><div class=\"ds-hunk\" data-focused=\"true\">Built a Kafka pipeline that cut invoice latency by 38%<ins class=\"ds-padd\">, improving reliability for 2M daily transactions</ins></div><p class=\"ds-equal\">Ran the on-call rotation and incident reviews</p></div>",
+      "css": ".ds-paper{width:30rem;padding:32px 40px;border-radius:2px;background:var(--paper,oklch(94.5% 0.01 85));color:var(--paper-ink,oklch(22% 0.01 70));box-shadow:var(--paper-shadow,0 1px 0 oklch(100% 0 0 / .04),0 18px 48px -12px oklch(0% 0 0 / .55));font:13.5px/1.5 'Source Serif 4',Georgia,serif}.ds-paper-h2{margin:0 0 7px;padding-bottom:4px;border-bottom:1px solid var(--paper-rule,oklch(83% 0.012 80));font:650 12.5px/1.3 'Hanken Grotesk',sans-serif;letter-spacing:.09em;text-transform:uppercase}.ds-hunk{position:relative;margin:0 -8px 3px;padding:0 8px;border-radius:3px;cursor:pointer;transition:background-color 150ms,opacity 200ms}.ds-hunk::after{content:'';position:absolute;left:-14px;top:4px;bottom:4px;width:2px;border-radius:1px;background:oklch(68% 0.12 78)}.ds-hunk:hover{background:oklch(80% 0.1 82 / .08)}.ds-hunk[data-focused=true]{background:oklch(80% 0.1 82 / .16)}.ds-paper:has([data-focused=true]) .ds-hunk:not([data-focused=true]),.ds-paper:has([data-focused=true]) .ds-equal{opacity:.45}.ds-equal{margin:0 0 3px}.ds-pdel{color:oklch(48% 0.17 30);background:oklch(70% 0.14 30 / .14);text-decoration:line-through;text-decoration-thickness:1.5px;border-radius:2px}.ds-padd{color:oklch(40% 0.1 165);background:oklch(70% 0.11 165 / .2);text-decoration:underline;text-decoration-thickness:1.5px;text-underline-offset:3px;border-radius:2px}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Compositor's Room",
+    "overview": "Tailoring is typesetting. The job posting is the copy. The AI marks it up, sets new lines, pulls a proof, and locks the forme. The interface is a print shop at night. The ground is warm lead graphite, the text is bone rather than white, and a single brass accent marks action, selection, and lock. The resume itself sits on warm proof paper at real scale in the middle of the room, and everything else is the furniture around that page: a thin top bar, a tab strip, and a rail holding the score and the change list.\n\nThe density is working-tool density: a tight six-step type scale, controls 32 to 36px tall, panels separated by hairlines instead of shadows. Meaning is carried by the form of a line (strike, underline, dashed, margin rule) before hue. The system rejects the category default of a grey SaaS dashboard with a purple \"AI\" sparkle and a chat box. Nothing in it glows, gradients only appear as a moving \"working\" rule, and the AI is never a character.\n\nThe light theme is the same press in daylight: a pale warm ground, ink-black text, and a darker brass. Each role keeps its job in both themes. Only the values change.",
+    "keyCharacteristics": [
+      "Dark-first, with warm graphite steps (hue 75) and no pure black or white in the chrome.",
+      "One accent (brass). Diff inks (vermilion, verdigris) and the blue pencil are semantic and never decorative.",
+      "The proof page is the hero of every workspace screen and renders in the export faces (Source Serif 4 and Hanken Grotesk).",
+      "Numbers are set in Geist Mono with tabular figures, and only numbers are.",
+      "Every state has a line form as well as a color, so nothing depends on hue alone."
+    ],
+    "rules": [
+      {
+        "name": "The One Brass Rule",
+        "body": "Brass is the only accent and means \"act here, this is selected, this is locked or still needs you\". Do not use it for decoration, illustration, or a second meaning.",
+        "section": "colors"
+      },
+      {
+        "name": "The Line-Form Rule",
+        "body": "Every semantic color travels with a line form: removal is struck through, insertion is underlined, an unmatched keyword has a dashed border, and an unreviewed change has a margin rule or dot. If a state would disappear in greyscale, the work is not finished.",
+        "section": "colors"
+      },
+      {
+        "name": "The Bone-Not-White Rule",
+        "body": "Dark-theme text tops out at oklch 92% with warm chroma. Pure #fff and pure #000 never appear in the chrome.",
+        "section": "colors"
+      },
+      {
+        "name": "The Six-Step Rule",
+        "body": "The UI uses exactly six sizes (label, small, body, lead, title, page). Rank comes from weight (400, 500, 600) before size. Do not add in-between sizes.",
+        "section": "typography"
+      },
+      {
+        "name": "The Mono-Means-Measured Rule",
+        "body": "Geist Mono appears only on a number or a key cap. If it isn't a measurement, it is set in Schibsted.",
+        "section": "typography"
+      },
+      {
+        "name": "The Didone-Stays-Outside Rule",
+        "body": "Bodoni Moda is for marketing display only and never appears inside the authenticated app.",
+        "section": "typography"
+      },
+      {
+        "name": "The Only-Paper-Floats Rule",
+        "body": "At rest, the only shadowed surface is the proof sheet. Everything else gets depth from tone and hairlines, and a shadow means the layer is temporary.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do route every color through the role tokens in `app/globals.css` so both themes stay in step, and check every new surface in dark and light.",
+      "Do pair every semantic ink with a line form: strike for removal, underline for insertion, a dashed border for missing, and a margin rule or dot for unreviewed.",
+      "Do keep brass for action, selection, and lock, with one primary button per region.",
+      "Do set every score, count, and measurement in Geist Mono with tabular figures, and set everything else in Schibsted Grotesk.",
+      "Do stay within the six-step UI scale and rank by weight (400, 500, 600) before reaching for a larger size.",
+      "Do keep the proof page at real measure (794px) and in the export faces, so what is on screen is what downloads.",
+      "Do separate panels with 1px hairlines and tonal steps. Reserve shadows for the paper and floating layers.",
+      "Do honor reduced motion. Motion is limited to `slug-in` (280ms, ease-out-expo), 150 to 300ms state transitions, and the working-rule shimmer."
+    ],
+    "donts": [
+      "Don't introduce a second accent, a purple \"AI\" tint, sparkles, or a chat-bubble treatment for the AI.",
+      "Don't use pure white text or a pure black ground in the dark theme.",
+      "Don't use vermilion or verdigris decoratively, or use error red for a diff.",
+      "Don't show a query (blue pencil) as an error, or let a flagged change look identical to a clean one.",
+      "Don't use Bodoni Moda inside the authenticated app, or use mono for prose.",
+      "Don't add shadows to cards, rails, or the top bar, or round controls into pills.",
+      "Don't add tracked-uppercase labels in the chrome. Uppercase tracking belongs to the resume's own section heads on the paper."
+    ]
+  }
+}

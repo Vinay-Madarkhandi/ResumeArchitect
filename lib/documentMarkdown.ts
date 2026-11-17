@@ -44,7 +44,7 @@ function listItemToMarkdown(item: ListItemNode): string {
   return item.content.map((block) => blockToMarkdown(block)).join(" ").trim();
 }
 
-function inlineToMarkdown(nodes: InlineNode[]): string {
+export function inlineToMarkdown(nodes: InlineNode[]): string {
   return nodes.map((node) => (node.type === "hardBreak" ? "  \n" : textNodeToMarkdown(node))).join("");
 }
 
@@ -116,7 +116,7 @@ export function markdownToDocument(markdown: string): DocumentContent {
       while (i < lines.length) {
         const m = lines[i].trim().match(ORDERED_RE);
         if (!m) break;
-        items.push({ type: "listItem", content: [{ type: "paragraph", content: parseInline(m[1]) }] });
+        items.push({ type: "listItem", content: [{ type: "paragraph", content: parseInline(m[2]) }] });
         i++;
       }
       blocks.push({ type: "orderedList", attrs: { start }, content: items });
@@ -138,7 +138,7 @@ export function markdownToDocument(markdown: string): DocumentContent {
 
 const INLINE_RE = /(\*\*(.+?)\*\*)|(_(.+?)_)|(\[(.+?)\]\((.+?)\))/g;
 
-function parseInline(text: string): InlineNode[] {
+export function parseInline(text: string): InlineNode[] {
   const nodes: InlineNode[] = [];
   let lastIndex = 0;
   let match: RegExpExecArray | null;

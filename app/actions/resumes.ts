@@ -28,7 +28,7 @@ export async function renameResume(resumeId: string, title: string): Promise<Act
     .eq("user_id", user.id);
 
   if (error) return { ok: false, error: error.message };
-  revalidatePath("/library");
+  revalidatePath("/dashboard");
   return { ok: true };
 }
 
@@ -62,7 +62,7 @@ export async function duplicateResume(resumeId: string): Promise<ActionResult> {
   });
 
   if (insertError) return { ok: false, error: insertError.message };
-  revalidatePath("/library");
+  revalidatePath("/dashboard");
   return { ok: true };
 }
 
@@ -100,6 +100,6 @@ export async function deleteResume(resumeId: string): Promise<ActionResult> {
     await supabase.storage.from(bucket).remove([path]);
   }
 
-  revalidatePath("/library");
+  revalidatePath("/dashboard");
   return { ok: true };
 }
