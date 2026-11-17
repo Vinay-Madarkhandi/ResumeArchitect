@@ -4,11 +4,10 @@ import { createClient } from "@/utils/supabase/proxy";
 const PUBLIC_PATHS = ["/", "/sign-in", "/sign-up", "/forgot-password", "/reset-password", "/auth-confirm"];
 const AUTH_PATHS = ["/sign-in", "/sign-up"];
 const ONBOARDING_PREFIX = "/onboarding";
-// /onboarding/upload and /onboarding/review are also the "replace master
-// resume" flow reached from the Library, so an already-onboarded user must
-// still be able to visit them — only the one-time steps below force a
-// completed user back to /library.
-const ONBOARDING_ONLY_PATHS = ["/onboarding", "/onboarding/profile", "/onboarding/connect-gemini"];
+// /onboarding/resume and /onboarding/review double as the "replace master
+// resume" flow from the dashboard, so onboarded users may still visit them.
+// Only the key step is one-time.
+const ONBOARDING_ONLY_PATHS = ["/onboarding"];
 
 function isPublicPath(pathname: string) {
   return PUBLIC_PATHS.includes(pathname);
@@ -21,13 +20,13 @@ export async function proxy(request: NextRequest) {
   if (!user) {
     if (isPublicPath(pathname)) return supabaseResponse;
     const redirectUrl = new URL("/sign-in", request.url);
-    redirectUrl.searchParams.set("redirect", pathname);
+    redirectUrl.searchParams.set("redirect", `${pathname}${request.nextUrl.search}`);
     return NextResponse.redirect(redirectUrl);
   }
 
   // Authenticated from here on.
   if (AUTH_PATHS.includes(pathname)) {
-    return NextResponse.redirect(new URL("/library", request.url));
+    return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
   const isOnboardingPath = pathname.startsWith(ONBOARDING_PREFIX);
@@ -46,7 +45,7 @@ export async function proxy(request: NextRequest) {
       return NextResponse.redirect(new URL("/onboarding", request.url));
     }
     if (onboarded && ONBOARDING_ONLY_PATHS.includes(pathname)) {
-      return NextResponse.redirect(new URL("/library", request.url));
+      return NextResponse.redirect(new URL("/dashboard", request.url));
     }
   }
 

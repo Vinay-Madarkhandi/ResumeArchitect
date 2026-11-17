@@ -1,118 +1,97 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
-import { parseResumeFile, ResumeParseError } from "@/lib/resume-parser";
-import { mergeParsedContentWithProfile } from "@/lib/resume-parser/mergeProfile";
+import { loadGeminiKey } from "@/lib/server/geminiKey";
+import { detectKind, ImportError, importResume } from "@/lib/server/importResume";
 import { MAX_RESUME_UPLOAD_BYTES, RESUME_UPLOADS_BUCKET, originalResumePath } from "@/lib/storage/paths";
 
 export const runtime = "nodejs";
-export const maxDuration = 60;
+export const maxDuration = 120;
 
+const MAX_PASTE_CHARS = 40_000;
+
+function fail(status: number, code: string, message: string) {
+  return NextResponse.json({ errorCode: code, errorMessage: message }, { status });
+}
+
+/**
+ * Imports a resume as a draft master. Accepts multipart form data with either
+ * `file` (PDF, DOCX, TXT) or `text` (pasted). The draft becomes the user's
+ * master only after they review it (finalizeMasterResume).
+ */
 export async function POST(request: Request) {
   const supabase = createClient(await cookies());
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ errorCode: "unauthorized" }, { status: 401 });
+  if (!user) return fail(401, "unauthorized", "Sign in to continue.");
 
-  const formData = await request.formData();
-  const file = formData.get("file");
-  const previousResumeId = formData.get("previousResumeId");
+  const form = await request.formData().catch(() => null);
+  if (!form) return fail(400, "no_file", "Upload a file or paste your resume.");
+  const file = form.get("file");
+  const pasted = form.get("text");
 
-  if (!(file instanceof File)) {
-    return NextResponse.json({ errorCode: "no_file", errorMessage: "No file was uploaded." }, { status: 400 });
-  }
-  if (file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf")) {
-    return NextResponse.json(
-      { errorCode: "invalid_file_type", errorMessage: "Please upload a PDF file." },
-      { status: 400 },
-    );
-  }
-  if (file.size > MAX_RESUME_UPLOAD_BYTES) {
-    return NextResponse.json(
-      { errorCode: "file_too_large", errorMessage: "That file is larger than 10MB. Please upload a smaller PDF." },
-      { status: 400 },
-    );
-  }
-
+  const key = await loadGeminiKey(supabase, user.id);
+  const apiKey = key.ok ? key.apiKey : null;
   const resumeId = crypto.randomUUID();
-  const arrayBuffer = await file.arrayBuffer();
-  const storagePath = originalResumePath(user.id, resumeId);
-
-  const { error: uploadError } = await supabase.storage
-    .from(RESUME_UPLOADS_BUCKET)
-    .upload(storagePath, arrayBuffer, { contentType: "application/pdf", upsert: false });
-
-  if (uploadError) {
-    return NextResponse.json(
-      { errorCode: "upload_failed", errorMessage: "Couldn't save your file. Please try again." },
-      { status: 500 },
-    );
-  }
+  let storagePath: string | null = null;
+  let fileName: string | null = null;
 
   try {
-    const { content, lowConfidenceFields } = await parseResumeFile(arrayBuffer);
+    let result;
+    if (file instanceof File && file.size > 0) {
+      const kind = detectKind(file);
+      if (!kind) return fail(400, "invalid_file_type", "Upload a PDF, Word (.docx), or text file.");
+      if (file.size > MAX_RESUME_UPLOAD_BYTES) return fail(400, "file_too_large", "That file is over 10 MB. Upload a smaller one.");
+      const buffer = await file.arrayBuffer();
 
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("full_name, headline, phone, location, links")
-      .eq("id", user.id)
-      .single();
+      storagePath = originalResumePath(user.id, resumeId, kind === "text" ? "txt" : kind);
+      fileName = file.name;
+      const { error: uploadError } = await supabase.storage
+        .from(RESUME_UPLOADS_BUCKET)
+        .upload(storagePath, buffer, { contentType: file.type || "application/octet-stream", upsert: false });
+      if (uploadError) storagePath = null; // Keeping the original is a convenience, not a requirement.
 
-    const mergedContent = mergeParsedContentWithProfile(content, {
-      fullName: profile?.full_name,
-      headline: profile?.headline,
-      email: user.email,
-      phone: profile?.phone,
-      location: profile?.location,
-      links: profile?.links,
-    });
+      result = await importResume({ kind, buffer }, apiKey);
+    } else if (typeof pasted === "string" && pasted.trim()) {
+      if (pasted.length > MAX_PASTE_CHARS) return fail(400, "too_long", "That's longer than a resume. Paste just your resume text.");
+      result = await importResume({ kind: "text", text: pasted }, apiKey);
+    } else {
+      return fail(400, "no_file", "Upload a file or paste your resume.");
+    }
 
-    const { error: insertError } = await supabase.from("resumes").insert({
+    const { error } = await supabase.from("resumes").insert({
       id: resumeId,
       user_id: user.id,
       kind: "master",
-      title: "Master Resume",
-      content: mergedContent,
+      title: result.title,
+      content: result.content,
       status: "draft",
       is_default: false,
       original_file_storage_path: storagePath,
-      original_file_name: file.name,
-      low_confidence_fields: lowConfidenceFields,
+      original_file_name: fileName,
     });
+    if (error) throw new Error("insert failed");
 
-    if (insertError) {
-      await supabase.storage.from(RESUME_UPLOADS_BUCKET).remove([storagePath]);
-      return NextResponse.json(
-        { errorCode: "save_failed", errorMessage: "Couldn't save your resume. Please try again." },
-        { status: 500 },
-      );
+    // Drop earlier drafts that were never reviewed, so abandoned uploads don't pile up.
+    const { data: stale } = await supabase
+      .from("resumes")
+      .select("id, original_file_storage_path")
+      .eq("user_id", user.id)
+      .eq("kind", "master")
+      .eq("status", "draft")
+      .eq("is_default", false)
+      .neq("id", resumeId);
+    if (stale?.length) {
+      const paths = stale.map((r) => r.original_file_storage_path).filter((p): p is string => !!p);
+      if (paths.length) await supabase.storage.from(RESUME_UPLOADS_BUCKET).remove(paths);
+      await supabase.from("resumes").delete().in("id", stale.map((r) => r.id));
     }
 
-    // Clean up a previous pending (not-yet-finalized) upload from this same
-    // onboarding attempt so replacing the file before finishing doesn't
-    // leave an orphaned draft row behind.
-    if (typeof previousResumeId === "string" && previousResumeId) {
-      const { data: previous } = await supabase
-        .from("resumes")
-        .select("id, original_file_storage_path, is_default, user_id")
-        .eq("id", previousResumeId)
-        .maybeSingle();
-      if (previous && previous.user_id === user.id && !previous.is_default) {
-        if (previous.original_file_storage_path) {
-          await supabase.storage.from(RESUME_UPLOADS_BUCKET).remove([previous.original_file_storage_path]);
-        }
-        await supabase.from("resumes").delete().eq("id", previous.id);
-      }
-    }
-
-    return NextResponse.json({ resumeId, content: mergedContent, lowConfidenceFields });
+    return NextResponse.json({ resumeId, usedAi: result.usedAi });
   } catch (error) {
-    await supabase.storage.from(RESUME_UPLOADS_BUCKET).remove([storagePath]);
-    const message =
-      error instanceof ResumeParseError
-        ? error.message
-        : "Something went wrong while reading your resume. Please try again.";
-    return NextResponse.json({ errorCode: "parse_failed", errorMessage: message }, { status: 422 });
+    if (storagePath) await supabase.storage.from(RESUME_UPLOADS_BUCKET).remove([storagePath]);
+    if (error instanceof ImportError) return fail(422, "parse_failed", error.message);
+    return fail(500, "save_failed", "Couldn't save your resume. Try again.");
   }
 }

@@ -1,11 +1,7 @@
-import { ApiError } from "@google/genai";
-import { createGeminiClient } from "../client";
-import { TAILOR_MODEL } from "../config";
-import { selectionEditGeminiSchema } from "../schemas";
-import { stripNulls } from "../stripNulls";
+import { generateStructured, type JsonModel } from "@/lib/gemini/model";
 import { SelectionEditResultSchema, type SelectionEditResult } from "@/lib/schemas/selectionEdit";
 
-/** The scoped counterpart to lib/gemini/prompts/tailorDocument.ts: instead
+/** The scoped counterpart to lib/gemini/prompts/tailorLines.ts: instead
  * of rewriting the whole document against a job description, this rewrites
  * exactly one selected snippet per a free-text instruction, given just
  * enough surrounding context to stay coherent. Same non-fabrication
@@ -63,53 +59,14 @@ function buildPrompt(contextBefore: string, selectedText: string, contextAfter: 
   ].join("\n");
 }
 
-export type EditSelectionResult =
-  | { ok: true; result: SelectionEditResult }
-  | { ok: false; errorCode: "invalid_api_key" | "gemini_error" | "schema_validation_failed"; message: string };
-
 export async function editSelection(
-  apiKey: string,
-  contextBefore: string,
-  selectedText: string,
-  contextAfter: string,
-  instruction: string,
-): Promise<EditSelectionResult> {
-  const client = createGeminiClient(apiKey);
-
-  let responseText: string | undefined;
-  try {
-    const response = await client.models.generateContent({
-      model: TAILOR_MODEL,
-      contents: buildPrompt(contextBefore, selectedText, contextAfter, instruction),
-      config: {
-        systemInstruction: SYSTEM_INSTRUCTION,
-        responseMimeType: "application/json",
-        responseSchema: selectionEditGeminiSchema,
-      },
-    });
-    responseText = response.text;
-  } catch (error) {
-    if (error instanceof ApiError && (error.status === 400 || error.status === 401 || error.status === 403)) {
-      return { ok: false, errorCode: "invalid_api_key", message: "Your Gemini key was rejected. Please check it in Settings." };
-    }
-    return { ok: false, errorCode: "gemini_error", message: "Something went wrong talking to Gemini. Please try again." };
-  }
-
-  if (!responseText) {
-    return { ok: false, errorCode: "gemini_error", message: "Gemini returned an empty response. Please try again." };
-  }
-
-  let raw: unknown;
-  try {
-    raw = JSON.parse(responseText);
-  } catch {
-    return { ok: false, errorCode: "schema_validation_failed", message: "Gemini's response wasn't valid JSON." };
-  }
-
-  const parsed = SelectionEditResultSchema.safeParse(stripNulls(raw));
-  if (!parsed.success) {
-    return { ok: false, errorCode: "schema_validation_failed", message: "Gemini's response didn't match the expected shape." };
-  }
-
-  return { ok: true, result: parsed.data };
+  model: JsonModel,
+  input: { contextBefore: string; selectedText: string; contextAfter: string; instruction: string },
+): Promise<SelectionEditResult> {
+  return generateStructured(model, {
+    system: SYSTEM_INSTRUCTION,
+    prompt: buildPrompt(input.contextBefore, input.selectedText, input.contextAfter, input.instruction),
+    schema: SelectionEditResultSchema,
+    temperature: 0.5,
+  });
 }

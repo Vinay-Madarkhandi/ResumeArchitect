@@ -1,5 +1,5 @@
 /**
- * Hand-written to match supabase/migrations/20260822174320_init_schema.sql.
+ * Hand-written to match supabase/migrations/*.sql.
  * Once a real project is linked, regenerate with:
  *   supabase gen types typescript --linked > lib/supabase/database.types.ts
  * and diff against this file rather than blindly overwriting, since a few
@@ -7,7 +7,8 @@
  */
 import type { Link, ResumeContent } from "@/lib/schemas/resume";
 import type { DocumentContent } from "@/lib/schemas/document";
-import type { ChangeExplanation } from "@/lib/schemas/tailoring";
+import type { JobAnalysis } from "@/lib/schemas/jobAnalysis";
+import type { PipelineStage, TailoredChange } from "@/lib/schemas/tailoring";
 
 /**
  * `resumes.content` holds either the new freeform document (going forward)
@@ -85,6 +86,8 @@ export interface Database {
           pdf_storage_path: string | null;
           pdf_generated_at: string | null;
           low_confidence_fields: string[];
+          template: "classic" | "modern";
+          reviewed_change_ids: string[];
           created_at: string;
           updated_at: string;
         };
@@ -115,6 +118,7 @@ export interface Database {
             | "invalid_api_key"
             | "invalid_jd"
             | "source_not_found"
+            | "rate_limited"
             | "gemini_error"
             | "schema_validation_failed"
             | "fabrication_detected"
@@ -122,16 +126,21 @@ export interface Database {
             | "unknown"
             | null;
           error_message: string | null;
-          change_explanations: ChangeExplanation[] | null;
+          change_explanations: Json | null;
+          stage: PipelineStage | null;
+          job_analysis: JobAnalysis | null;
+          source_snapshot: DocumentContent | null;
+          changes: TailoredChange[] | null;
+          summary: string | null;
+          score_before: number | null;
+          score_after: number | null;
           gemini_model: string | null;
           started_at: string | null;
           completed_at: string | null;
           created_at: string;
         };
         Insert: Partial<Database["public"]["Tables"]["tailoring_sessions"]["Row"]> & { user_id: string };
-        Update: Partial<Omit<Database["public"]["Tables"]["tailoring_sessions"]["Row"], "change_explanations">> & {
-          change_explanations?: ChangeExplanation[] | null;
-        };
+        Update: Partial<Database["public"]["Tables"]["tailoring_sessions"]["Row"]>;
       };
     };
     Views: Record<string, never>;

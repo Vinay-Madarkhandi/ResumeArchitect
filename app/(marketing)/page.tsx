@@ -1,210 +1,175 @@
+import type { Metadata } from "next";
 import Link from "next/link";
-import { Button } from "@/components/ui/Button";
-import { Icon, type IconName } from "@/components/icon/Icon";
+import { ArrowRight, CircleHelp, KeyRound, RotateCcw } from "lucide-react";
+import { buttonVariants } from "@/components/ui/Button";
+import { Logo } from "@/components/ui/Logo";
+import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import { cn } from "@/lib/cn";
 
-const STEPS = [
-  {
-    number: "01",
-    title: "Build your profile once",
-    body: "Upload your existing resume. We parse it into a structured, editable profile — your master resume — that becomes the source of truth for every application.",
-  },
-  {
-    number: "02",
-    title: "Paste a job description",
-    body: "Found a role? Paste the listing. Your master resume is already selected — no re-uploading, no starting from scratch.",
-  },
-  {
-    number: "03",
-    title: "Edit live, right on the page",
-    body: "Tailoring lands directly in a live document, not a form. Select any line and tell AI what to change, in place, then export a polished, print-ready PDF.",
-  },
-] as const;
+export const metadata: Metadata = {
+  title: "ResumeArchitect · Tailor your resume to every job, line by line",
+};
 
-const FEATURES: { icon: IconName; title: string; body: string }[] = [
-  {
-    icon: "editor",
-    title: "A document, not a form",
-    body: "No fixed Experience/Education fields to fight with. Write and structure your resume freely — headings, lists, emphasis — exactly like the page that gets exported.",
-  },
-  {
-    icon: "ai-suggestion",
-    title: "Select text, ask AI",
-    body: "Highlight any line, describe the change, and preview the rewrite in place before accepting it. Nothing is ever applied silently.",
-  },
-  {
-    icon: "verified",
-    title: "Flagged, never fabricated",
-    body: "Tailoring never invents employers or credentials. Anything that looks new gets visibly flagged for your review — you always have the final say.",
-  },
-  {
-    icon: "api-key",
-    title: "Your Gemini key, your data",
-    body: "AI tailoring runs on your own Google Gemini API key. We never generate on our own account, and your key is encrypted and never shown again.",
-  },
+const STAGES = [
+  { name: "Read the job", body: "Gemini pulls out the must-haves, nice-to-haves, and the words recruiters search for." },
+  { name: "Measure", body: "Your resume is scored against those requirements before anything changes." },
+  { name: "Rewrite", body: "Lines you already have are reworded toward the role. Nothing new is invented." },
+  { name: "Proof", body: "Every edit is checked against your original. New numbers, names, or skills get flagged." },
+  { name: "Score", body: "The result is measured with the same yardstick, so the change is a fair comparison." },
 ];
+
+/** Example data for the illustration, labeled on the page as an example. */
+function ProofIllustration() {
+  return (
+    <figure className="relative" aria-label="Example of a reviewed change">
+      <div className="paper rotate-[-0.6deg] px-7 py-8 text-[13px] sm:px-11 sm:pb-36" data-template="classic">
+        <div className="paper-flow">
+          <h2 style={{ marginTop: 0 }}>Experience</h2>
+          <h3>Senior Engineer — Harbor Freight Labs</h3>
+          <p style={{ color: "var(--paper-muted)" }}>2021 – Present · Lisbon</p>
+          <div className="rl-bullet">
+            <del className="mark-del">Worked on</del>
+            <ins className="mark-add">Led</ins> migration of the billing service to{" "}
+            <ins className="mark-add">event-driven</ins> Kafka pipelines, cutting invoice latency 38%
+          </div>
+          <div className="rl-bullet" style={{ opacity: 0.55 }}>
+            Mentored four engineers through on-call rotations
+          </div>
+          <div className="rl-bullet">
+            <ins className="mark-add">Owned incident response for payments, with a 99.95% uptime SLO</ins>
+          </div>
+        </div>
+      </div>
+
+      <div className="relative mx-auto -mt-6 w-[min(17.5rem,92%)] rounded-lg border border-line bg-raised p-4 shadow-pop sm:absolute sm:-right-6 sm:bottom-2 sm:mt-0">
+        <div className="flex items-end gap-4">
+          <div>
+            <p className="text-label text-ink-3">Original</p>
+            <p className="font-mono text-[22px] leading-none text-ink-3 line-through decoration-del/70 decoration-1 tabular">52</p>
+          </div>
+          <div className="mb-1.5 h-px flex-1 bg-line-strong" />
+          <div className="text-right">
+            <p className="text-label text-ink-3">Now</p>
+            <p className="font-mono text-[34px] font-medium leading-none text-ink tabular">81</p>
+          </div>
+        </div>
+        <p className="mt-3 border-t border-line pt-3 text-small text-ink-2">
+          The posting asks for incident response. Your on-call bullet already shows it, and now it says so.
+        </p>
+        <p className="mt-2 flex items-start gap-1.5 rounded-md bg-query-soft px-2 py-1.5 text-label text-ink">
+          <CircleHelp className="mt-px size-3.5 shrink-0 text-query" aria-hidden />
+          &ldquo;99.95%&rdquo; isn&rsquo;t in your original. Confirm it before keeping.
+        </p>
+      </div>
+      <figcaption className="mt-4 text-label text-ink-3 sm:mt-6">Example resume and job, for illustration.</figcaption>
+    </figure>
+  );
+}
 
 export default function LandingPage() {
   return (
-    <div className="bg-background text-on-surface selection:bg-secondary-container selection:text-on-secondary-container">
-      <header className="fixed top-0 z-50 w-full border-b border-outline-variant bg-background/80 backdrop-blur-md">
-        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-margin-mobile md:px-margin-desktop">
-          <span className="font-display text-2xl italic text-primary">
-            ResumeArchitect
-          </span>
-          <nav className="hidden items-center gap-xl font-sans text-body-lg md:flex">
-            <a href="#how-it-works" className="text-on-surface-variant transition-colors hover:text-secondary">
-              How it works
-            </a>
-            <a href="#features" className="text-on-surface-variant transition-colors hover:text-secondary">
-              Features
-            </a>
-          </nav>
-          <div className="flex items-center gap-md">
-            <Link href="/sign-in" className="hidden font-sans text-button text-primary hover:text-secondary md:inline-flex">
-              Sign in
-            </Link>
-            <Link href="/sign-up">
-              <Button variant="primary">Get started</Button>
-            </Link>
-          </div>
-        </div>
+    <div className="min-h-dvh overflow-x-clip">
+      <header className="mx-auto flex max-w-6xl items-center gap-4 px-5 py-5 sm:px-8">
+        <Logo />
+        <nav className="ml-auto flex items-center gap-1">
+          <ThemeToggle />
+          <Link href="/sign-in" className={buttonVariants({ variant: "ghost", size: "sm" })}>
+            Sign in
+          </Link>
+          <Link href="/sign-up" className={buttonVariants({ variant: "primary", size: "sm" })}>
+            Get started
+          </Link>
+        </nav>
       </header>
 
-      <main className="pt-16">
-        <section className="relative overflow-hidden">
-          <div className="bg-dot-grid -z-10" aria-hidden />
-          <div className="relative mx-auto max-w-max-width-doc px-margin-mobile py-xxl text-center md:px-0">
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-outline-variant bg-surface-container-lowest px-3 py-1 font-mono text-label-sm text-on-surface-variant shadow-[var(--shadow-soft)]">
-              <Icon name="ai-suggestion" size={12} className="text-tertiary" />
-              LIVE, AI-ASSISTED RESUME EDITING
-            </span>
-            <h1 className="mt-lg font-display text-display-lg text-primary">
-              Keep your experience.
+      <main>
+        <section className="mx-auto grid max-w-6xl items-center gap-16 px-5 pb-28 pt-12 sm:px-8 lg:grid-cols-[1fr_1.05fr] lg:pt-20">
+          <div>
+            <h1 className="font-display text-[clamp(2.75rem,6vw,4.75rem)] font-normal leading-[0.98] tracking-[-0.02em] text-ink">
+              Every line,
               <br />
-              <span className="italic text-secondary">Tailor</span> how you present it.
+              <em className="text-brass">set for the job.</em>
             </h1>
-            <p className="mx-auto mt-lg max-w-2xl font-doc text-body-doc text-on-surface-variant">
-              You already have the experience. Build a resume once, then adapt it for every
-              opportunity — editing live, directly on the page, not in a form buried behind it.
+            <p className="mt-7 max-w-[34rem] text-lead text-ink-2">
+              Paste a job post. ResumeArchitect rewrites your real experience toward it, shows every change with its
+              reason and a before&nbsp;→&nbsp;after match score, and flags anything it can&rsquo;t back up. You keep
+              what&rsquo;s true, revert the rest, and download a PDF or Word file.
             </p>
-            <div className="mt-xl flex flex-col items-center justify-center gap-md sm:flex-row">
-              <Link href="/sign-up">
-                <Button variant="primary" size="lg">
-                  Get started
-                  <Icon name="arrow-right" size={16} />
-                </Button>
+            <div className="mt-9 flex flex-wrap items-center gap-4">
+              <Link href="/sign-up" className={buttonVariants({ variant: "primary", size: "lg" })}>
+                Tailor your resume <ArrowRight aria-hidden />
               </Link>
-              <a href="#how-it-works">
-                <Button variant="secondary" size="lg">
-                  See how it works
-                </Button>
-              </a>
-            </div>
-
-            <div className="relative mt-xxl overflow-hidden rounded-xl border border-outline-variant bg-surface-container-lowest p-lg text-left shadow-[var(--shadow-lifted)]">
-              <div className="absolute left-0 top-0 h-1 w-full bg-secondary" />
-              <div className="grid grid-cols-1 gap-md md:grid-cols-[1fr_auto_1fr] md:items-center">
-                <div className="rounded-lg border border-outline-variant bg-surface-container-low p-md">
-                  <p className="font-mono text-label-sm text-on-surface-variant">MASTER RESUME</p>
-                  <p className="mt-2 font-doc text-body-doc text-on-surface">
-                    5 years of product design experience, React &amp; design systems, cross-functional
-                    leadership&hellip;
-                  </p>
-                </div>
-                <Icon name="arrow-right" className="mx-auto hidden text-secondary md:block" size={28} />
-                <div className="relative rounded-lg border border-secondary bg-secondary-container/20 p-md">
-                  <span className="ai-highlight absolute -left-1 top-3 h-4 w-1 rounded-full" aria-hidden />
-                  <p className="font-mono text-label-sm text-on-secondary-container">
-                    TAILORED — SENIOR PRODUCT DESIGNER @ TECHCORP
-                  </p>
-                  <p className="mt-2 font-doc text-body-doc text-on-surface">
-                    <span className="ai-highlight">Design-systems and React experience</span> moved up
-                    front — directly relevant to this role&rsquo;s requirements.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section id="how-it-works" className="border-y border-outline-variant bg-surface-container-low py-xxl">
-          <div className="mx-auto max-w-6xl px-margin-mobile md:px-margin-desktop">
-            <div className="mb-xl text-center">
-              <span className="font-mono text-label-sm uppercase tracking-widest text-tertiary">
-                Process
+              <span className="flex items-center gap-2 text-small text-ink-3">
+                <KeyRound className="size-4 text-brass" aria-hidden /> Runs on your own free Gemini key
               </span>
-              <h2 className="mt-sm font-display text-headline-lg text-primary">
-                One profile. Many job-specific resumes.
-              </h2>
-            </div>
-            <div className="grid grid-cols-1 gap-lg md:grid-cols-3">
-              {STEPS.map((step) => (
-                <div key={step.number}>
-                  <div className="font-display text-5xl italic leading-none text-secondary">{step.number}</div>
-                  <h3 className="mb-sm mt-md font-sans text-headline-md font-semibold text-primary">{step.title}</h3>
-                  <p className="font-sans text-body-lg text-on-surface-variant">{step.body}</p>
-                </div>
-              ))}
             </div>
           </div>
+          <ProofIllustration />
         </section>
 
-        <section id="features" className="mx-auto max-w-6xl px-margin-mobile py-xxl md:px-margin-desktop">
-          <div className="mb-xl text-center">
-            <span className="font-mono text-label-sm uppercase tracking-widest text-tertiary">
-              Why it&rsquo;s different
-            </span>
-            <h2 className="mt-sm font-display text-headline-lg text-primary">
-              Built to feel like editing the resume, not a spreadsheet of it.
+        <section className="border-y border-line bg-panel/60">
+          <div className="mx-auto max-w-6xl px-5 py-20 sm:px-8">
+            <h2 className="max-w-2xl font-display text-[clamp(2rem,3.6vw,2.75rem)] leading-[1.05] tracking-[-0.015em]">
+              Five steps you can watch, not a black box.
             </h2>
-          </div>
-          <div className="grid grid-cols-1 gap-lg sm:grid-cols-2">
-            {FEATURES.map((feature) => (
-              <div
-                key={feature.title}
-                className="flex gap-md rounded-lg border border-outline-variant bg-surface-container-lowest p-lg shadow-[var(--shadow-soft)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[var(--shadow-lifted)]"
-              >
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-secondary-container text-on-secondary-container">
-                  <Icon name={feature.icon} size={18} />
-                </div>
-                <div>
-                  <h3 className="mb-1 font-sans text-headline-md text-primary">{feature.title}</h3>
-                  <p className="font-sans text-body-lg text-on-surface-variant">{feature.body}</p>
-                </div>
-              </div>
-            ))}
+            <ol className="mt-12 grid gap-px overflow-hidden rounded-lg border border-line bg-line sm:grid-cols-2 lg:grid-cols-5">
+              {STAGES.map((s, i) => (
+                <li key={s.name} className="flex flex-col gap-3 bg-ground p-5">
+                  <span className="flex items-center gap-2">
+                    <span className="flex size-6 items-center justify-center rounded-full border border-brass font-mono text-[11px] text-brass tabular">
+                      {i + 1}
+                    </span>
+                    <span className="h-px flex-1 bg-line-strong" aria-hidden />
+                  </span>
+                  <h3 className="text-lead font-semibold text-ink">{s.name}</h3>
+                  <p className="text-small text-ink-2">{s.body}</p>
+                </li>
+              ))}
+            </ol>
           </div>
         </section>
 
-        <section className="bg-primary py-xxl">
-          <div className="mx-auto max-w-max-width-doc px-margin-mobile text-center md:px-0">
-            <Icon name="api-key" size={28} className="mx-auto mb-md text-secondary" />
-            <h2 className="font-display text-headline-lg italic text-on-primary">Your Gemini key. Your data.</h2>
-            <p className="mx-auto mt-md max-w-2xl font-sans text-body-lg text-on-primary/70">
-              ResumeArchitect uses your own Google Gemini API key to tailor resumes — we never run AI
-              generation on our own account, and your key is encrypted and never shown again after you
-              save it.
+        <section className="mx-auto grid max-w-6xl gap-x-16 gap-y-12 px-5 py-24 sm:px-8 md:grid-cols-3">
+          <div>
+            <h3 className="text-lead font-semibold text-ink">See exactly what changed</h3>
+            <p className="mt-2 text-body text-ink-2">
+              A word-level redline of every line, with the reason it was changed and the requirement it serves.
             </p>
-            <div className="mt-xl">
-              <Link href="/sign-up">
-                <Button variant="primary" size="lg">
-                  Get started
-                  <Icon name="arrow-right" size={16} />
-                </Button>
-              </Link>
+          </div>
+          <div>
+            <h3 className="flex items-center gap-2 text-lead font-semibold text-ink">
+              Revert any change <RotateCcw className="size-4 text-ink-3" aria-hidden />
+            </h3>
+            <p className="mt-2 text-body text-ink-2">
+              Keep or revert changes one at a time, or edit the page directly. Select any text to have AI rewrite just
+              that part.
+            </p>
+          </div>
+          <div>
+            <h3 className="text-lead font-semibold text-ink">A score that explains itself</h3>
+            <p className="mt-2 text-body text-ink-2">
+              Must-haves, nice-to-haves, keywords, and ATS checks, each with its points and the line that earned them.
+            </p>
+          </div>
+        </section>
+
+        <section className="mx-auto max-w-6xl px-5 pb-28 sm:px-8">
+          <div className="flex flex-col items-start gap-6 rounded-lg border border-line bg-panel px-8 py-12 md:flex-row md:items-center md:justify-between">
+            <div>
+              <h2 className="font-display text-[2rem] leading-tight tracking-[-0.01em]">Your next application, set properly.</h2>
+              <p className="mt-2 text-body text-ink-2">Free to use with your own Gemini key. Your master resume is never changed.</p>
             </div>
+            <Link href="/sign-up" className={cn(buttonVariants({ variant: "primary", size: "lg" }), "shrink-0")}>
+              Create your account
+            </Link>
           </div>
         </section>
       </main>
 
-      <footer className="border-t border-outline-variant bg-surface-container-low">
-        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-md px-margin-mobile py-lg md:flex-row md:px-margin-desktop">
-          <span className="font-display text-xl italic text-primary">
-            ResumeArchitect
-          </span>
-          <p className="font-mono text-label-sm text-on-surface-variant">
-            &copy; {new Date().getFullYear()} ResumeArchitect
-          </p>
+      <footer className="border-t border-line">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-5 py-6 text-small text-ink-3 sm:px-8">
+          <span>© {new Date().getFullYear()} ResumeArchitect</span>
+          <span>Your key is encrypted at rest and never shown again.</span>
         </div>
       </footer>
     </div>

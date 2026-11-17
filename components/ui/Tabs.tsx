@@ -1,44 +1,23 @@
 "use client";
 
-import * as TabsPrimitive from "@radix-ui/react-tabs";
+import * as T from "@radix-ui/react-tabs";
+import type { ComponentProps } from "react";
 import { cn } from "@/lib/cn";
 
-export const Tabs = TabsPrimitive.Root;
+export const Tabs = T.Root;
+export const TabsContent = T.Content;
 
-export function TabsList({ className, ...props }: React.ComponentProps<typeof TabsPrimitive.List>) {
-  return (
-    <TabsPrimitive.List
-      className={cn("flex items-center gap-lg border-b border-outline-variant", className)}
-      {...props}
-    />
-  );
+export function TabsList({ className, ...props }: ComponentProps<typeof T.List>) {
+  return <T.List className={cn("inline-flex items-center gap-0.5 rounded-md border border-line bg-sunken p-0.5", className)} {...props} />;
 }
 
-export function TabsTrigger({
-  className,
-  ...props
-}: React.ComponentProps<typeof TabsPrimitive.Trigger>) {
+export function TabsTrigger({ className, ...props }: ComponentProps<typeof T.Trigger>) {
   return (
-    <TabsPrimitive.Trigger
+    <T.Trigger
       className={cn(
-        "relative py-sm font-sans text-body-lg text-on-surface-variant transition-colors -mb-px border-b-2 border-transparent",
-        "hover:text-on-surface",
-        "data-[state=active]:text-on-surface data-[state=active]:border-secondary data-[state=active]:font-medium",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2 rounded-t",
-        className
+        "inline-flex h-7 items-center gap-1.5 rounded-sm px-3 text-small font-medium text-ink-3 transition-colors hover:text-ink data-[state=active]:bg-raised data-[state=active]:text-ink data-[state=active]:shadow-[0_1px_2px_oklch(0%_0_0/0.25)] [&_svg]:size-3.5",
+        className,
       )}
-      {...props}
-    />
-  );
-}
-
-export function TabsContent({
-  className,
-  ...props
-}: React.ComponentProps<typeof TabsPrimitive.Content>) {
-  return (
-    <TabsPrimitive.Content
-      className={cn("pt-lg focus-visible:outline-none", className)}
       {...props}
     />
   );

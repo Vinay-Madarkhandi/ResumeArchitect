@@ -2,84 +2,60 @@
 
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
+import { MailCheck } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 import { Button } from "@/components/ui/Button";
-import { Input, Label, FieldError } from "@/components/ui/Input";
-import { Icon } from "@/components/icon/Icon";
+import { Field, Input } from "@/components/ui/Field";
+import { AuthHeading, FormError } from "@/components/auth/AuthHeading";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [pending, setPending] = useState(false);
   const [sent, setSent] = useState(false);
 
-  async function handleSubmit(e: FormEvent) {
+  async function onSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
-    setIsSubmitting(true);
-    const supabase = createClient();
-    const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
+    setPending(true);
+    const { error: resetError } = await createClient().auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/reset-password`,
     });
-    setIsSubmitting(false);
-
-    // Always show the same confirmation, whether or not the email exists —
-    // don't let this endpoint be used to enumerate registered accounts.
-    if (resetError && resetError.status !== 400) {
-      setError(resetError.message);
-      return;
-    }
+    setPending(false);
+    // Same confirmation whether or not the account exists, so emails can't be enumerated.
+    if (resetError && resetError.status !== 400) return setError(resetError.message);
     setSent(true);
   }
 
   if (sent) {
     return (
-      <div className="text-center">
-        <Icon name="email" size={32} className="mx-auto mb-md text-secondary" />
-        <h1 className="mb-1 font-display text-headline-lg text-primary">Check your email</h1>
-        <p className="font-sans text-body-lg text-on-surface-variant">
-          If an account exists for <span className="font-medium text-on-surface">{email}</span>, we sent a link
-          to reset your password.
-        </p>
-        <Link href="/sign-in" className="mt-lg inline-block font-sans text-body-lg text-secondary hover:underline">
+      <>
+        <MailCheck className="mb-5 size-7 text-brass" aria-hidden />
+        <AuthHeading title="Check your email">
+          If an account exists for <span className="text-ink">{email}</span>, a reset link is on its way.
+        </AuthHeading>
+        <Link href="/sign-in" className="text-small text-brass hover:underline">
           Back to sign in
         </Link>
-      </div>
+      </>
     );
   }
 
   return (
-    <div>
-      <h1 className="mb-1 font-display text-headline-lg text-primary">Reset your password</h1>
-      <p className="mb-lg font-sans text-body-lg text-on-surface-variant">
-        Enter your email and we&rsquo;ll send you a reset link.
-      </p>
-
-      <form onSubmit={handleSubmit} className="space-y-md" noValidate>
-        <div>
-          <Label htmlFor="email">Email</Label>
-          <Input
-            id="email"
-            type="email"
-            autoComplete="email"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-        </div>
-
-        <FieldError>{error ?? undefined}</FieldError>
-
-        <Button type="submit" variant="primary" className="w-full" disabled={isSubmitting}>
-          {isSubmitting ? "Sending…" : "Send reset link"}
+    <>
+      <AuthHeading title="Reset your password">We&rsquo;ll email you a link to choose a new one.</AuthHeading>
+      <form onSubmit={onSubmit} className="flex flex-col gap-4" noValidate>
+        <Field label="Email">
+          {(p) => <Input {...p} type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} />}
+        </Field>
+        <FormError>{error}</FormError>
+        <Button type="submit" variant="primary" size="lg" loading={pending} className="mt-1 w-full">
+          Send reset link
         </Button>
       </form>
-
-      <p className="mt-lg text-center font-sans text-body-lg text-on-surface-variant">
-        <Link href="/sign-in" className="text-secondary hover:underline">
-          Back to sign in
-        </Link>
-      </p>
-    </div>
+      <Link href="/sign-in" className="mt-6 inline-block text-small text-ink-2 hover:text-ink">
+        Back to sign in
+      </Link>
+    </>
   );
 }

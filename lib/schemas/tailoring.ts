@@ -1,54 +1,64 @@
 import { z } from "zod";
+import { DocumentContentSchema } from "@/lib/schemas/document";
+import { JobAnalysisSchema } from "@/lib/schemas/jobAnalysis";
 
 /**
- * Shape Gemini's tailoring call must return. Re-validated with
- * `TailoringResultSchema.safeParse()` on every response before anything is
- * persisted — this guards against SDK/schema drift and semantically-wrong
- * output the model's own declared schema wouldn't catch.
- *
- * Tailoring now operates on the freeform document (as Markdown, see
- * lib/documentMarkdown.ts) rather than typed ResumeContent fields, so a
- * "change" no longer names a fixed section — it carries a short quoted
- * snippet instead, for the UI to show what changed. A "flagged" entry is
- * not a change explanation at all: it's a proper-noun-like phrase that
- * appeared in the tailored text but not the source, surfaced for the user
- * to double-check rather than auto-rejecting the whole result (see
- * lib/tailoring/fabricationGuardrail.ts).
+ * Something in an AI edit that the source resume can't back up. Flags never
+ * block: they are shown on the change for the candidate to confirm or revert.
  */
-export const ChangeExplanationSchema = z.object({
-  kind: z.enum(["change", "flagged"]).default("change"),
-  quote: z.string().nullable().default(null),
-  whatChanged: z.string(),
-  why: z.string(),
+export const ChangeFlagSchema = z.object({
+  kind: z.enum(["number", "name", "skill"]),
+  value: z.string(),
+  message: z.string(),
 });
-export type ChangeExplanation = z.infer<typeof ChangeExplanationSchema>;
+export type ChangeFlag = z.infer<typeof ChangeFlagSchema>;
 
-export const TailoringResultSchema = z.object({
-  markdown: z.string(),
-  changes: z.array(ChangeExplanationSchema).default([]),
+/** One applied AI edit, stored with its application so the review can explain it. */
+export const TailoredChangeSchema = z.object({
+  id: z.string(),
+  op: z.enum(["rewrite", "insert_after", "remove"]),
+  /** Original line as inline Markdown; null for insertions. */
+  before: z.string().nullable(),
+  /** New line as inline Markdown; null for removals. */
+  after: z.string().nullable(),
+  reason: z.string(),
+  requirementIds: z.array(z.string()).default([]),
+  flags: z.array(ChangeFlagSchema).default([]),
 });
-export type TailoringResult = z.infer<typeof TailoringResultSchema>;
+export type TailoredChange = z.infer<typeof TailoredChangeSchema>;
+
+export const PIPELINE_STAGES = ["copy", "markup", "set", "proof", "lockup"] as const;
+export type PipelineStage = (typeof PIPELINE_STAGES)[number];
 
 export const TailoringErrorCode = z.enum([
   "missing_api_key",
   "invalid_api_key",
   "invalid_jd",
   "source_not_found",
+  "rate_limited",
   "gemini_error",
   "schema_validation_failed",
-  "fabrication_detected",
   "timeout",
   "unknown",
 ]);
 export type TailoringErrorCodeT = z.infer<typeof TailoringErrorCode>;
 
-export const TailoringSessionStatus = z.enum([
-  "pending",
-  "analyzing",
-  "generating",
-  "completed",
-  "failed",
-]);
-export type TailoringSessionStatusT = z.infer<typeof TailoringSessionStatus>;
+/** Events streamed (as NDJSON) from POST /api/tailoring while the pipeline runs. */
+export type PipelineEvent =
+  | { type: "session"; sessionId: string }
+  | { type: "stage"; stage: PipelineStage; status: "running" | "done"; note?: string }
+  | { type: "done"; sessionId: string; resumeId: string }
+  | { type: "error"; code: TailoringErrorCodeT; message: string; sessionId?: string; stage?: PipelineStage };
+
+/** What the workspace needs from a completed session. Parsed defensively from the DB row. */
+export const SessionArtifactsSchema = z.object({
+  jobAnalysis: JobAnalysisSchema,
+  sourceSnapshot: DocumentContentSchema,
+  changes: z.array(TailoredChangeSchema),
+  summary: z.string().nullable(),
+  scoreBefore: z.number().nullable(),
+});
+export type SessionArtifacts = z.infer<typeof SessionArtifactsSchema>;
 
 export const MIN_JOB_DESCRIPTION_LENGTH = 60;
+export const MAX_JOB_DESCRIPTION_LENGTH = 20_000;
