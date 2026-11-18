@@ -20,7 +20,7 @@ export type TermMatch =
       resumeCount: number;
       /** The term as the resume writes it. */
       matchedForm: string;
-      /** Set when the term has an acronym or long form the resume never uses. */
+      /** Advice on wording or excessive repetition. */
       advice: string | null;
     }
   | {

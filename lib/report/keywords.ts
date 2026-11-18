@@ -234,7 +234,16 @@ export function groundJobSkills(facts: JobFacts, jobText: string): JobFacts {
 /** Every job skill with its status, most important first, then most repeated in the posting. */
 export function matchSkills(skills: JobSkill[], ctx: MatchContext): SkillMatch[] {
   return skills
-    .map((s) => ({ ...matchTerm(s.term, ctx), term: s.term, importance: s.importance, jdCount: postingCount(s.term, ctx) }))
+    .map(({ term, importance }) => {
+      const jdCount = postingCount(term, ctx);
+      const match = matchTerm(term, ctx);
+      if (match.status === "missing" || jdCount === 0 || match.resumeCount < Math.max(5, jdCount * 3)) {
+        return { ...match, term, importance, jdCount };
+      }
+      const expected = jdCount === 1 ? "once" : `${jdCount} times`;
+      const advice = `Your resume says "${term}" ${match.resumeCount} times. The posting uses it ${expected}. Keep the mentions that show distinct work.`;
+      return { ...match, term, importance, jdCount, advice: match.advice ? `${match.advice} ${advice}` : advice };
+    })
     .sort((a, b) => IMPORTANCE_RANK[a.importance] - IMPORTANCE_RANK[b.importance] || b.jdCount - a.jdCount);
 }
 

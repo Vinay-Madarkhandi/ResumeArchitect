@@ -150,6 +150,15 @@ describe("buildMatchReport", () => {
     expect(heading).toMatchObject({ status: "warn", fix: expect.stringContaining("Work Experience") });
   });
 
+  it("advises trimming excessive mentions without rewarding repetition", () => {
+    const job = { ...JOB, hardSkills: [{ term: "PostgreSQL", importance: "high" as const }] };
+    const normal = report("## Skills\n\nPostgreSQL", job);
+    const stuffed = report(`## Skills\n\n${"PostgreSQL, ".repeat(6)}`, job);
+    expect(stuffed.hardSkills[0].advice).toMatch(/6 times.*posting.*once/i);
+    expect(normal.hardSkills[0].advice).toBeNull();
+    expect(stuffed.breakdown[0].ratio).toBe(normal.breakdown[0].ratio);
+  });
+
   it("is reproducible: the same input always gives the same report", () => {
     expect(report(STRONG)).toEqual(report(STRONG));
   });
