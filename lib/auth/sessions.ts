@@ -45,6 +45,14 @@ export async function removeSessions(tx: Transaction, userId: string) {
   return removed.map(({ id }) => id);
 }
 
+// Postgres deletes a banned user's session rows from a trigger, so collect the
+// ids first; the caller clears their cache keys once the transaction commits.
+export async function banUser(tx: Transaction, userId: string, reason: string) {
+  const ids = await removeSessions(tx, userId);
+  await tx.update(users).set({ banned_at: sql`now()`, ban_reason: reason }).where(eq(users.id, userId));
+  return ids;
+}
+
 export async function clearSessionCache(ids: string[]) {
   if (ids.length) await cache().del(...ids.map(cacheKey)).catch(() => {});
 }

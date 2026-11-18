@@ -4,7 +4,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vites
 import { db } from "@/lib/db";
 import { cache } from "@/lib/cache";
 import { authTokens, personalTokens, recoveryCodes, sessions, users } from "@/lib/db/schema";
-import { clearSessionCache, createSession, removeSessions, revokeSession, validateSession } from "./sessions";
+import { banUser, clearSessionCache, createSession, removeSessions, revokeSession, validateSession } from "./sessions";
 import { authenticatePersonalToken, createPersonalToken, listPersonalTokens, readBearer, revokePersonalToken } from "./personal-tokens";
 import { hashToken } from "./secrets";
 import { authenticator, checkSecondFactor, protectTotp, replaceRecoveryCodes } from "./totp";
@@ -82,6 +82,21 @@ describe("sessions", () => {
       await expect(validateSession(session.token)).resolves.toBeNull();
       await expect(cache().get(cacheKey(session.token))).resolves.toBeNull();
     }
+  });
+
+  it("leaves no cached session behind after a ban", async () => {
+    const sessionsBefore = await Promise.all([create(), create()]);
+    for (const session of sessionsBefore) await validateSession(session.token);
+    const cachedFor = async () => {
+      const keys = await cache().keys("session:*");
+      return (await Promise.all(keys.map((key) => cache().get(key)))).filter((owner) => owner === userId);
+    };
+    expect((await cachedFor()).length).toBeGreaterThanOrEqual(2);
+    const ids = await db.transaction((tx) => banUser(tx, userId, "abuse"));
+    await clearSessionCache(ids);
+    expect(ids).toEqual(expect.arrayContaining(sessionsBefore.map(({ token }) => hashToken(token))));
+    expect(await cachedFor()).toHaveLength(0);
+    await db.update(users).set({ banned_at: null, ban_reason: null }).where(eq(users.id, userId));
   });
 
   it("revokes a banned account's cached session in Postgres", async () => {

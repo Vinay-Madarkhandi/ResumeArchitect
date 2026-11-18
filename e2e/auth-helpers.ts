@@ -34,8 +34,9 @@ export async function queuedEmailsContaining(text: string) {
   }
 }
 
-export async function submitSignUp(page: Page, email = `e2e-${randomUUID()}@example.com`, password = TEST_PASSWORD) {
+export async function submitSignUp(page: Page, requestedEmail?: string, password = TEST_PASSWORD) {
   const unique = randomUUID();
+  const email = requestedEmail ?? `e2e-${unique}@example.com`;
   // The loopback Next server receives synthetic client addresses so each
   // Playwright user has an independent production-sized sign-up limit.
   const address = `2001:db8:${unique.split("-").slice(1, 4).join(":")}::1`;
@@ -55,8 +56,8 @@ export async function verifySignUp(page: Page, link: string) {
   await expect(page).toHaveURL(/\/onboarding$/);
 }
 
-export async function signUp(page: Page) {
-  const email = await submitSignUp(page);
+export async function signUp(page: Page, requestedEmail?: string) {
+  const email = await submitSignUp(page, requestedEmail);
   await verifySignUp(page, await mailboxLink(email, "verify"));
   return email;
 }

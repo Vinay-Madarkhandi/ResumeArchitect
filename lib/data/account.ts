@@ -1,5 +1,9 @@
 import { eq } from "drizzle-orm";
-import { db } from "@/lib/db";
+import { db, type Transaction } from "@/lib/db";
+import { clearSessionCache, removeSessions } from "@/lib/auth/sessions";
+import { deleteUserObjects } from "@/lib/storage";
+import { logger } from "@/lib/logger";
+import { maintenanceQueue } from "@/lib/queue";
 import { aiCalls, jobDescriptions, personalTokens, profiles, resumes, scans, tailoringSessions, users } from "@/lib/db/schema";
 
 export async function clearAccountData(userId: string) {
@@ -44,4 +48,23 @@ export async function exportAccountData(userId: string) {
       aiCalls: await tx.select().from(aiCalls).where(eq(aiCalls.user_id, userId)),
     };
   }, { isolationLevel: "repeatable read", accessMode: "read only" });
+}
+
+export async function deleteAccountRows(tx: Transaction, userId: string) {
+  const ids = await removeSessions(tx, userId);
+  await tx.delete(users).where(eq(users.id, userId));
+  return ids;
+}
+
+export async function finishAccountDeletion(userId: string, sessionIds: string[]) {
+  await clearSessionCache(sessionIds);
+  try {
+    await deleteUserObjects(userId);
+  } catch {
+    logger.warn({ userId }, "Retrying removal of account objects");
+    await maintenanceQueue().add("delete-user-objects", { userId }, {
+      jobId: `delete-user-objects-${userId}`, attempts: 5, backoff: { type: "exponential", delay: 15_000 },
+    }).catch(() => logger.error({ userId }, "Could not schedule account object removal"));
+    // The daily orphan cleanup also removes any keys left by stalled uploads.
+  }
 }

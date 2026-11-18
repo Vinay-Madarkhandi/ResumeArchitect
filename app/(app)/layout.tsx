@@ -1,3 +1,4 @@
+import { AnnouncementBanner } from "@/components/layout/AnnouncementBanner";
 import { RefreshSession } from "@/components/auth/RefreshSession";
 import { requireOnboardedUser } from "@/lib/auth/onboarding";
 import type { ReactNode } from "react";
@@ -9,7 +10,8 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-dvh">
       <RefreshSession />
-      <AppHeader email={user.email ?? ""} />
+      <AppHeader email={user.email} admin={user.role === "admin"} />
+      <AnnouncementBanner />
       <main className="mx-auto max-w-6xl px-4 pb-24 pt-8 sm:px-6 sm:pt-10">{children}</main>
     </div>
   );

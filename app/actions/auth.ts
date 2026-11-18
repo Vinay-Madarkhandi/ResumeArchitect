@@ -4,6 +4,7 @@ import { eq, sql } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { db } from "@/lib/db";
+import { countOtherActiveAdmins, lockAdminMembership } from "@/lib/auth/admin-membership";
 import { users } from "@/lib/db/schema";
 import { rateLimit, rateLimitWait } from "@/lib/cache/rateLimit";
 import { hashPassword, passwordError, verifyPassword } from "@/lib/auth/password";
@@ -109,15 +110,18 @@ export async function verifyEmail(token: string, change: boolean, password: stri
   const hash = change ? undefined : await hashPassword(password);
   try {
     const result = await db.transaction(async (tx) => {
+      if (change) await lockAdminMembership(tx);
       const user = await lockAccount(tx, link.userId);
       if (!user || (!change && user.email_verified_at)) return;
-      const used = await consumeToken(tx, token, purpose, user.id);
-      if (!used) return;
-      const email = change ? used.payload?.email : user.email;
+      const email = change ? link.nextEmail : user.email;
       if (!email) return;
+      const role = roleFor(email, change ? "user" : user.role);
+      if (user.role === "admin" && role === "user" && !await countOtherActiveAdmins(tx, user.id)) {
+        return fail("Assign another active administrator before changing your email.");
+      }
+      if (!await consumeToken(tx, token, purpose, user.id)) return;
       await tx.update(users).set({
-        email, email_verified_at: sql`now()`, password_hash: hash,
-        role: roleFor(email, change ? "user" : user.role),
+        email, email_verified_at: sql`now()`, password_hash: hash, role,
         last_sign_in_at: change ? user.last_sign_in_at : sql`now()`,
       }).where(eq(users.id, user.id));
       if (change) {
@@ -128,6 +132,7 @@ export async function verifyEmail(token: string, change: boolean, password: stri
       return { session: await createSession(tx, user.id, ip, userAgent) };
     });
     if (!result) return fail(invalidLink);
+    if ("error" in result) return result;
     if (result.session) {
       const previous = await sessionToken();
       if (previous) await revokeSession(previous);

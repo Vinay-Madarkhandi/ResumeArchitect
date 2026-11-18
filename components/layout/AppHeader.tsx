@@ -16,7 +16,7 @@ const NAV = [
   { href: "/settings", label: "Settings" },
 ];
 
-export function AppHeader({ email }: { email: string }) {
+export function AppHeader({ email, admin = false }: { email: string; admin?: boolean }) {
   const pathname = usePathname();
   const router = useRouter();
 
@@ -31,7 +31,7 @@ export function AppHeader({ email }: { email: string }) {
       <div className="mx-auto flex h-14 max-w-6xl items-center gap-6 px-4 sm:px-6">
         <Logo href="/dashboard" />
         <nav aria-label="Main" className="hidden items-center gap-1 sm:flex">
-          {NAV.map((item) => {
+          {(admin ? [...NAV, { href: "/admin", label: "Admin" }] : NAV).map((item) => {
             const active = pathname.startsWith(item.href);
             return (
               <Link
@@ -69,6 +69,9 @@ export function AppHeader({ email }: { email: string }) {
               <MenuItem onSelect={() => router.push("/tracker")} className="sm:hidden">
                 <Columns3 /> Job tracker
               </MenuItem>
+              {admin && <MenuItem onSelect={() => router.push("/admin")} className="sm:hidden">
+                <Settings /> Admin
+              </MenuItem>}
               <MenuItem onSelect={leaveAccount}>
                 <LogOut /> Sign out
               </MenuItem>

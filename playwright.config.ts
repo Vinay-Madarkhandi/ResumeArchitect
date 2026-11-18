@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { loadEnvConfig } from "@next/env";
 import { defineConfig, devices } from "@playwright/test";
 
@@ -5,6 +6,7 @@ loadEnvConfig(process.cwd(), true);
 const port = Number(process.env.E2E_PORT ?? 3217);
 const fakePort = Number(process.env.FAKE_GEMINI_PORT ?? 4010);
 const baseURL = `http://localhost:${port}`;
+const adminEmail = process.env.E2E_ADMIN_EMAIL ??= `e2e-admin-${randomUUID()}@example.com`;
 
 export default defineConfig({
   testDir: "e2e",
@@ -25,6 +27,7 @@ export default defineConfig({
       timeout: 300_000,
       env: {
         APP_URL: baseURL,
+        ADMIN_EMAILS: [process.env.ADMIN_EMAILS, adminEmail].filter(Boolean).join(","),
         E2E_PORT: String(port),
         GEMINI_API_BASE_URL: `http://127.0.0.1:${fakePort}`,
         KEY_ENCRYPTION_SECRET: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
