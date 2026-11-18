@@ -37,7 +37,7 @@ export async function authenticatePersonalToken(token: string) {
   const [user] = await db.update(personalTokens).set({ last_used_at: sql`clock_timestamp()` }).from(users)
     .where(and(
       eq(personalTokens.token_hash, hashToken(token)), eq(users.id, personalTokens.user_id),
-      isNotNull(users.email_verified_at), isNull(users.banned_at),
+      isNotNull(users.email_verified_at), isNotNull(users.password_set_at), isNull(users.banned_at),
     )).returning({ id: users.id, email: users.email });
   return user;
 }

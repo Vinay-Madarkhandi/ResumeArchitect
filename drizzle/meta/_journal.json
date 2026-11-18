@@ -78,6 +78,13 @@
       "when": 1795009090359,
       "tag": "0010_sign_in_links",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1795013143823,
+      "tag": "0011_revoke_unproven_credentials",
+      "breakpoints": true
     }
   ]
 }

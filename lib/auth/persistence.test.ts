@@ -1,5 +1,8 @@
 import { randomUUID } from "node:crypto";
-import { eq, inArray } from "drizzle-orm";
+import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { eq, inArray, sql } from "drizzle-orm";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { db } from "@/lib/db";
 import { cache } from "@/lib/cache";
@@ -35,7 +38,8 @@ beforeAll(async () => {
 }, 30_000);
 beforeEach(async () => {
   const [row] = await db.insert(users).values({
-    email: `${randomUUID()}@example.com`, password_hash: "fixture", email_verified_at: new Date().toISOString(),
+    email: `${randomUUID()}@example.com`, password_hash: "fixture",
+    email_verified_at: new Date().toISOString(), password_set_at: new Date().toISOString(),
   }).returning({ id: users.id });
   userId = row.id;
 });
@@ -239,6 +243,55 @@ describe("personal API tokens", () => {
     await expect(authenticatePersonalToken(token)).resolves.toBeUndefined();
     await db.update(users).set({ email_verified_at: new Date().toISOString() }).where(eq(users.id, userId));
     await expect(revokePersonalToken(userId, entry.id)).resolves.toBe(true);
+    await expect(authenticatePersonalToken(token)).resolves.toBeUndefined();
+  });
+});
+
+describe("an account whose password was never proven", () => {
+  // Migrations 0000 through `last` in a folder of their own.
+  function migrationsThrough(last: number) {
+    const dir = mkdtempSync(join(tmpdir(), "ra-migrations-"));
+    mkdirSync(join(dir, "meta"));
+    const journal = JSON.parse(readFileSync("drizzle/meta/_journal.json", "utf8"));
+    journal.entries = journal.entries.filter(({ idx }: { idx: number }) => idx <= last);
+    writeFileSync(join(dir, "meta/_journal.json"), JSON.stringify(journal));
+    for (const { tag } of journal.entries) copyFileSync(`drizzle/${tag}.sql`, join(dir, `${tag}.sql`));
+    return dir;
+  }
+
+  it("loses the sessions and API tokens it held before passwords had to be proven", async () => {
+    const { PGlite } = await import("@electric-sql/pglite");
+    const { citext } = await import("@electric-sql/pglite/contrib/citext");
+    const { drizzle } = await import("drizzle-orm/pglite");
+    const { migrate } = await import("drizzle-orm/pglite/migrator");
+    const client = new PGlite({ extensions: { citext } });
+    try {
+      const old = drizzle(client);
+      await migrate(old, { migrationsFolder: migrationsThrough(10) });
+      const owners = await old.insert(users).values([
+        { email: "unproven@example.com", password_hash: "fixture", email_verified_at: sql`now()` },
+        { email: "proven@example.com", password_hash: "fixture", email_verified_at: sql`now()`, password_set_at: sql`now()` },
+      ]).returning({ id: users.id, email: users.email });
+      for (const { id } of owners) {
+        await old.insert(sessions).values({ id: hashToken(randomUUID()), user_id: id, expires_at: new Date(Date.now() + 86_400_000).toISOString() });
+        await old.insert(personalTokens).values({ user_id: id, name: "Clipper", token_hash: hashToken(randomUUID()) });
+      }
+
+      await migrate(old, { migrationsFolder: "drizzle" });
+      const proven = owners.find(({ email }) => email === "proven@example.com")!.id;
+      expect((await old.select({ owner: sessions.user_id }).from(sessions)).map(({ owner }) => owner)).toEqual([proven]);
+      expect((await old.select({ owner: personalTokens.user_id }).from(personalTokens)).map(({ owner }) => owner)).toEqual([proven]);
+    } finally {
+      await client.close();
+    }
+  }, 30_000);
+
+  it("cannot use a session or API token", async () => {
+    const session = await create();
+    const token = await createPersonalToken(userId, "Clipper");
+    await expect(validateSession(session.token)).resolves.toMatchObject({ id: userId });
+    await db.update(users).set({ password_set_at: null }).where(eq(users.id, userId));
+    await expect(validateSession(session.token)).resolves.toBeNull();
     await expect(authenticatePersonalToken(token)).resolves.toBeUndefined();
   });
 });

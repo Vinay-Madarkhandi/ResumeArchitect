@@ -71,7 +71,9 @@ checks are the app's job). Put those queries in small per-entity modules
 - Roles: `user`, `admin`. `ADMIN_EMAILS` grants admin when such an address is verified,
   and at boot only to accounts whose password was chosen on a verify or reset link
   (`users.password_set_at`). Administrators cannot mark an address verified: only the
-  inbox can, and an unproven password never becomes usable.
+  inbox can, and an unproven password never becomes usable. An account with no
+  `password_set_at` has no active credentials: sessions and personal API tokens are
+  rejected (migration 0011 deleted the ones issued before), until a reset sets it.
   Banned users cannot sign in; their sessions are revoked.
 
 `proxy.ts` (Next 16 middleware) only checks that the cookie exists for the paths in

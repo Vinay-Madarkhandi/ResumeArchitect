@@ -32,7 +32,7 @@ export async function validateSession(token: string, renew = false) {
     id: users.id, email: users.email, role: users.role, twoFactor: users.totp_enabled_at, expiresAt: sessions.expires_at,
   }).from(sessions).innerJoin(users, eq(users.id, sessions.user_id)).where(and(
     eq(sessions.id, id), owner ? eq(users.id, owner) : undefined,
-    gt(sessions.expires_at, sql`now()`), isNull(users.banned_at), isNotNull(users.email_verified_at),
+    gt(sessions.expires_at, sql`now()`), isNull(users.banned_at), isNotNull(users.email_verified_at), isNotNull(users.password_set_at),
   ));
   if (!row) return null;
   if (!owner) await cache().eval(cacheUnlessRevoked, 2, cacheKey(id), revokedKey(id), row.id, 300).catch(() => {});
