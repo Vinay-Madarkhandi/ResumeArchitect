@@ -1,4 +1,4 @@
-import { and, eq, gt, inArray, isNull, sql } from "drizzle-orm";
+import { and, eq, gt, inArray, isNotNull, isNull, sql } from "drizzle-orm";
 import { db, type Transaction } from "@/lib/db";
 import { authTokens, profiles, recoveryCodes, users } from "@/lib/db/schema";
 import { appUrl, adminEmails } from "./config";
@@ -19,15 +19,23 @@ export async function accountByEmail(email: string) {
   return user;
 }
 
+// A pending account belongs to whoever signed up last: the inbox owner can
+// always replace a password someone else chose before the address was proven.
 export async function register(email: string, passwordHash: string) {
   return db.transaction(async (tx) => {
-    const [user] = await tx.insert(users).values({
-      email, password_hash: passwordHash, role: adminEmails().includes(email) ? "admin" : "user",
-    }).onConflictDoNothing({ target: users.email }).returning();
-    if (user) await tx.insert(profiles).values({ id: user.id });
-    return user;
+    const [created] = await tx.insert(users).values({ email, password_hash: passwordHash })
+      .onConflictDoNothing({ target: users.email }).returning();
+    if (created) {
+      await tx.insert(profiles).values({ id: created.id });
+      return created;
+    }
+    const [pending] = await tx.update(users).set({ password_hash: passwordHash })
+      .where(and(eq(users.email, email), isNull(users.email_verified_at), isNull(users.banned_at))).returning();
+    return pending;
   });
 }
+
+export const roleFor = (email: string, role: Account["role"]) => adminEmails().includes(email) ? "admin" : role;
 
 const emailDetails = {
   verify_email: { template: "verify", path: "/verify-email" },
@@ -42,7 +50,7 @@ export async function sendAccountLink(
 ) {
   const result = await db.transaction(async (tx) => {
     const user = await lockAccount(tx, userId);
-    if (!user || (purpose === "verify_email" ? user.email_verified_at : !user.email_verified_at)) return;
+    if (!user || (purpose === "verify_email" && user.email_verified_at) || (purpose === "change_email" && !user.email_verified_at)) return;
     if (options && !await options.authorize(tx, user)) return;
     const recipient = options?.recipient;
     const scope = and(eq(authTokens.user_id, userId), eq(authTokens.purpose, purpose), isNull(authTokens.used_at));
@@ -80,7 +88,9 @@ export async function confirmCredentials(tx: Transaction, user: Account, passwor
 
 export async function seedAdmins() {
   const emails = adminEmails();
-  if (emails.length) await db.update(users).set({ role: "admin" }).where(inArray(users.email, emails));
+  if (emails.length) {
+    await db.update(users).set({ role: "admin" }).where(and(inArray(users.email, emails), isNotNull(users.email_verified_at)));
+  }
 }
 
 export async function disableTotp(tx: Transaction, userId: string) {

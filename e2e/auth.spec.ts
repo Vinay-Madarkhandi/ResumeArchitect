@@ -12,6 +12,22 @@ test("sign-up requires email verification and the link works once", async ({ pag
   await expect(page.getByRole("heading", { name: "This link isn't valid" })).toBeVisible();
 });
 
+test("an inbox owner reclaims an address someone else signed up with first", async ({ browser, page }) => {
+  const email = await submitSignUp(page, undefined, "squatter-chosen-password");
+  const owner = await browser.newPage();
+  try {
+    await submitSignUp(owner, email);
+    await verifySignUp(owner, await mailboxLink(email, "verify"));
+
+    await signIn(page, email, "squatter-chosen-password");
+    await expect(page.getByText("That email and password don't match an account.")).toBeVisible();
+    await signIn(page, email);
+    await expect(page).toHaveURL(/\/onboarding$/);
+  } finally {
+    await owner.close();
+  }
+});
+
 test("sign in and out with a password", async ({ page, context }) => {
   const email = await signUp(page);
   await onboard(page);

@@ -32,12 +32,12 @@ export function VerifyEmailForm({ token, changing }: { token: string; changing: 
   return (
     <>
       <AuthHeading title="Verify your email">
-        {changing ? "Confirm that you want to use this email address." : "Enter your password to activate your account."}
+        {changing ? "Confirm that you want to use this email address." : "Choose the password for your account to activate it."}
       </AuthHeading>
       <form onSubmit={submit} className="flex flex-col gap-4">
         {!changing && (
-          <Field label="Password">
-            {(p) => <Input {...p} type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} />}
+          <Field label="Password" hint="At least 10 characters.">
+            {(p) => <Input {...p} type="password" autoComplete="new-password" minLength={10} required value={password} onChange={(e) => setPassword(e.target.value)} />}
           </Field>
         )}
         <FormError>{error}</FormError>

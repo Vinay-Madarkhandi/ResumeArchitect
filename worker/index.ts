@@ -1,13 +1,11 @@
 import { hostname } from "node:os";
 import { Worker } from "bullmq";
-import { lt, sql } from "drizzle-orm";
 import { cache, redisUrl } from "@/lib/cache";
-import { db, sqlClient } from "@/lib/db";
-import { authTokens, sessions } from "@/lib/db/schema";
+import { sqlClient } from "@/lib/db";
 import { deliverEmail } from "@/lib/email";
 import { logger } from "@/lib/logger";
 import { maintenanceQueue, type EmailJob, type MaintenanceJob, type MaintenancePayload } from "@/lib/queue";
-import { clearSessionCache } from "@/lib/auth/sessions";
+import { purgeExpiredAuth } from "@/lib/auth/purge";
 import { deleteObjects, deleteUserObjects, listObjects, resumeBuckets } from "@/lib/storage";
 import { referencedObjects } from "@/lib/data/resumes";
 
@@ -44,11 +42,7 @@ async function main() {
       return deleteUserObjects(job.data.userId);
     }
     if (job.name === "orphaned-objects") return cleanOrphans();
-    if (job.name === "purge-auth") {
-      const expired = await db.delete(sessions).where(lt(sessions.expires_at, sql`now()`)).returning({ id: sessions.id });
-      await db.delete(authTokens).where(lt(authTokens.expires_at, sql`now()`));
-      await clearSessionCache(expired.map(({ id }) => id));
-    }
+    if (job.name === "purge-auth") return purgeExpiredAuth();
   }, { connection });
   for (const worker of [email, maintenance]) {
     worker.on("failed", (job) => logger.error({ queue: worker.name, jobId: job?.id }, "Background job failed"));

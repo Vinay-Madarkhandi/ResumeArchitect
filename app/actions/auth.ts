@@ -7,8 +7,8 @@ import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
 import { rateLimit } from "@/lib/cache/rateLimit";
 import { hashPassword, passwordError, verifyPassword } from "@/lib/auth/password";
-import { normalizeEmail, adminEmails } from "@/lib/auth/config";
-import { accountByEmail, confirmCredentials, disableTotp, invalidateLinks, lockAccount, register, sendAccountLink } from "@/lib/auth/accounts";
+import { normalizeEmail } from "@/lib/auth/config";
+import { accountByEmail, confirmCredentials, disableTotp, invalidateLinks, lockAccount, register, roleFor, sendAccountLink } from "@/lib/auth/accounts";
 import { clearSessionCookie, currentUser, requestDetails, sessionToken, writeSession } from "@/lib/auth/current-user";
 import { clearSessionCache, createSession, removeSessions, revokeSession } from "@/lib/auth/sessions";
 import { consumeToken, findToken } from "@/lib/auth/tokens";
@@ -31,12 +31,8 @@ export async function signUp(rawEmail: string, password: string): Promise<{ erro
   const { ip } = await requestDetails();
   if (await rateLimit("sign-up", ip ?? "unknown", 5, HOUR)) return fail("Too many sign-up attempts. Try again later.");
 
-  const hash = await hashPassword(password);
-  const created = await register(email, hash);
-  const user = created ?? await accountByEmail(email);
-  if (user && !user.banned_at && !user.email_verified_at && (created || await verifyPassword(password, user.password_hash))) {
-    await sendAccountLink(user.id, "verify_email");
-  }
+  const pending = await register(email, await hashPassword(password));
+  if (pending) await sendAccountLink(pending.id, "verify_email");
   return {};
 }
 
@@ -55,7 +51,7 @@ export async function signIn(rawEmail: string, password: string, code: string): 
   }
   if (!await verifyPassword(password, candidate.password_hash)) return fail(invalidCredentials);
   if (candidate.banned_at) return fail("This account is suspended.");
-  if (!candidate.email_verified_at) return fail("Verify your email before signing in. Sign up again with the same password to request a fresh link.");
+  if (!candidate.email_verified_at) return fail("Verify your email before signing in. Sign up again to get a fresh link.");
 
   const result = await db.transaction(async (tx) => {
     const user = await lockAccount(tx, candidate.id);
@@ -90,34 +86,37 @@ export async function signOutEverywhere() {
   await clearSessionCookie();
 }
 
+// The link proves control of the inbox, so a new account takes the password
+// typed here rather than one an earlier, unproven sign-up chose.
 export async function verifyEmail(token: string, change: boolean, password: string): Promise<{ error?: string }> {
   const purpose = change ? "change_email" : "verify_email";
+  const error = change ? null : passwordError(password);
+  if (error) return fail(error);
   const link = await findToken(token, purpose);
   if (!link) return fail(invalidLink);
   const { ip, userAgent } = await requestDetails();
-  if (await credentialLimit(link.userId)) return fail("Too many attempts. Try again later.");
+  const hash = change ? undefined : await hashPassword(password);
   try {
     const result = await db.transaction(async (tx) => {
       const user = await lockAccount(tx, link.userId);
       if (!user || (!change && user.email_verified_at)) return;
-      if (!change && !await verifyPassword(password, user.password_hash)) return fail("Enter the password you used to sign up.");
       const used = await consumeToken(tx, token, purpose, user.id);
       if (!used) return;
       const email = change ? used.payload?.email : user.email;
       if (!email) return;
       await tx.update(users).set({
-        email, email_verified_at: sql`now()`,
-        role: adminEmails().includes(email) ? "admin" : change ? "user" : user.role,
+        email, email_verified_at: sql`now()`, password_hash: hash,
+        role: roleFor(email, change ? "user" : user.role),
         last_sign_in_at: change ? user.last_sign_in_at : sql`now()`,
       }).where(eq(users.id, user.id));
       if (change) {
         await invalidateLinks(tx, user.id, ["reset_password"]);
         return { removed: await removeSessions(tx, user.id) };
       }
+      await invalidateLinks(tx, user.id, ["verify_email", "reset_password"]);
       return { session: await createSession(tx, user.id, ip, userAgent) };
     });
     if (!result) return fail(invalidLink);
-    if ("error" in result) return result;
     if (result.session) {
       const previous = await sessionToken();
       if (previous) await revokeSession(previous);
@@ -137,7 +136,7 @@ export async function forgotPassword(rawEmail: string) {
   const email = normalizeEmail(rawEmail);
   if (!validEmail(email) || await rateLimit("reset", email, 3, HOUR)) return {};
   const user = await accountByEmail(email);
-  if (user?.email_verified_at && !user.banned_at) {
+  if (user && !user.banned_at) {
     try {
       await sendAccountLink(user.id, "reset_password");
     } catch {
@@ -155,9 +154,12 @@ export async function resetPassword(token: string, password: string): Promise<{ 
   const hash = await hashPassword(password);
   const removed = await db.transaction(async (tx) => {
     const user = await lockAccount(tx, link.userId);
-    if (!user?.email_verified_at || !await consumeToken(tx, token, "reset_password", user.id)) return;
-    await tx.update(users).set({ password_hash: hash }).where(eq(users.id, user.id));
-    await invalidateLinks(tx, user.id, ["reset_password", "change_email"]);
+    if (!user || !await consumeToken(tx, token, "reset_password", user.id)) return;
+    await tx.update(users).set({
+      password_hash: hash, role: roleFor(user.email, user.role),
+      email_verified_at: sql`coalesce(${users.email_verified_at}, now())`,
+    }).where(eq(users.id, user.id));
+    await invalidateLinks(tx, user.id, ["verify_email", "reset_password", "change_email"]);
     return removeSessions(tx, user.id);
   });
   if (!removed) return fail(invalidLink);

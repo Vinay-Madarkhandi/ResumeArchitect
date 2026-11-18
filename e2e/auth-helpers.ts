@@ -21,16 +21,15 @@ export async function mailboxLink(email: string, template: "verify" | "reset" | 
   return link;
 }
 
-export async function submitSignUp(page: Page) {
+export async function submitSignUp(page: Page, email = `e2e-${randomUUID()}@example.com`, password = TEST_PASSWORD) {
   const unique = randomUUID();
-  const email = `e2e-${unique}@example.com`;
   // The loopback Next server receives synthetic client addresses so each
   // Playwright user has an independent production-sized sign-up limit.
   const address = `2001:db8:${unique.split("-").slice(1, 4).join(":")}::1`;
   await page.setExtraHTTPHeaders({ "x-forwarded-for": address });
   await page.goto("/sign-up");
   await page.getByLabel("Email").fill(email);
-  await page.getByLabel("Password").fill(TEST_PASSWORD);
+  await page.getByLabel("Password").fill(password);
   await page.getByRole("button", { name: "Create account" }).click();
   await expect(page.getByRole("heading", { name: "Check your email" })).toBeVisible();
   return email;

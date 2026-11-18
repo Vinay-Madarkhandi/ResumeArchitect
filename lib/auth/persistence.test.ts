@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { db } from "@/lib/db";
 import { cache } from "@/lib/cache";
@@ -8,6 +8,7 @@ import { clearSessionCache, createSession, removeSessions, revokeSession, valida
 import { hashToken } from "./secrets";
 import { authenticator, checkSecondFactor, protectTotp, replaceRecoveryCodes } from "./totp";
 import { consumeToken, findToken, issueToken } from "./tokens";
+import { purgeExpiredAuth } from "./purge";
 
 const fixture = vi.hoisted(() => ({ close: async () => {} }));
 vi.mock("@/lib/db", async () => {
@@ -131,4 +132,25 @@ it("validates authenticator codes and consumes hashed recovery codes once", asyn
   } finally {
     vi.unstubAllEnvs();
   }
+});
+
+it("releases addresses nobody verified within a week of their last link expiring", async () => {
+  const daysAgo = (days: number) => new Date(Date.now() - days * 86_400_000).toISOString();
+  const account = async (verified: boolean, linkExpired?: number) => {
+    const [row] = await db.insert(users).values({
+      email: `${randomUUID()}@example.com`, password_hash: "fixture", created_at: daysAgo(30),
+      email_verified_at: verified ? daysAgo(30) : null,
+    }).returning({ id: users.id });
+    if (linkExpired !== undefined) {
+      await db.insert(authTokens).values({ id: randomUUID(), user_id: row.id, purpose: "verify_email", expires_at: daysAgo(linkExpired) });
+    }
+    return row.id;
+  };
+  const abandoned = await account(false, 8);
+  const neverSent = await account(false);
+  const recent = await account(false, 6);
+  const verified = await account(true, 8);
+  await purgeExpiredAuth();
+  const left = await db.select({ id: users.id }).from(users).where(inArray(users.id, [abandoned, neverSent, recent, verified]));
+  expect(left.map(({ id }) => id).sort()).toEqual([recent, verified].sort());
 });
