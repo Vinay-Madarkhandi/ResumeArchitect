@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { expect, test } from "@playwright/test";
 import { Queue } from "bullmq";
+import Redis from "ioredis";
 import { signIn, signUp } from "./auth-helpers";
 
 test("admin publishes announcements, suspends users, and sees audited actions", async ({ page: user, browser }) => {
@@ -61,12 +62,22 @@ test("admin publishes announcements, suspends users, and sees audited actions", 
     const userDetailsUrl = admin.url();
     expect((await user.goto(userDetailsUrl))?.status()).toBe(404);
 
+    const userId = new URL(userDetailsUrl).pathname.split("/").pop()!;
+    const redis = new Redis(process.env.REDIS_URL ?? "redis://localhost:16379");
+    const cachedSessions = async () => {
+      const keys = await redis.keys("session:*");
+      return (await Promise.all(keys.map((key) => redis.get(key)))).filter((owner) => owner === userId).length;
+    };
+    expect(await cachedSessions()).toBeGreaterThan(0);
+
     await admin.getByRole("button", { name: "Ban user" }).click();
     const ban = admin.getByRole("dialog", { name: "Ban user" });
     await ban.getByLabel("Reason").fill("Abusive activity confirmed");
     await ban.getByRole("button", { name: "Ban user" }).click();
     await expect(admin.getByText("Suspended", { exact: true })).toBeVisible();
     await expect(admin.getByText("No active sessions.")).toBeVisible();
+    expect(await cachedSessions()).toBe(0);
+    await redis.quit();
 
     await user.goto("/onboarding");
     await expect(user).toHaveURL(/\/sign-in/);

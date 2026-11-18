@@ -12,7 +12,7 @@ import { parseUtcTime } from "@/lib/admin/announcement-date";
 import { countOtherActiveAdmins, lockAdminMembership } from "@/lib/auth/admin-membership";
 import { invalidateLinks, sendAccountLink } from "@/lib/auth/accounts";
 import { clearSessionCookie } from "@/lib/auth/current-user";
-import { clearSessionCache, removeSessions } from "@/lib/auth/sessions";
+import { banUser, clearSessionCache, removeSessions } from "@/lib/auth/sessions";
 import { deleteAccountRows, finishAccountDeletion } from "@/lib/data/account";
 import { announcementLevels } from "@/lib/data/announcements";
 import { db } from "@/lib/db";
@@ -78,8 +78,7 @@ export async function updateUser(_previous: AdminResult, form: FormData): Promis
         break;
       case "ban":
         if (target.banned_at) return { error: "This account is already suspended." };
-        await tx.update(users).set({ banned_at: sql`now()`, ban_reason: reason }).where(eq(users.id, id));
-        sessions = await removeSessions(tx, id);
+        sessions = await banUser(tx, id, reason);
         await invalidateLinks(tx, id, ["reset_password", "change_email"]);
         break;
       case "unban":
