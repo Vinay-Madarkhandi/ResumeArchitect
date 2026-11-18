@@ -20,9 +20,17 @@ test("admin publishes announcements, suspends users, and sees audited actions", 
     await admin.getByRole("link", { name: "Announcements" }).click();
     const message = `Service update ${randomUUID()}`;
     await admin.getByLabel("Message").fill(message);
+    const submission = admin.waitForRequest((request) => request.method() === "POST" && !!request.headers()["next-action"]);
     await admin.getByRole("button", { name: "Save announcement" }).click();
+    const request = await submission;
+    const headers = request.headers();
+    const unauthorized = await user.request.post(request.url(), {
+      data: request.postDataBuffer()!,
+      headers: { "next-action": headers["next-action"], "content-type": headers["content-type"], origin: new URL(request.url()).origin },
+    });
+    expect(unauthorized.status()).toBe(404);
     const announcementRow = admin.getByRole("row").filter({ hasText: message });
-    await expect(announcementRow.getByText("Active", { exact: true })).toBeVisible();
+    await expect(announcementRow.getByText("Active", { exact: true })).toHaveCount(1);
 
     await user.goto("/onboarding");
     const banner = user.getByRole("complementary", { name: "Service announcement" });
