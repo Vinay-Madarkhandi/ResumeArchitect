@@ -3,11 +3,12 @@ import { DocumentContentSchema } from "@/lib/schemas/document";
 import { JobAnalysisSchema } from "@/lib/schemas/jobAnalysis";
 
 /**
- * Something in an AI edit that the source resume can't back up. Flags never
+ * Something in an AI edit the candidate should look at: a claim the source
+ * resume can't back up, a detail the rewrite lost, or added padding. Flags never
  * block: they are shown on the change for the candidate to confirm or revert.
  */
 export const ChangeFlagSchema = z.object({
-  kind: z.enum(["number", "name", "skill"]),
+  kind: z.enum(["number", "name", "skill", "dropped", "filler"]),
   value: z.string(),
   message: z.string(),
 });

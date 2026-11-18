@@ -5,6 +5,8 @@ import { parseResume } from "@/lib/gemini/prompts/parseResume";
 import { markdownToDocument } from "@/lib/documentMarkdown";
 import { resumeContentToDoc } from "@/lib/documentConversion";
 import { parseResumeFile } from "@/lib/resume-parser";
+import { docxToDocument } from "@/lib/docx/inPlace";
+import { toUnits } from "@/lib/resume/units";
 import type { DocumentContent } from "@/lib/schemas/document";
 
 export class ImportError extends Error {}
@@ -62,14 +64,25 @@ export function plainTextToDocument(text: string): DocumentContent {
 }
 
 /**
- * Turns an uploaded file (or pasted text) into a resume document. With a
- * Gemini key, the AI rebuilds clean structure from the extracted text; without
- * one, PDFs go through the rule-based parser and other text is split by line.
+ * Turns an uploaded file (or pasted text) into a resume document. A Word file
+ * is read paragraph by paragraph, word for word, so its own design can be
+ * kept on export (`keepsDesign`). Otherwise, with a Gemini key, the AI
+ * rebuilds clean structure from the extracted text; without one, PDFs go
+ * through the rule-based parser and other text is split by line.
  */
 export async function importResume(
   input: { kind: SourceKind; buffer: ArrayBuffer } | { kind: "text"; text: string },
   apiKey: string | null,
-): Promise<{ title: string; content: DocumentContent; usedAi: boolean }> {
+): Promise<{ title: string; content: DocumentContent; usedAi: boolean; keepsDesign: boolean }> {
+  if ("buffer" in input && input.kind === "docx") {
+    const content = await docxToDocument(input.buffer.slice(0)).catch(() => null);
+    const units = content ? toUnits(content) : [];
+    if (content && units.length >= 3) {
+      const name = units[0].kind === "heading" ? units[0].text : "";
+      return { title: name || "Master resume", content, usedAi: false, keepsDesign: true };
+    }
+  }
+
   const text = "text" in input ? input.text : await extractPlainText(input.kind, input.buffer);
   if (text.replace(/\s+/g, "").length < 80) {
     throw new ImportError(
@@ -81,7 +94,7 @@ export async function importResume(
     try {
       const parsed = await parseResume(geminiModel(apiKey), text);
       const content = markdownToDocument(parsed.markdown);
-      if (content.content.length >= 3) return { title: parsed.title.trim() || "Master resume", content, usedAi: true };
+      if (content.content.length >= 3) return { title: parsed.title.trim() || "Master resume", content, usedAi: true, keepsDesign: false };
     } catch {
       // Fall through to the non-AI path; the user can still review and fix it.
     }
@@ -90,10 +103,10 @@ export async function importResume(
   if ("buffer" in input && input.kind === "pdf") {
     try {
       const { content } = await parseResumeFile(input.buffer.slice(0));
-      return { title: "Master resume", content: resumeContentToDoc(content), usedAi: false };
+      return { title: "Master resume", content: resumeContentToDoc(content), usedAi: false, keepsDesign: false };
     } catch {
       // Use the line-based fallback below.
     }
   }
-  return { title: "Master resume", content: plainTextToDocument(text), usedAi: false };
+  return { title: "Master resume", content: plainTextToDocument(text), usedAi: false, keepsDesign: false };
 }

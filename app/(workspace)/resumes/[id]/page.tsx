@@ -24,7 +24,7 @@ export default async function ResumePage({ params, searchParams }: PageProps<"/r
 
   const { data: resume } = await supabase
     .from("resumes")
-    .select("id, title, kind, content, template, reviewed_change_ids, tailoring_session_id, application_status, cover_letter, job_description_id")
+    .select("id, title, kind, content, template, reviewed_change_ids, tailoring_session_id, application_status, cover_letter, job_description_id, design_source_path")
     .eq("id", id)
     .eq("user_id", user.id)
     .maybeSingle();
@@ -70,6 +70,7 @@ export default async function ResumePage({ params, searchParams }: PageProps<"/r
         reviewedChangeIds: resume.reviewed_change_ids,
         applicationStatus: resume.application_status,
         coverLetter: resume.cover_letter,
+        keepsWordDesign: !!resume.design_source_path,
       }}
       session={session}
       jobText={jobText}

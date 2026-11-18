@@ -58,6 +58,7 @@ export async function duplicateResume(resumeId: string): Promise<ActionResult> {
     job_description_id: original.job_description_id,
     job_title_snapshot: original.job_title_snapshot,
     job_company_snapshot: original.job_company_snapshot,
+    design_source_path: original.design_source_path,
     low_confidence_fields: [],
   });
 
@@ -86,7 +87,15 @@ export async function deleteResume(resumeId: string): Promise<ActionResult> {
   }
 
   const objectsToRemove: { bucket: string; path: string }[] = [];
-  if (resume.original_file_storage_path) {
+  const { count: designUsers } = resume.original_file_storage_path
+    ? await supabase
+        .from("resumes")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", user.id)
+        .eq("design_source_path", resume.original_file_storage_path)
+        .neq("id", resumeId)
+    : { count: 0 };
+  if (resume.original_file_storage_path && !designUsers) {
     objectsToRemove.push({ bucket: RESUME_UPLOADS_BUCKET, path: resume.original_file_storage_path });
   }
   if (resume.pdf_storage_path) {

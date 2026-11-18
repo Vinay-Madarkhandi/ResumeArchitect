@@ -9,7 +9,9 @@ registerResumeFonts();
 /**
  * Renders the resume document to PDF with @react-pdf/renderer: no headless
  * browser, so it runs in a serverless function. h1 is the name, h2 a section
- * heading, h3 an entry title (role, school, project).
+ * heading, h3 an entry title (role, school, project). Section headings are
+ * never letter-spaced: text extraction (what an ATS reads) turns tracked
+ * capitals into "S U M M A RY".
  */
 function makeStyles(t: Template) {
   return StyleSheet.create({
@@ -21,15 +23,22 @@ function makeStyles(t: Template) {
       color: t.color.ink,
       lineHeight: 1.42,
     },
-    h1: { fontFamily: t.headingFont, fontSize: t.size.name, fontWeight: 700, lineHeight: 1.15, marginBottom: 6 },
+    h1: {
+      fontFamily: t.headingFont,
+      fontSize: t.size.name,
+      fontWeight: 700,
+      lineHeight: 1.15,
+      marginBottom: 6,
+      textAlign: t.header === "center" ? "center" : "left",
+    },
+    contact: { marginBottom: 3.5, textAlign: t.header === "center" ? "center" : "left" },
     h2:
       t.sectionStyle === "rule"
         ? {
             fontFamily: t.headingFont,
             fontSize: t.size.section,
             fontWeight: 600,
-            textTransform: "uppercase",
-            letterSpacing: 1.1,
+            textTransform: t.sectionCase === "upper" ? "uppercase" : "none",
             borderBottom: `0.75pt solid ${t.color.rule}`,
             paddingBottom: 3,
             marginTop: 13,
@@ -40,7 +49,6 @@ function makeStyles(t: Template) {
             fontSize: t.size.section,
             fontWeight: 700,
             textTransform: "uppercase",
-            letterSpacing: 1.4,
             color: t.color.accent,
             marginTop: 14,
             marginBottom: 5,
@@ -92,7 +100,8 @@ function renderItem(item: ListItemNode, marker: string, key: number, s: Styles):
   );
 }
 
-function renderBlock(node: BlockNode, key: number, s: Styles): ReactNode {
+/** `contact` marks the paragraph right under the name, which follows the header alignment. */
+function renderBlock(node: BlockNode, key: number, s: Styles, contact = false): ReactNode {
   switch (node.type) {
     case "heading": {
       if (node.content.length === 0) return null;
@@ -106,7 +115,7 @@ function renderBlock(node: BlockNode, key: number, s: Styles): ReactNode {
     case "paragraph":
       if (node.content.length === 0) return null;
       return (
-        <Text key={key} style={s.paragraph}>
+        <Text key={key} style={contact ? s.contact : s.paragraph}>
           {renderInline(node.content, s)}
         </Text>
       );
@@ -129,12 +138,17 @@ function renderBlock(node: BlockNode, key: number, s: Styles): ReactNode {
   }
 }
 
+function isContactLine(blocks: BlockNode[], i: number): boolean {
+  const prev = blocks[i - 1];
+  return i > 0 && prev.type === "heading" && prev.attrs.level === 1 && blocks[i].type === "paragraph";
+}
+
 export function DocumentPdf({ doc, template, title }: { doc: DocumentContent; template: Template; title?: string }) {
   const s = makeStyles(template);
   return (
     <Document title={title} creator="ResumeArchitect" producer="ResumeArchitect">
       <Page size="A4" style={s.page}>
-        {doc.content.map((block, i) => renderBlock(block, i, s))}
+        {doc.content.map((block, i) => renderBlock(block, i, s, isContactLine(doc.content, i)))}
       </Page>
     </Document>
   );

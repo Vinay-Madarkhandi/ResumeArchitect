@@ -155,3 +155,88 @@ test("signed-out visitors are sent to sign in, and unsafe redirects are ignored"
   await page.goto("/sign-in?redirect=//evil.example");
   await expect(page.getByRole("heading", { name: "Sign in" })).toBeVisible();
 });
+
+/** Ada's resume as a hand-made Word file: centered header, tab-aligned dates, real bullets, bold skill labels. */
+async function adaWordFile(): Promise<Buffer> {
+  const { AlignmentType, Document, LevelFormat, Packer, Paragraph, Tab, TabStopType, TextRun } = await import("docx");
+  const bullet = (text: string) => new Paragraph({ numbering: { reference: "dots", level: 0 }, children: [new TextRun(text)] });
+  const section = (text: string) => new Paragraph({ children: [new TextRun({ text, bold: true, size: 26 })] });
+  return Packer.toBuffer(
+    new Document({
+      numbering: { config: [{ reference: "dots", levels: [{ level: 0, format: LevelFormat.BULLET, text: "●", alignment: AlignmentType.LEFT }] }] },
+      sections: [
+        {
+          children: [
+            new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "Ada Lovelace", bold: true, size: 36 })] }),
+            new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun("ada@example.com | +44 20 7946 0958 | London")] }),
+            section("Professional Summary"),
+            new Paragraph({ children: [new TextRun("Backend engineer who builds dependable systems and enjoys teaching.")] }),
+            section("Work Experience"),
+            new Paragraph({
+              tabStops: [{ type: TabStopType.RIGHT, position: 10000 }],
+              children: [new TextRun({ text: "Senior Engineer, Analytical Engines Ltd", bold: true }), new TextRun({ children: [new Tab(), "2020 – Present"] })],
+            }),
+            bullet("Worked on services in Go backed by PostgreSQL"),
+            bullet("Built a Kafka pipeline that cut invoice latency by 38%"),
+            bullet("Ran the on-call rotation and incident reviews"),
+            section("Technical Skills"),
+            new Paragraph({ children: [new TextRun({ text: "Languages:", bold: true }), new TextRun(" Go, SQL")] }),
+            new Paragraph({ children: [new TextRun({ text: "Tools:", bold: true }), new TextRun(" PostgreSQL, Kafka, Docker")] }),
+          ],
+        },
+      ],
+    }),
+  );
+}
+
+test("a Word resume comes back as the same file with only the wording changed", async ({ page }) => {
+  const JSZip = (await import("jszip")).default;
+  const paragraphs = async (file: Buffer) =>
+    ((await (await JSZip.loadAsync(file)).file("word/document.xml")!.async("string")).match(/<w:p[ >][\s\S]*?<\/w:p>/g) ?? []);
+
+  await signUp(page);
+  await page.getByLabel("API key").fill("AIzaTESTKEY0000wxyz");
+  await page.getByRole("button", { name: "Connect key" }).click();
+  await expect(page).toHaveURL(/\/onboarding\/resume/);
+  const original = await adaWordFile();
+  await page.locator('input[type="file"]').setInputFiles({
+    name: "Ada Lovelace.docx",
+    mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    buffer: original,
+  });
+  await expect(page).toHaveURL(/\/onboarding\/review\?resumeId=/, { timeout: 30_000 });
+  const review = page.getByRole("textbox", { name: "Resume document" });
+  await expect(review).toContainText("Worked on services in Go backed by PostgreSQL");
+  await expect(review).toContainText("Senior Engineer, Analytical Engines Ltd · 2020 – Present");
+  await page.getByRole("button", { name: "Save as my master resume" }).click();
+  await expect(page).toHaveURL(/\/dashboard/);
+
+  await page.getByRole("link", { name: "New application" }).first().click();
+  await page.getByLabel("Job post").fill(JOB);
+  await page.getByRole("button", { name: "Tailor resume" }).click();
+  await expect(page).toHaveURL(/\/resumes\/[0-9a-f-]+\?view=review/, { timeout: 60_000 });
+
+  await page.getByRole("button", { name: "Download" }).click();
+  await expect(page.getByText("Same fonts and layout, new wording.")).toBeVisible();
+  const download = page.waitForEvent("download");
+  await page.getByRole("menuitem", { name: "Word, your original file" }).click();
+  const file = await download;
+  expect(file.suggestedFilename()).toMatch(/\.docx$/);
+  const { readFile } = await import("node:fs/promises");
+  const tailored = await readFile((await file.path())!);
+
+  const before = await paragraphs(original);
+  const after = await paragraphs(tailored);
+  const xml = after.join("\n");
+  // The fake model rewrote two bullets, extended the skills line, and added one bullet.
+  expect(xml).toContain("Led payment services in Go backed by PostgreSQL");
+  expect(xml).toContain("2M daily transactions");
+  expect(xml).toContain("Mentored engineers through on-call rotations");
+  expect(after).toHaveLength(before.length + 1);
+  // The design is untouched: the centered header and the tab-aligned dates are the original paragraphs, byte for byte.
+  expect(after[0]).toBe(before[0]);
+  expect(after[0]).toContain('<w:jc w:val="center"/>');
+  expect(after.find((p) => p.includes("2020 – Present"))).toBe(before.find((p) => p.includes("2020 – Present")));
+  // The new bullet is a real Word bullet, like its neighbours.
+  expect(after.find((p) => p.includes("Mentored engineers"))).toContain("<w:numPr>");
+});

@@ -84,6 +84,7 @@ export function ImportResume({ hasKey, next }: { hasKey: boolean; next: string }
           <div>
             <p className="text-lead font-medium text-ink">Drop your resume here</p>
             <p className="mt-1 text-small text-ink-3">PDF, Word (.docx), or plain text · up to 10 MB</p>
+            <p className="mt-2 text-small text-ink-2">Have the Word file? Use it: your downloads keep its exact design.</p>
           </div>
           <Button onClick={() => input.current?.click()}>Choose file</Button>
           <input ref={input} type="file" accept={ACCEPT} className="sr-only" onChange={(e) => upload(e.target.files?.[0])} tabIndex={-1} />

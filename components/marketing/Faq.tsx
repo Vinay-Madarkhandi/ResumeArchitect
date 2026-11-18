@@ -30,7 +30,7 @@ const QUESTIONS: { q: string; a: ReactNode }[] = [
   },
   {
     q: "What can I download?",
-    a: "PDF or Word (.docx), in the Classic or Modern template. Both are built from exactly what’s on screen, including any edits you made, so there are no surprises in the file. You can also copy the resume as plain text.",
+    a: "If you upload your resume as a Word file, you get that same file back with only the wording changed: your fonts, layout, and spacing stay exactly as you made them. You can also download a PDF or Word file in the Classic, Modern, or Standard template, built from exactly what’s on screen, or copy the resume as plain text.",
   },
   {
     q: "Does it guarantee I’ll get past an ATS?",

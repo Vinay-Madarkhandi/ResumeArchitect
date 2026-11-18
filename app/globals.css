@@ -499,3 +499,20 @@ a {
   background: transparent;
   text-decoration-color: currentColor;
 }
+
+.paper[data-template="standard"] {
+  --paper-body: var(--font-paper-sans);
+  font-size: 13px;
+}
+
+.paper[data-template="standard"] .paper-flow h1,
+.paper[data-template="standard"] .paper-flow h1 + p {
+  text-align: center;
+}
+
+.paper[data-template="standard"] .paper-flow h2 {
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 15px;
+  font-weight: 700;
+}
