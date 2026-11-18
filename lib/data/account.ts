@@ -4,12 +4,18 @@ import { clearSessionCache, removeSessions } from "@/lib/auth/sessions";
 import { deleteUserObjects } from "@/lib/storage";
 import { logger } from "@/lib/logger";
 import { maintenanceQueue } from "@/lib/queue";
-import { aiCalls, jobDescriptions, personalTokens, profiles, resumes, scans, tailoringSessions, users } from "@/lib/db/schema";
+import {
+  aiCalls, coverLetterScans, interviewAnswers, interviewSessions, jobDescriptions, linkedinReviews, personalTokens, profiles,
+  resumes, scans, tailoringSessions, users,
+} from "@/lib/db/schema";
 
 export async function clearAccountData(userId: string) {
   await db.transaction(async (tx) => {
     await tx.select({ id: profiles.id }).from(profiles).where(eq(profiles.id, userId)).for("update");
     await tx.delete(scans).where(eq(scans.user_id, userId));
+    await tx.delete(linkedinReviews).where(eq(linkedinReviews.user_id, userId));
+    await tx.delete(coverLetterScans).where(eq(coverLetterScans.user_id, userId));
+    await tx.delete(interviewSessions).where(eq(interviewSessions.user_id, userId));
     await tx.delete(resumes).where(eq(resumes.user_id, userId));
     await tx.delete(tailoringSessions).where(eq(tailoringSessions.user_id, userId));
     await tx.delete(jobDescriptions).where(eq(jobDescriptions.user_id, userId));
@@ -45,6 +51,10 @@ export async function exportAccountData(userId: string) {
       jobDescriptions: await tx.select().from(jobDescriptions).where(eq(jobDescriptions.user_id, userId)),
       tailoringSessions: await tx.select().from(tailoringSessions).where(eq(tailoringSessions.user_id, userId)),
       scans: await tx.select().from(scans).where(eq(scans.user_id, userId)),
+      linkedinReviews: await tx.select().from(linkedinReviews).where(eq(linkedinReviews.user_id, userId)),
+      coverLetterScans: await tx.select().from(coverLetterScans).where(eq(coverLetterScans.user_id, userId)),
+      interviewSessions: await tx.select().from(interviewSessions).where(eq(interviewSessions.user_id, userId)),
+      interviewAnswers: await tx.select().from(interviewAnswers).where(eq(interviewAnswers.user_id, userId)),
       aiCalls: await tx.select().from(aiCalls).where(eq(aiCalls.user_id, userId)),
     };
   }, { isolationLevel: "repeatable read", accessMode: "read only" });

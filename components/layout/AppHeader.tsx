@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Columns3, LogOut, Plus, Settings, UserRound } from "lucide-react";
+import { Briefcase, Columns3, ContactRound, LogOut, MessagesSquare, PenLine, Plus, Settings, ShieldCheck, UserRound } from "lucide-react";
 import { signOut } from "@/app/actions/auth";
 import { Logo } from "@/components/ui/Logo";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
@@ -11,14 +11,18 @@ import { Menu, MenuContent, MenuItem, MenuLabel, MenuSeparator, MenuTrigger } fr
 import { cn } from "@/lib/cn";
 
 const NAV = [
-  { href: "/dashboard", label: "Applications" },
-  { href: "/tracker", label: "Job tracker" },
-  { href: "/settings", label: "Settings" },
+  { href: "/dashboard", label: "Applications", icon: Briefcase },
+  { href: "/tracker", label: "Job tracker", icon: Columns3 },
+  { href: "/linkedin", label: "LinkedIn review", icon: ContactRound },
+  { href: "/interview", label: "Interview prep", icon: MessagesSquare },
+  { href: "/cover-letter", label: "Cover letter scan", icon: PenLine },
+  { href: "/settings", label: "Settings", icon: Settings },
 ];
 
 export function AppHeader({ email, admin = false }: { email: string; admin?: boolean }) {
   const pathname = usePathname();
   const router = useRouter();
+  const nav = admin ? [...NAV, { href: "/admin", label: "Admin", icon: ShieldCheck }] : NAV;
 
   async function leaveAccount() {
     await signOut();
@@ -30,8 +34,8 @@ export function AppHeader({ email, admin = false }: { email: string; admin?: boo
     <header className="sticky top-0 z-40 border-b border-line bg-ground/90 backdrop-blur-md">
       <div className="mx-auto flex h-14 max-w-6xl items-center gap-6 px-4 sm:px-6">
         <Logo href="/dashboard" />
-        <nav aria-label="Main" className="hidden items-center gap-1 sm:flex">
-          {(admin ? [...NAV, { href: "/admin", label: "Admin" }] : NAV).map((item) => {
+        <nav aria-label="Main" className="hidden items-center gap-1 lg:flex">
+          {nav.map((item) => {
             const active = pathname.startsWith(item.href);
             return (
               <Link
@@ -60,18 +64,11 @@ export function AppHeader({ email, admin = false }: { email: string; admin?: boo
             <MenuContent>
               <MenuLabel className="max-w-56 truncate">{email}</MenuLabel>
               <MenuSeparator />
-              <MenuItem onSelect={() => router.push("/settings")} className="sm:hidden">
-                <Settings /> Settings
-              </MenuItem>
-              <MenuItem onSelect={() => router.push("/dashboard")} className="sm:hidden">
-                <Plus /> Applications
-              </MenuItem>
-              <MenuItem onSelect={() => router.push("/tracker")} className="sm:hidden">
-                <Columns3 /> Job tracker
-              </MenuItem>
-              {admin && <MenuItem onSelect={() => router.push("/admin")} className="sm:hidden">
-                <Settings /> Admin
-              </MenuItem>}
+              {nav.map(({ href, label, icon: Icon }) => (
+                <MenuItem key={href} onSelect={() => router.push(href)} className="lg:hidden">
+                  <Icon aria-hidden /> {label}
+                </MenuItem>
+              ))}
               <MenuItem onSelect={leaveAccount}>
                 <LogOut /> Sign out
               </MenuItem>

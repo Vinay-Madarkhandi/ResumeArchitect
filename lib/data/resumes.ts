@@ -101,3 +101,18 @@ export async function referencedObjects(userId: string, bucket: string, keys: st
     .where(and(eq(resumes.user_id, userId), inArray(resumes.pdf_storage_path, keys)));
   return new Set(rows.flatMap(({ pdf }) => pdf ? [pdf] : []));
 }
+
+/** Tailored applications with their job, for the career tools' target pickers. */
+export async function listApplications(userId: string) {
+  return db.select({
+    id: resumes.id, title: resumes.title, job_title: resumes.job_title_snapshot, company: resumes.job_company_snapshot,
+    cover_letter: resumes.cover_letter,
+  }).from(resumes).where(and(eq(resumes.user_id, userId), eq(resumes.kind, "tailored"), eq(resumes.status, "draft")))
+    .orderBy(desc(resumes.updated_at));
+}
+
+export async function getDefaultMaster(userId: string) {
+  const [row] = await db.select().from(resumes)
+    .where(and(eq(resumes.user_id, userId), eq(resumes.kind, "master"), eq(resumes.is_default, true)));
+  return row;
+}

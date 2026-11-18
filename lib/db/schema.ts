@@ -216,6 +216,75 @@ export const scans = pgTable("scans", {
   check("scans_match_rate_check", sql`${t.match_rate} between 0 and 100`),
 ]);
 
+/** A LinkedIn profile review: the pasted sections, the deterministic report, and optional AI suggestions. */
+export const linkedinReviews = pgTable("linkedin_reviews", {
+  id: id(),
+  user_id: owner(),
+  target_label: text("target_label"),
+  job_analysis: jsonb("job_analysis").$type<JobAnalysis>(),
+  resume_id: uuid("resume_id").references(() => resumes.id, { onDelete: "set null" }),
+  job_description_id: uuid("job_description_id").references(() => jobDescriptions.id, { onDelete: "set null" }),
+  profile: jsonb("profile").notNull(),
+  report: jsonb("report").notNull(),
+  suggestions: jsonb("suggestions"),
+  score: smallint("score").notNull(),
+  created_at: created(),
+}, (t) => [
+  index("linkedin_reviews_user_created_idx").on(t.user_id, t.created_at.desc()),
+  index("linkedin_reviews_resume_idx").on(t.resume_id),
+  index("linkedin_reviews_job_description_idx").on(t.job_description_id),
+  check("linkedin_reviews_score_check", sql`${t.score} between 0 and 100`),
+]);
+
+/** A cover letter measured against one job. The letter text is a snapshot, so later edits don't change the report. */
+export const coverLetterScans = pgTable("cover_letter_scans", {
+  id: id(),
+  user_id: owner(),
+  resume_id: uuid("resume_id").references(() => resumes.id, { onDelete: "set null" }),
+  job_description_id: uuid("job_description_id").references(() => jobDescriptions.id, { onDelete: "set null" }),
+  target_label: text("target_label").notNull(),
+  letter: text("letter").notNull(),
+  report: jsonb("report").notNull(),
+  score: smallint("score").notNull(),
+  created_at: created(),
+}, (t) => [
+  index("cover_letter_scans_user_created_idx").on(t.user_id, t.created_at.desc()),
+  index("cover_letter_scans_resume_idx").on(t.resume_id),
+  index("cover_letter_scans_job_description_idx").on(t.job_description_id),
+  check("cover_letter_scans_score_check", sql`${t.score} between 0 and 100`),
+]);
+
+/** Questions generated for one job; each practice answer is a row in interview_answers. */
+export const interviewSessions = pgTable("interview_sessions", {
+  id: id(),
+  user_id: owner(),
+  resume_id: uuid("resume_id").references(() => resumes.id, { onDelete: "set null" }),
+  job_description_id: uuid("job_description_id").references(() => jobDescriptions.id, { onDelete: "set null" }),
+  target_label: text("target_label").notNull(),
+  job_analysis: jsonb("job_analysis").$type<JobAnalysis>().notNull(),
+  questions: jsonb("questions").notNull(),
+  created_at: created(),
+}, (t) => [
+  index("interview_sessions_user_created_idx").on(t.user_id, t.created_at.desc()),
+  index("interview_sessions_resume_idx").on(t.resume_id),
+  index("interview_sessions_job_description_idx").on(t.job_description_id),
+]);
+
+export const interviewAnswers = pgTable("interview_answers", {
+  id: id(),
+  user_id: owner(),
+  session_id: uuid("session_id").notNull().references(() => interviewSessions.id, { onDelete: "cascade" }),
+  question_id: text("question_id").notNull(),
+  answer: text("answer").notNull(),
+  feedback: jsonb("feedback").notNull(),
+  score: smallint("score").notNull(),
+  created_at: created(),
+}, (t) => [
+  index("interview_answers_session_idx").on(t.session_id, t.created_at),
+  index("interview_answers_user_idx").on(t.user_id),
+  check("interview_answers_score_check", sql`${t.score} between 0 and 100`),
+]);
+
 export const auditLog = pgTable("audit_log", {
   id: id(),
   actor_id: uuid("actor_id").references(() => users.id, { onDelete: "set null" }),
