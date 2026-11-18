@@ -1,3 +1,4 @@
+import { checkOrigin } from "@/lib/auth/guards";
 import { NextResponse } from "next/server";
 import { renderToBuffer } from "@react-pdf/renderer";
 import { extractText, getDocumentProxy } from "unpdf";
@@ -27,6 +28,8 @@ function pageEndAnchor(pageText: string): string {
  * possibly unsaved content posted by the client.
  */
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const originError = checkOrigin(request);
+  if (originError) return originError;
   const { id } = await params;
   const owned = await requireOwnedResume(id);
   if (!owned.ok) return owned.response;

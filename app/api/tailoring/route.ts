@@ -1,6 +1,9 @@
-import { cookies } from "next/headers";
+import { getResume } from "@/lib/data/resumes";
+import { getTailoringSession } from "@/lib/data/tailoring";
+import { createJobDescription, getJobDescription } from "@/lib/data/job-descriptions";
+import { checkOrigin } from "@/lib/auth/guards";
+import { currentUser } from "@/lib/auth/current-user";
 import { after, NextResponse } from "next/server";
-import { createClient } from "@/utils/supabase/server";
 import { resolveDocument } from "@/lib/documentConversion";
 import { geminiModel } from "@/lib/gemini/model";
 import { loadGeminiKey } from "@/lib/server/geminiKey";
@@ -11,7 +14,7 @@ import {
   type PipelineEvent,
 } from "@/lib/schemas/tailoring";
 import { runPipeline } from "@/lib/tailoring/pipeline";
-import { supabasePipelineStore } from "@/lib/tailoring/supabaseStore";
+import { postgresPipelineStore } from "@/lib/tailoring/postgresStore";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -28,10 +31,9 @@ function fail(status: number, code: string, message: string) {
  *   { retrySessionId }.
  */
 export async function POST(request: Request) {
-  const supabase = createClient(await cookies());
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const originError = checkOrigin(request);
+  if (originError) return originError;
+  const user = await currentUser();
   if (!user) return fail(401, "unauthorized", "Sign in to continue.");
 
   const body = await request.json().catch(() => null);
@@ -45,20 +47,11 @@ export async function POST(request: Request) {
 
   const retrySessionId = str(body?.retrySessionId);
   if (retrySessionId) {
-    const { data: previous } = await supabase
-      .from("tailoring_sessions")
-      .select("source_resume_id, job_description_id")
-      .eq("id", retrySessionId)
-      .eq("user_id", user.id)
-      .single();
+    const previous = await getTailoringSession(user.id, retrySessionId);
     if (!previous?.source_resume_id || !previous.job_description_id) {
       return fail(404, "source_not_found", "That run can't be retried. Start a new application instead.");
     }
-    const { data: jd } = await supabase
-      .from("job_descriptions")
-      .select("id, raw_text")
-      .eq("id", previous.job_description_id)
-      .single();
+    const jd = await getJobDescription(user.id, previous.job_description_id);
     if (!jd) return fail(404, "invalid_jd", "The job description for that run is gone. Start a new application.");
     sourceResumeId = previous.source_resume_id;
     jobDescriptionText = jd.raw_text;
@@ -73,20 +66,15 @@ export async function POST(request: Request) {
     return fail(400, "invalid_jd", "That job description is very long. Paste just the role details and requirements.");
   }
 
-  const { data: source } = await supabase
-    .from("resumes")
-    .select("id, title, content, design_source_path")
-    .eq("id", sourceResumeId)
-    .eq("user_id", user.id)
-    .single();
+  const source = await getResume(user.id, sourceResumeId);
   if (!source) return fail(404, "source_not_found", "That resume could not be found.");
   const sourceDoc = resolveDocument(source.content);
   if (!sourceDoc) return fail(422, "source_not_found", "That resume couldn't be read. Open it and save it once, then retry.");
 
-  const key = await loadGeminiKey(supabase, user.id);
+  const key = await loadGeminiKey(user.id);
   if (!key.ok) return fail(400, key.code, key.message);
 
-  const waitMinutes = await tailoringRateLimit(supabase, user.id);
+  const waitMinutes = await tailoringRateLimit(user.id);
   if (waitMinutes !== null) {
     return fail(
       429,
@@ -96,20 +84,16 @@ export async function POST(request: Request) {
   }
 
   if (!jobDescriptionId) {
-    const { data: jd, error } = await supabase
-      .from("job_descriptions")
-      .insert({ user_id: user.id, raw_text: jobDescriptionText, company, job_title: jobTitle })
-      .select("id")
-      .single();
-    if (error || !jd) return fail(500, "unknown", "Couldn't save the job description. Try again.");
-    jobDescriptionId = jd.id;
+    const jdId = await createJobDescription(user.id, { raw_text: jobDescriptionText, company, job_title: jobTitle })
+      .catch(() => null);
+    if (!jdId) return fail(500, "unknown", "Couldn't save the job description. Try again.");
+    jobDescriptionId = jdId;
   }
 
   const events = runPipeline(
     {
-      model: geminiModel(key.apiKey),
-      store: supabasePipelineStore(supabase, {
-        userId: user.id,
+      model: geminiModel(key.apiKey, user.id),
+      store: postgresPipelineStore(user.id, {
         sourceResumeId: source.id,
         sourceTitle: source.title,
         designSourcePath: source.design_source_path,

@@ -1,3 +1,5 @@
+import { limitAi } from "@/lib/server/rateLimit";
+import { checkOrigin } from "@/lib/auth/guards";
 import { NextResponse } from "next/server";
 import { requireOwnedResume } from "@/lib/server/ownedResume";
 import { AiError, geminiModel } from "@/lib/gemini/model";
@@ -14,10 +16,12 @@ export const maxDuration = 30;
  * selection/context/instruction come from the client's live editor state
  * directly rather than being re-fetched here. */
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const originError = checkOrigin(request);
+  if (originError) return originError;
   const { id } = await params;
   const owned = await requireOwnedResume(id);
   if (!owned.ok) return owned.response;
-  const { supabase, user } = owned;
+  const { user } = owned;
 
   const body = await request.json().catch(() => null);
   const selectedText = typeof body?.selectedText === "string" ? body.selectedText : "";
@@ -35,11 +39,14 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: "Tell it what to change." }, { status: 400 });
   }
 
-  const key = await loadGeminiKey(supabase, user.id);
+  const limited = await limitAi(user.id, "ai-edit");
+  if (limited) return limited;
+
+  const key = await loadGeminiKey(user.id);
   if (!key.ok) return NextResponse.json({ error: key.message }, { status: 400 });
 
   try {
-    const result = await editSelection(geminiModel(key.apiKey), { contextBefore, selectedText, contextAfter, instruction });
+    const result = await editSelection(geminiModel(key.apiKey, user.id), { contextBefore, selectedText, contextAfter, instruction });
     return NextResponse.json(result);
   } catch (error) {
     const message = error instanceof AiError ? error.message : "Something went wrong. Try again.";

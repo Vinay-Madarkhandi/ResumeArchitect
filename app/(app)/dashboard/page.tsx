@@ -1,9 +1,10 @@
+import { listResumes } from "@/lib/data/resumes";
+import { getProfileStatus } from "@/lib/data/profiles";
+import { getTailoringScores, latestFailedTailoring } from "@/lib/data/tailoring";
+import { requireOnboardedUser } from "@/lib/auth/onboarding";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
 import { ArrowRight, CircleAlert, FileText, Plus, RefreshCw } from "lucide-react";
-import { createClient } from "@/utils/supabase/server";
 import { buttonVariants } from "@/components/ui/Button";
 import { ResumeActions } from "@/components/dashboard/ResumeActions";
 import { ApplicationsTable, type ApplicationRow } from "@/components/dashboard/ApplicationsTable";
@@ -18,37 +19,16 @@ function hoursAgo(hours: number): string {
 }
 
 export default async function DashboardPage() {
-  const supabase = createClient(await cookies());
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/sign-in");
+  const user = await requireOnboardedUser();
 
-  const [{ data: resumes }, { data: profile }] = await Promise.all([
-    supabase
-      .from("resumes")
-      .select("id, kind, title, status, is_default, updated_at, job_title_snapshot, job_company_snapshot, tailoring_session_id, application_status")
-      .eq("user_id", user.id)
-      .order("updated_at", { ascending: false }),
-    supabase.from("profiles").select("gemini_key_status").eq("id", user.id).single(),
-  ]);
+  const [resumes, profile] = await Promise.all([listResumes(user.id), getProfileStatus(user.id)]);
 
   const master = resumes?.find((r) => r.kind === "master" && r.is_default) ?? null;
   const applications = (resumes ?? []).filter((r) => r.kind === "tailored");
   const sessionIds = applications.map((a) => a.tailoring_session_id).filter((x): x is string => !!x);
-  const { data: sessions } = sessionIds.length
-    ? await supabase.from("tailoring_sessions").select("id, score_before, score_after, changes").in("id", sessionIds)
-    : { data: [] };
-  const byId = new Map((sessions ?? []).map((s) => [s.id, s]));
-
-  const { data: failed } = await supabase
-    .from("tailoring_sessions")
-    .select("id, error_message, created_at, job_analysis")
-    .eq("user_id", user.id)
-    .eq("status", "failed")
-    .gte("created_at", hoursAgo(24))
-    .order("created_at", { ascending: false })
-    .limit(1);
+  const sessions = await getTailoringScores(user.id, sessionIds);
+  const byId = new Map(sessions.map((session) => [session.id, session]));
+  const failed = await latestFailedTailoring(user.id, hoursAgo(24));
 
   const keyMissing = profile?.gemini_key_status !== "valid";
 
@@ -113,13 +93,13 @@ export default async function DashboardPage() {
         </div>
       )}
 
-      {failed?.[0] && (
+      {failed && (
         <div className="flex flex-wrap items-center gap-3 rounded-lg border border-line bg-panel px-4 py-3 text-body">
           <CircleAlert className="size-4 text-danger" aria-hidden />
           <p className="flex-1 text-ink-2">
-            Your last run didn&rsquo;t finish{failed[0].error_message ? `: ${failed[0].error_message}` : "."}
+            Your last run didn&rsquo;t finish{failed.error_message ? `: ${failed.error_message}` : "."}
           </p>
-          <Link href={`/new?retry=${failed[0].id}`} className={buttonVariants({ size: "sm" })}>
+          <Link href={`/new?retry=${failed.id}`} className={buttonVariants({ size: "sm" })}>
             <RefreshCw aria-hidden /> Retry
           </Link>
         </div>

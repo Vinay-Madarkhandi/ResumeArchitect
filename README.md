@@ -31,38 +31,71 @@ Each application stores a snapshot of the source resume, so "original" never dri
 
 ## Run it locally
 
-Requirements: Node 22, Docker (for local Supabase).
+Use Node.js 22 and Docker with the Compose plugin.
 
 ```bash
-npm install
-npx supabase start            # local Postgres/Auth/Storage, applies supabase/migrations
-cp .env.example .env.local    # fill in the values printed by `supabase start`
-openssl rand -base64 32       # → GEMINI_KEY_ENCRYPTION_SECRET
-npm run dev
+npm ci
+cp .env.example .env
+openssl rand -base64 32         # Paste the output into KEY_ENCRYPTION_SECRET in .env
+docker compose up -d --wait postgres redis localstack
+npm run build:worker
+npm run db:migrate
+npm run worker                  # Leave this running for email and scheduled jobs
 ```
 
-Create an account, then paste a key from [Google AI Studio](https://aistudio.google.com/app/apikey) when asked.
+In a second terminal, run `npm run dev -- --port 3100` and open [localhost:3100](http://localhost:3100).
+Create an account and open the latest message in the development mailbox. Leave `RESEND_API_KEY` empty to use this mailbox.
+
+```bash
+docker compose exec -T redis redis-cli --raw LINDEX dev:mailbox 0
+```
+
+Open the `data.link` value and enter the password you used to sign up. Then connect your own Gemini key from [Google AI Studio](https://aistudio.google.com/app/apikey).
+
+To run the web app and worker in containers too, use `docker compose up -d --build --wait`. The `migrate` service applies pending migrations before both start. Check the stack with `curl -fsS http://localhost:3100/api/health`.
 
 ## Tests
 
 ```bash
 npm run typecheck
 npm run lint
-npm test            # unit tests (diff, revert, scoring, pipeline, DOCX, import helpers)
-npm run test:e2e    # Playwright, against local Supabase + a fake Gemini server
+npm test
+npm run build
+npx playwright install chromium
+npm run test:e2e
 ```
 
-The end-to-end suite starts `e2e/fake-gemini.mjs` and runs the app with `GEMINI_API_BASE_URL=http://127.0.0.1:4010`, so the full pipeline runs without a Google key. Install the browser once with `npx playwright install chromium`.
+The unit suite uses embedded Postgres and an in-memory Redis test adapter. Playwright uses the running Compose Postgres, Redis and S3 services. It builds the standalone web app and starts it alongside a local email worker and fake Gemini server, signs up in the browser and retrieves verification and reset links from Redis. Use a development database and mailbox for this suite.
 
-## Deploying
+## Deploy in production
 
-- Apply `supabase/migrations/` to your project (`npx supabase db push`).
-- Set `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, and `GEMINI_KEY_ENCRYPTION_SECRET`. Leave `GEMINI_API_BASE_URL` unset.
-- `/api/tailoring` streams for up to 300 seconds (`maxDuration`). On Vercel this needs Fluid compute or a plan that allows it.
+1. Point your domain at the Docker host and make TCP ports 80 and 443 available for Caddy.
+2. Copy `.env.example` to `.env`. Set `APP_URL` to the public HTTPS origin, choose a URL-safe `POSTGRES_PASSWORD`, and generate and securely retain a separate `KEY_ENCRYPTION_SECRET`. Set `RESEND_API_KEY` and `EMAIL_FROM` using a verified sender domain. Set `ADMIN_EMAILS` to the comma-separated addresses to promote at sign-up and migration startup. Leave `GEMINI_API_BASE_URL` empty for direct Gemini calls.
+3. Start the stack.
+
+```bash
+docker compose --profile prod up -d --build --wait
+docker compose logs --tail=50 migrate web worker backup
+curl -fsS "https://your-domain.example/api/health"
+```
+
+Caddy terminates TLS and forwards the app's streaming responses. Compose binds its direct Web, Postgres, Redis and S3 ports to loopback. The web app and worker write JSON logs to stdout. When `RESEND_API_KEY` is empty, email goes to the local Redis mailbox.
+
+Keep the named volumes across deployments. The S3 service uses LocalStack Community 4.14 with a pinned S3 persistence extension. Its data lives on the `localstack` volume, which should be included in your server backups. The `backup` service also uploads a nightly Postgres dump to `s3://backups/postgres/` and removes dumps older than 14 days. Store off-host copies of the Postgres dumps, S3 volume and encryption secret for recovery. Stopping Compose preserves volumes. `docker compose down -v` permanently removes them.
+
+Download a dump from the backup bucket with the AWS CLI. Use the host endpoint from `S3_ENDPOINT` in your environment. Restore into an empty database with Postgres 17 client tools, then point the deployment at that restored database.
+
+```bash
+aws --endpoint-url http://localhost:14566 s3 ls s3://backups/postgres/
+aws --endpoint-url http://localhost:14566 s3 cp s3://backups/postgres/<dump>.dump ./resume.dump
+scripts/restore.sh 'postgres://user:password@localhost:55432/empty_database' ./resume.dump
+```
+
+The initial migration provisions a fresh database. Importing data from a previous deployment requires a separate migration of accounts, application rows and storage objects.
 
 ## Checking against real Gemini
 
-The test suites use a fake model. To prove the prompts, schemas, and model name work against Google's API with your own key (uses a few thousand tokens):
+Run the live Gemini smoke test to check the prompts, schemas and model name against Google’s API with your own key. It uses a few thousand tokens.
 
 ```bash
 GEMINI_API_KEY=AIza... npm run smoke:gemini

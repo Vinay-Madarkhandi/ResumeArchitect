@@ -48,3 +48,5 @@ next-env.d.ts
 # impeccable runtime captures
 /.impeccable/review/
 /.impeccable/antigravity-shots/
+
+/dist/

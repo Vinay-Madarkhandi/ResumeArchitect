@@ -1,7 +1,8 @@
+import { getResume } from "@/lib/data/resumes";
+import { getProfileStatus } from "@/lib/data/profiles";
+import { requireUser } from "@/lib/auth/current-user";
 import type { Metadata } from "next";
-import { cookies } from "next/headers";
 import { notFound, redirect } from "next/navigation";
-import { createClient } from "@/utils/supabase/server";
 import { resolveDocument } from "@/lib/documentConversion";
 import { ReviewMaster } from "@/components/onboarding/ReviewMaster";
 
@@ -11,23 +12,14 @@ export default async function ReviewPage({ searchParams }: PageProps<"/onboardin
   const { resumeId } = await searchParams;
   if (typeof resumeId !== "string") redirect("/onboarding/resume");
 
-  const supabase = createClient(await cookies());
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/sign-in");
+  const user = await requireUser();
 
-  const { data: resume } = await supabase
-    .from("resumes")
-    .select("id, title, content, kind, original_file_name")
-    .eq("id", resumeId)
-    .eq("user_id", user.id)
-    .single();
+  const resume = await getResume(user.id, resumeId);
   if (!resume || resume.kind !== "master") notFound();
   const content = resolveDocument(resume.content);
   if (!content) notFound();
 
-  const { data: profile } = await supabase.from("profiles").select("gemini_key_status").eq("id", user.id).single();
+  const profile = await getProfileStatus(user.id);
 
   return (
     <ReviewMaster

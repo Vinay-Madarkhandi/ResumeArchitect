@@ -51,12 +51,17 @@ checks are the app's job). Put those queries in small per-entity modules
   check `Origin` against `APP_URL` in one helper.
 - Email verification and password reset: random token emailed as a link, stored as
   `sha256`, single use, expiry 24 h / 1 h. Reset revokes all sessions.
-- Rate limits (Redis): sign-in 5/15 min per email+IP, sign-up 5/h per IP, reset 3/h per
+- Proving the inbox always wins. Until an address is verified, its password is
+  provisional: signing up again replaces it and sends a fresh link, the verify page
+  sets the password the inbox owner types there, and a reset link also verifies.
+  Unverified accounts are deleted 7 days after their last link expired.
+- Rate limits (Redis): sign-in 5/15 min per email+IP and 20 failures/h per email (sliding, so it lapses), sign-up 5/h per IP, reset 3/h per
   email, AI endpoints per user.
 - Optional TOTP 2FA (`otpauth`), with 10 hashed recovery codes.
 - "Sign out everywhere", change email (re-verify), change password, delete account
   (cascades rows + S3 objects), export my data (JSON zip).
-- Roles: `user`, `admin`. First admin is set by `ADMIN_EMAILS` env on sign-up/boot.
+- Roles: `user`, `admin`. `ADMIN_EMAILS` grants admin when such an address is verified,
+  and at boot to verified accounts only.
   Banned users cannot sign in; their sessions are revoked.
 
 `proxy.ts` (Next 16 middleware) only checks that the cookie exists for protected
@@ -92,9 +97,10 @@ the server master key `KEY_ENCRYPTION_SECRET`). It is never logged or returned.
 
 ## Queues (BullMQ on Redis)
 
-- `email`: {template, to, data}; 5 attempts, exponential backoff.
-- `maintenance`: repeatable jobs: purge expired sessions/tokens hourly, orphaned S3
-  objects daily.
+- `email`: {template, to, data}; 5 attempts, exponential backoff. A delivered job is
+  removed at once; a job out of attempts is kept for a day with its link blanked.
+- `maintenance`: repeatable jobs: purge expired sessions, week-old expired tokens and
+  abandoned unverified accounts hourly, orphaned S3 objects daily.
 Jobs carry ids derived from their purpose (e.g. `verify:<userId>:<tokenHash>`) so a
 retry or a double click doesn't send twice.
 

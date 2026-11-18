@@ -1,22 +1,15 @@
-import type { Metadata } from "next";
-import { cookies } from "next/headers";
+import { getProfileStatus } from "@/lib/data/profiles";
 import { redirect } from "next/navigation";
-import { createClient } from "@/utils/supabase/server";
+import { requireUser } from "@/lib/auth/current-user";
+import type { Metadata } from "next";
 import { ConnectStep } from "@/components/onboarding/ConnectStep";
 
 export const metadata: Metadata = { title: "Connect Gemini" };
 
 export default async function ConnectPage() {
-  const supabase = createClient(await cookies());
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/sign-in");
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("gemini_key_status, gemini_key_last4")
-    .eq("id", user.id)
-    .single();
+  const user = await requireUser();
+  const profile = await getProfileStatus(user.id);
+  if (profile?.onboarding_completed_at) redirect("/dashboard");
 
   return (
     <div className="mx-auto grid max-w-4xl gap-10 md:grid-cols-[1fr_22rem]">

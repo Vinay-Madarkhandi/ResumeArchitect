@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Check, ChevronDown } from "lucide-react";
 import { Menu, MenuContent, MenuItem, MenuTrigger } from "@/components/ui/Menu";
 import { useToast } from "@/components/ui/Toast";
-import type { ApplicationStatus } from "@/lib/supabase/database.types";
+import type { ApplicationStatus } from "@/lib/db/schema";
 import { cn } from "@/lib/cn";
 
 export const STATUSES: Array<{ id: ApplicationStatus; label: string; dot: string }> = [
