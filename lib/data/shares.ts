@@ -1,3 +1,5 @@
+import { claimShareView, type ShareVisitor } from "@/lib/sharing/views";
+import { logger } from "@/lib/logger";
 import { and, eq, isNull, sql } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/lib/db";
@@ -41,11 +43,24 @@ export async function getShareAccess(slug: string) {
   return share;
 }
 
-export async function recordShareView(slug: string, passwordHash: string | null) {
+export async function readSharedResume(slug: string, passwordHash: string | null, visitor: ShareVisitor) {
   if (!isShareSlug(slug)) return undefined;
-  const [share] = await db.update(resumeShares).set({ views: sql`${resumeShares.views} + 1` }).where(and(
+  const access = and(
     eq(resumeShares.slug, slug),
     passwordHash === null ? isNull(resumeShares.password_hash) : eq(resumeShares.password_hash, passwordHash),
-  )).returning({ content: resumeShares.content, template: resumeShares.template });
+  );
+  const snapshot = { content: resumeShares.content, template: resumeShares.template };
+  if (await claimShareView(slug, visitor).catch(() => false)) {
+    try {
+      const [share] = await db.update(resumeShares).set({ views: sql`${resumeShares.views} + 1` })
+        .where(access).returning(snapshot);
+      return share;
+    } catch {
+      // Keep the reservation if Postgres may have committed before the
+      // connection failed. It expires at the end of this counting day.
+      logger.warn("Could not record shared resume view");
+    }
+  }
+  const [share] = await db.select(snapshot).from(resumeShares).where(access);
   return share;
 }
