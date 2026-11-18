@@ -15,6 +15,13 @@
       "when": 1794982956775,
       "tag": "0001_revoke_banned_sessions",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1794984832516,
+      "tag": "0002_track_jobs",
+      "breakpoints": true
     }
   ]
 }

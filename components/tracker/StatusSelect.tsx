@@ -14,6 +14,7 @@ export const STATUSES: Array<{ id: ApplicationStatus; label: string; dot: string
   { id: "interviewing", label: "Interviewing", dot: "bg-query" },
   { id: "offer", label: "Offer", dot: "bg-add" },
   { id: "rejected", label: "Rejected", dot: "bg-del" },
+  { id: "withdrawn", label: "Withdrawn", dot: "bg-ink-3" },
 ];
 
 export function statusMeta(id: ApplicationStatus) {

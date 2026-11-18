@@ -3,6 +3,8 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { tailoringSessions } from "@/lib/db/schema";
 
+import { registerTailoredJob } from "./jobs";
+
 type Insert = Omit<typeof tailoringSessions.$inferInsert, "user_id">;
 const owned = (userId: string, id: string) => and(eq(tailoringSessions.user_id, userId), eq(tailoringSessions.id, id));
 
@@ -34,6 +36,10 @@ export async function createTailoringSession(userId: string, values: Insert) {
 }
 
 export async function updateTailoringSession(userId: string, id: string, patch: Partial<Omit<Insert, "id">>) {
-  const [row] = await db.update(tailoringSessions).set(patch).where(owned(userId, id)).returning({ id: tailoringSessions.id });
-  if (!row) throw new Error("Couldn't update the tailoring session.");
+  await db.transaction(async (tx) => {
+    const [row] = await tx.update(tailoringSessions).set(patch).where(owned(userId, id))
+      .returning({ jobId: tailoringSessions.job_description_id, resumeId: tailoringSessions.result_resume_id });
+    if (!row) throw new Error("Couldn't update the tailoring session.");
+    if (patch.status === "completed" && row.jobId && row.resumeId) await registerTailoredJob(userId, row.jobId, row.resumeId, tx);
+  });
 }

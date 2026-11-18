@@ -1,7 +1,9 @@
-import { and, desc, eq, inArray, ne, or } from "drizzle-orm";
+import { and, desc, eq, getTableColumns, inArray, ne, or, sql } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { profiles, resumes } from "@/lib/db/schema";
+import { jobDescriptions, profiles, resumes } from "@/lib/db/schema";
+import type { ApplicationStatus } from "@/lib/tracker/stages";
+import { moveJob } from "./jobs";
 import type { DocumentContent } from "@/lib/schemas/document";
 import { RESUME_UPLOADS_BUCKET } from "@/lib/storage/paths";
 
@@ -12,9 +14,13 @@ type Patch = Partial<Pick<Insert,
 const uuid = z.uuid();
 const owned = (userId: string, resumeId: string) => and(eq(resumes.user_id, userId), eq(resumes.id, resumeId));
 
+const joinedJob = and(eq(jobDescriptions.id, resumes.job_description_id), eq(jobDescriptions.user_id, resumes.user_id));
+const stage = sql<ApplicationStatus>`coalesce(${jobDescriptions.tracker_stage}::text, ${resumes.application_status})`;
+
 export async function getResume(userId: string, resumeId: string) {
   if (!uuid.safeParse(resumeId).success) return undefined;
-  const [resume] = await db.select().from(resumes).where(owned(userId, resumeId));
+  const [resume] = await db.select({ ...getTableColumns(resumes), application_status: stage })
+    .from(resumes).leftJoin(jobDescriptions, joinedJob).where(owned(userId, resumeId));
   return resume;
 }
 
@@ -23,8 +29,8 @@ export async function listResumes(userId: string, onlyDrafts = false) {
     id: resumes.id, kind: resumes.kind, title: resumes.title, status: resumes.status, is_default: resumes.is_default,
     updated_at: resumes.updated_at, job_title_snapshot: resumes.job_title_snapshot,
     job_company_snapshot: resumes.job_company_snapshot, tailoring_session_id: resumes.tailoring_session_id,
-    application_status: resumes.application_status,
-  }).from(resumes).where(and(eq(resumes.user_id, userId), onlyDrafts ? eq(resumes.status, "draft") : undefined))
+    application_status: stage,
+  }).from(resumes).leftJoin(jobDescriptions, joinedJob).where(and(eq(resumes.user_id, userId), onlyDrafts ? eq(resumes.status, "draft") : undefined))
     .orderBy(desc(resumes.updated_at));
 }
 
@@ -46,8 +52,17 @@ export async function replaceImportDraft(userId: string, values: Insert) {
 
 export async function updateResume(userId: string, resumeId: string, patch: Patch) {
   if (!uuid.safeParse(resumeId).success) return undefined;
-  const [row] = await db.update(resumes).set(patch).where(owned(userId, resumeId)).returning({ updated_at: resumes.updated_at });
-  return row;
+  if (!patch.application_status) {
+    const [row] = await db.update(resumes).set(patch).where(owned(userId, resumeId)).returning({ updated_at: resumes.updated_at });
+    return row;
+  }
+  const next = patch.application_status;
+  return db.transaction(async (tx) => {
+    const [row] = await tx.update(resumes).set(patch).where(owned(userId, resumeId))
+      .returning({ updated_at: resumes.updated_at, jobId: resumes.job_description_id, kind: resumes.kind });
+    if (row?.kind === "tailored" && row.jobId) await moveJob(userId, row.jobId, next, tx);
+    return row;
+  });
 }
 
 export async function removeResume(userId: string, resumeId: string) {
