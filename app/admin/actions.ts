@@ -196,20 +196,27 @@ export async function endAnnouncement(_previous: AdminResult, form: FormData): P
 
 export async function toggleFlag(_previous: AdminResult, form: FormData): Promise<AdminResult> {
   const actor = await adminActor();
-  const key = form.get("key");
+  const key = z.string().min(1).max(254).refine((value) => !value.includes("\0")).safeParse(form.get("key"));
   const enabled = form.get("enabled");
-  if (typeof key !== "string" || !Object.hasOwn(featureDefinitions, key) || (enabled !== "true" && enabled !== "false")) {
-    return { error: "Invalid feature flag." };
-  }
+  if (!key.success || (enabled !== "true" && enabled !== "false")) return { error: "Invalid feature flag." };
+
   const value = enabled === "true";
-  const note = featureDefinitions[key as FeatureKey].note;
-  await db.transaction(async (tx) => {
+  const changed = await db.transaction(async (tx) => {
     await lockAdminSession(tx, actor);
-    await tx.insert(featureFlags).values({ key, enabled: value, note }).onConflictDoUpdate({
-      target: featureFlags.key, set: { enabled: value },
-    });
-    await audit(tx, actor, "feature_flag.toggle", key, { enabled: value });
+    if (Object.hasOwn(featureDefinitions, key.data)) {
+      const note = featureDefinitions[key.data as FeatureKey].note;
+      await tx.insert(featureFlags).values({ key: key.data, enabled: value, note }).onConflictDoUpdate({
+        target: featureFlags.key, set: { enabled: value },
+      });
+    } else {
+      const [flag] = await tx.update(featureFlags).set({ enabled: value }).where(eq(featureFlags.key, key.data))
+        .returning({ key: featureFlags.key });
+      if (!flag) return false;
+    }
+    await audit(tx, actor, "feature_flag.toggle", key.data, { enabled: value });
+    return true;
   });
+  if (!changed) return { error: "Feature flag not found." };
   refresh();
   return { success: value ? "Feature enabled." : "Feature disabled." };
 }
