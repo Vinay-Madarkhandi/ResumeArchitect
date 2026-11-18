@@ -41,6 +41,7 @@ const emailDetails = {
   verify_email: { template: "verify", path: "/verify-email" },
   reset_password: { template: "reset", path: "/reset-password" },
   change_email: { template: "changeEmail", path: "/verify-email" },
+  sign_in: { template: "signIn", path: "/sign-in/link" },
 } as const;
 
 export async function sendAccountLink(
@@ -50,7 +51,8 @@ export async function sendAccountLink(
 ) {
   const result = await db.transaction(async (tx) => {
     const user = await lockAccount(tx, userId);
-    if (!user || (purpose === "verify_email" && user.email_verified_at) || (purpose === "change_email" && !user.email_verified_at)) return;
+    if (!user) return;
+    if (purpose === "verify_email" ? user.email_verified_at : purpose !== "reset_password" && !user.email_verified_at) return;
     if (options && !await options.authorize(tx, user)) return;
     const recipient = options?.recipient;
     const scope = and(eq(authTokens.user_id, userId), eq(authTokens.purpose, purpose), isNull(authTokens.used_at));

@@ -5,7 +5,10 @@ import { hashToken, isToken, newToken } from "./secrets";
 
 type Purpose = typeof authTokens.$inferInsert.purpose;
 
-export const tokenLifetime = (purpose: Purpose) => (purpose === "reset_password" ? 1 : 24) * 3_600_000;
+const lifetimes: Record<Purpose, number> = {
+  verify_email: 24 * 3_600_000, change_email: 24 * 3_600_000, reset_password: 3_600_000, sign_in: 15 * 60_000,
+};
+export const tokenLifetime = (purpose: Purpose) => lifetimes[purpose];
 
 export async function issueToken(tx: Transaction, userId: string, purpose: Purpose, payload?: { email: string }) {
   const token = newToken();

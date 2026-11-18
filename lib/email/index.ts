@@ -12,6 +12,7 @@ const subjects = {
   verify: "Verify your ResumeArchitect email",
   reset: "Reset your ResumeArchitect password",
   changeEmail: "Confirm your new ResumeArchitect email",
+  signIn: "Your ResumeArchitect sign-in link",
   alert: "ResumeArchitect account alert",
   trackerDigest: "Your job tracker reminders",
 };

@@ -6,7 +6,9 @@ import { cache } from "@/lib/cache";
 import { authTokens, users } from "@/lib/db/schema";
 import type { EmailJob } from "@/lib/queue";
 import { seedAdmins } from "@/lib/auth/accounts";
-import { changeEmail, forgotPassword, resetPassword, signIn, signUp, verifyEmail } from "./auth";
+import { hashToken } from "@/lib/auth/secrets";
+import { authenticator, protectTotp } from "@/lib/auth/totp";
+import { changeEmail, forgotPassword, requestSignInLink, resetPassword, signIn, signInWithLink, signUp, verifyEmail } from "./auth";
 
 const fixture = vi.hoisted(() => ({
   close: async () => {},
@@ -64,7 +66,7 @@ const victim = () => `victim-${randomUUID()}@example.com`;
 const account = async (email: string) => (await db.select().from(users).where(eq(users.email, email)))[0];
 const from = (ip: string) => { fixture.ip = ip; };
 
-function lastLink(to: string, template: "verify" | "reset" | "changeEmail") {
+function lastLink(to: string, template: "verify" | "reset" | "changeEmail" | "signIn") {
   const job = fixture.mail.findLast((entry) => "to" in entry && entry.to === to && entry.template === template);
   if (!job || !("link" in job.data)) throw new Error(`No ${template} mail for ${to}`);
   return new URL(job.data.link).searchParams.get("token")!;
@@ -166,6 +168,7 @@ describe("an unverified address squatted by someone else", () => {
 
 describe("sign-in throttling", () => {
   const tooMany = { error: "Too many sign-in attempts. Try again in a few minutes." };
+  const backingOff = { ...tooMany, offerLink: true };
 
   async function failFromManyAddresses(email: string) {
     for (let attempt = 1; attempt <= 20; attempt++) {
@@ -182,7 +185,7 @@ describe("sign-in throttling", () => {
       await signUp(email, OWNER);
       await verifyEmail(lastLink(email, "verify"), false, OWNER);
       await failFromManyAddresses(email);
-      await expect(signIn(email, OWNER, "")).resolves.toEqual(tooMany);
+      await expect(signIn(email, OWNER, "")).resolves.toEqual(backingOff);
       vi.setSystemTime(Date.now() + 3_600_000);
       await expect(signIn(email, OWNER, "")).resolves.toEqual({});
     } finally {
@@ -193,7 +196,64 @@ describe("sign-in throttling", () => {
   it("throttles an unknown address the same way", async () => {
     const email = victim();
     await failFromManyAddresses(email);
-    await expect(signIn(email, OWNER, "")).resolves.toEqual(tooMany);
+    await expect(signIn(email, OWNER, "")).resolves.toEqual(backingOff);
+    await expect(requestSignInLink(email)).resolves.toEqual({});
+    expect(fixture.mail).toEqual([]);
+  });
+
+  async function verifiedOwner() {
+    const email = victim();
+    await signUp(email, OWNER);
+    await verifyEmail(lastLink(email, "verify"), false, OWNER);
+    fixture.cookies.clear();
+    return email;
+  }
+
+  it("lets the owner in with a one-time emailed link while guesses keep the account backing off", async () => {
+    const email = await verifiedOwner();
+    await failFromManyAddresses(email);
+    await expect(signIn(email, OWNER, "")).resolves.toEqual(backingOff);
+
+    await expect(requestSignInLink(email)).resolves.toEqual({});
+    const token = lastLink(email, "signIn");
+    const [stored] = await db.select().from(authTokens).where(eq(authTokens.id, hashToken(token)));
+    expect(stored.purpose).toBe("sign_in");
+    expect(Date.parse(stored.expires_at) - Date.now()).toBeLessThanOrEqual(15 * 60_000);
+
+    await expect(signInWithLink(token, "")).resolves.toEqual({});
+    expect(fixture.cookies.get("ra_session")).toBeTruthy();
+    await expect(signInWithLink(token, "")).resolves.toHaveProperty("error");
+
+    fixture.cookies.clear();
+    await expect(signIn(email, OWNER, "")).resolves.toEqual({});
+  });
+
+  it("rejects an expired sign-in link", async () => {
+    const email = await verifiedOwner();
+    await requestSignInLink(email);
+    const token = lastLink(email, "signIn");
+    await ageLinks(email, 15 * 60_000);
+    await expect(signInWithLink(token, "")).resolves.toHaveProperty("error");
+    expect(fixture.cookies.has("ra_session")).toBe(false);
+  });
+
+  it("still asks for the authenticator code when two-factor is on", async () => {
+    vi.stubEnv("KEY_ENCRYPTION_SECRET", Buffer.alloc(32, 7).toString("base64"));
+    try {
+      const email = await verifiedOwner();
+      const totp = authenticator(email);
+      await db.update(users).set({ totp_secret_ciphertext: protectTotp(totp), totp_enabled_at: sql`now()` })
+        .where(eq(users.email, email));
+      await requestSignInLink(email);
+      const token = lastLink(email, "signIn");
+      await expect(signInWithLink(token, "")).resolves.toEqual({ needsCode: true });
+      await expect(signInWithLink(token, String((Number(totp.generate()) + 1) % 1e6).padStart(6, "0"))).resolves.toMatchObject({ needsCode: true, error: expect.any(String) });
+      expect(fixture.cookies.has("ra_session")).toBe(false);
+      await expect(signInWithLink(token, totp.generate())).resolves.toEqual({});
+      expect(fixture.cookies.get("ra_session")).toBeTruthy();
+    } finally {
+      vi.unstubAllEnvs();
+    }
   });
 });
 

@@ -43,6 +43,32 @@ test("sign in and out with a password", async ({ page, context }) => {
   });
 });
 
+test("an owner whose account is backing off signs in with an emailed link", async ({ browser, page }) => {
+  const email = await signUp(page);
+  const owner = await browser.newPage();
+  try {
+    for (let attempt = 1; attempt <= 20; attempt++) {
+      await owner.setExtraHTTPHeaders({ "x-forwarded-for": `198.51.100.${attempt}` });
+      await signIn(owner, email, "someone-elses-guess");
+      await expect(owner.getByText("That email and password don't match an account.")).toBeVisible();
+    }
+    await owner.setExtraHTTPHeaders({ "x-forwarded-for": "192.0.2.77" });
+    await signIn(owner, email);
+    await expect(owner.getByText("Too many sign-in attempts.")).toBeVisible();
+    await owner.getByRole("button", { name: "Email me a sign-in link" }).click();
+    await expect(owner.getByRole("heading", { name: "Check your email" })).toBeVisible();
+
+    const link = await mailboxLink(email, "signIn");
+    await gotoForm(owner, link);
+    await owner.getByRole("button", { name: "Sign in" }).click();
+    await expect(owner).toHaveURL(/\/onboarding$/);
+    await owner.goto(link);
+    await expect(owner.getByRole("heading", { name: "This link isn't valid" })).toBeVisible();
+  } finally {
+    await owner.close();
+  }
+});
+
 test("forgot and reset password revokes the old session and uses the link once", async ({ browser, page }) => {
   const email = await signUp(page);
   const reset = await browser.newPage();

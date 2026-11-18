@@ -73,7 +73,7 @@ export async function updateUser(_previous: AdminResult, form: FormData): Promis
       case "ban":
         if (target.banned_at) return { error: "This account is already suspended." };
         sessions = await banUser(tx, id, reason);
-        await invalidateLinks(tx, id, ["reset_password", "change_email"]);
+        await invalidateLinks(tx, id, ["reset_password", "change_email", "sign_in"]);
         break;
       case "unban":
         if (!target.banned_at) return { error: "This account is already active." };

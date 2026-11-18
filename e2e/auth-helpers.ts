@@ -4,7 +4,7 @@ import Redis from "ioredis";
 
 export const TEST_PASSWORD = "correct-horse-battery";
 
-export async function mailboxLink(email: string, template: "verify" | "reset" | "changeEmail") {
+export async function mailboxLink(email: string, template: "verify" | "reset" | "changeEmail" | "signIn") {
   const redis = new Redis(process.env.REDIS_URL ?? "redis://localhost:16379");
   let link: string | undefined;
   try {

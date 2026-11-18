@@ -6,7 +6,7 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { countOtherActiveAdmins, lockAdminMembership } from "@/lib/auth/admin-membership";
 import { users } from "@/lib/db/schema";
-import { rateLimit, rateLimitWait } from "@/lib/cache/rateLimit";
+import { rateLimit, rateLimitClear, rateLimitWait } from "@/lib/cache/rateLimit";
 import { hashPassword, passwordError, verifyPassword } from "@/lib/auth/password";
 import { normalizeEmail } from "@/lib/auth/config";
 import { accountByEmail, confirmCredentials, disableTotp, invalidateLinks, lockAccount, register, roleFor, sendAccountLink } from "@/lib/auth/accounts";
@@ -28,6 +28,8 @@ const tooManySignIns = "Too many sign-in attempts. Try again in a few minutes.";
 // backoff ends an hour after guessing stops.
 const signInBackoff = (email: string) => rateLimitWait("sign-in-failures", email, 20, HOUR);
 const recordSignInFailure = (email: string) => rateLimit("sign-in-failures", email, 20, HOUR);
+// Anyone can keep an address backing off, so its inbox owner can still get in by link.
+const backingOff = { error: tooManySignIns, offerLink: true } as const;
 
 export async function signUp(rawEmail: string, password: string): Promise<{ error?: string }> {
   const email = normalizeEmail(rawEmail);
@@ -42,12 +44,14 @@ export async function signUp(rawEmail: string, password: string): Promise<{ erro
   return {};
 }
 
-export async function signIn(rawEmail: string, password: string, code: string): Promise<{ error?: string; needsCode?: boolean }> {
+type SignInResult = { error?: string; needsCode?: boolean; offerLink?: boolean };
+
+export async function signIn(rawEmail: string, password: string, code: string): Promise<SignInResult> {
   const email = normalizeEmail(rawEmail);
   const { ip, userAgent } = await requestDetails();
   if (!validEmail(email) || password.length > 1024) return fail(invalidCredentials);
   if (await rateLimit("sign-in", JSON.stringify([email, ip]), 5, HOUR / 4)) return fail(tooManySignIns);
-  if (await signInBackoff(email)) return fail(tooManySignIns);
+  if (await signInBackoff(email)) return backingOff;
   const rejected = async () => {
     await recordSignInFailure(email);
     return fail(invalidCredentials);
@@ -78,6 +82,49 @@ export async function signIn(rawEmail: string, password: string, code: string): 
   const previous = await sessionToken();
   if (previous) await revokeSession(previous);
   await writeSession(result);
+  return {};
+}
+
+export async function requestSignInLink(rawEmail: string) {
+  const email = normalizeEmail(rawEmail);
+  if (!validEmail(email) || await rateLimit("sign-in-link", email, 3, HOUR)) return {};
+  const user = await accountByEmail(email);
+  if (user && !user.banned_at) {
+    try {
+      await sendAccountLink(user.id, "sign_in");
+    } catch {
+      logger.error("Could not queue sign-in link");
+    }
+  }
+  return {};
+}
+
+// The link proves the inbox, so it ends the backoff that failed guesses built up.
+export async function signInWithLink(token: string, code: string): Promise<SignInResult> {
+  const link = await findToken(token, "sign_in");
+  if (!link) return fail(invalidLink);
+  const { ip, userAgent } = await requestDetails();
+  if (code && await rateLimit("sign-in-link-code", hashToken(token), 5, HOUR / 4)) return fail(tooManySignIns);
+  const result = await db.transaction(async (tx) => {
+    const user = await lockAccount(tx, link.userId);
+    if (!user?.email_verified_at) return;
+    if (user.totp_enabled_at && (!code || !await checkSecondFactor(tx, user.id, user.email, user.totp_secret_ciphertext, code))) {
+      return { needsCode: true } as const;
+    }
+    if (!await consumeToken(tx, token, "sign_in", user.id)) return;
+    await invalidateLinks(tx, user.id, ["sign_in"]);
+    await tx.update(users).set({ last_sign_in_at: sql`now()` }).where(eq(users.id, user.id));
+    return { email: user.email, session: await createSession(tx, user.id, ip, userAgent) };
+  });
+  if (!result) return fail(invalidLink);
+  if ("needsCode" in result) return { needsCode: true, error: code ? "That code couldn't be verified." : undefined };
+  await Promise.all([
+    rateLimitClear("sign-in-failures", result.email),
+    rateLimitClear("sign-in", JSON.stringify([result.email, ip])),
+  ]);
+  const previous = await sessionToken();
+  if (previous) await revokeSession(previous);
+  await writeSession(result.session);
   return {};
 }
 
@@ -126,7 +173,7 @@ export async function verifyEmail(token: string, change: boolean, password: stri
         last_sign_in_at: change ? user.last_sign_in_at : sql`now()`,
       }).where(eq(users.id, user.id));
       if (change) {
-        await invalidateLinks(tx, user.id, ["reset_password"]);
+        await invalidateLinks(tx, user.id, ["reset_password", "sign_in"]);
         return { removed: await removeSessions(tx, user.id) };
       }
       await invalidateLinks(tx, user.id, ["verify_email", "reset_password"]);
@@ -176,7 +223,7 @@ export async function resetPassword(token: string, password: string): Promise<{ 
       password_hash: hash, password_set_at: sql`now()`, role: roleFor(user.email, user.role),
       email_verified_at: sql`coalesce(${users.email_verified_at}, now())`,
     }).where(eq(users.id, user.id));
-    await invalidateLinks(tx, user.id, ["verify_email", "reset_password", "change_email"]);
+    await invalidateLinks(tx, user.id, ["verify_email", "reset_password", "change_email", "sign_in"]);
     return removeSessions(tx, user.id);
   });
   if (!removed) return fail(invalidLink);
@@ -197,7 +244,7 @@ export async function changePassword(current: string, next: string, code: string
     const row = await lockAccount(tx, user.id);
     if (!row || !await confirmCredentials(tx, row, current, code)) return;
     await tx.update(users).set({ password_hash: await hashPassword(next), password_set_at: sql`now()` }).where(eq(users.id, user.id));
-    await invalidateLinks(tx, user.id, ["reset_password", "change_email"]);
+    await invalidateLinks(tx, user.id, ["reset_password", "change_email", "sign_in"]);
     const removed = await removeSessions(tx, user.id);
     return { removed, session: await createSession(tx, user.id, ip, userAgent) };
   });

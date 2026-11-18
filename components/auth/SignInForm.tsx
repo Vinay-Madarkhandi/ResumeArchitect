@@ -2,8 +2,9 @@
 
 import { Suspense, useState, type FormEvent } from "react";
 import Link from "next/link";
+import { MailCheck } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { signIn } from "@/app/actions/auth";
+import { requestSignInLink, signIn } from "@/app/actions/auth";
 import { Button } from "@/components/ui/Button";
 import { Field, Input } from "@/components/ui/Field";
 import { AuthHeading, FormError } from "@/components/auth/AuthHeading";
@@ -28,6 +29,8 @@ function SignInForm() {
   const [code, setCode] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const [offerLink, setOfferLink] = useState(false);
+  const [linkSent, setLinkSent] = useState(false);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -37,6 +40,7 @@ function SignInForm() {
       const result = await signIn(email, password, code);
       if (result.needsCode || result.error) {
         setNeedsCode(Boolean(result.needsCode));
+        setOfferLink(Boolean(result.offerLink));
         setError(result.error ?? null);
         return;
       }
@@ -47,6 +51,31 @@ function SignInForm() {
     } finally {
       setPending(false);
     }
+  }
+
+  async function sendLink() {
+    setError(null);
+    setPending(true);
+    try {
+      await requestSignInLink(email);
+      setLinkSent(true);
+    } catch {
+      setError("Couldn't send the link. Try again.");
+    } finally {
+      setPending(false);
+    }
+  }
+
+  if (linkSent) {
+    return (
+      <>
+        <MailCheck className="mb-5 size-7 text-brass" aria-hidden />
+        <AuthHeading title="Check your email">
+          If an account exists for <span className="text-ink">{email}</span>, a sign-in link is on its way.
+          It works once, for 15 minutes.
+        </AuthHeading>
+      </>
+    );
   }
 
   return (
@@ -72,9 +101,15 @@ function SignInForm() {
           </Field>
         )}
         <FormError>{error}</FormError>
-        <Button type="submit" variant="primary" size="lg" loading={pending} className="mt-1 w-full">
-          Sign in
-        </Button>
+        {offerLink ? (
+          <Button type="button" variant="primary" size="lg" loading={pending} className="mt-1 w-full" onClick={sendLink}>
+            Email me a sign-in link
+          </Button>
+        ) : (
+          <Button type="submit" variant="primary" size="lg" loading={pending} className="mt-1 w-full">
+            Sign in
+          </Button>
+        )}
       </form>
       <div className="mt-6 flex justify-between text-small">
         <Link href="/forgot-password" className="text-ink-2 underline decoration-line-strong hover:text-ink">

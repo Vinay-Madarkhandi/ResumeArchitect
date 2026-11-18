@@ -2,7 +2,7 @@ import { Queue } from "bullmq";
 import { redisUrl } from "@/lib/cache";
 
 export type EmailJob =
-  | { template: "verify" | "reset" | "changeEmail"; to: string; data: { link: string } }
+  | { template: "verify" | "reset" | "changeEmail" | "signIn"; to: string; data: { link: string } }
   | { template: "alert"; to: string; data: { message: string } }
   | { template: "trackerDigest"; data: { userId: string; day: string } };
 export type MaintenanceJob = "purge-auth" | "orphaned-objects" | "delete-user-objects" | "tracker-reminders";

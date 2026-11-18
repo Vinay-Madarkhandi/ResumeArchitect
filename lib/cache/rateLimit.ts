@@ -18,9 +18,10 @@ end
 return 0
 `;
 
+const keyFor = (scope: string, subject: string) => `rate:${scope}:${createHash("sha256").update(subject).digest("hex")}`;
+
 async function run(scope: string, subject: string, limit: number, windowMs: number, member: string) {
-  const key = createHash("sha256").update(subject).digest("hex");
-  return Number(await cache().eval(script, 1, `rate:${scope}:${key}`, windowMs, limit, member));
+  return Number(await cache().eval(script, 1, keyFor(scope, subject), windowMs, limit, member));
 }
 
 /** Counts an attempt and returns the seconds to wait once the limit is reached, otherwise 0. */
@@ -30,3 +31,8 @@ export const rateLimit = (scope: string, subject: string, limit: number, windowM
 /** Returns the seconds to wait without counting an attempt. */
 export const rateLimitWait = (scope: string, subject: string, limit: number, windowMs: number) =>
   run(scope, subject, limit, windowMs, "");
+
+/** Forgets every attempt counted against the subject. */
+export const rateLimitClear = async (scope: string, subject: string) => {
+  await cache().del(keyFor(scope, subject));
+};
