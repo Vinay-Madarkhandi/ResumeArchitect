@@ -146,7 +146,7 @@ function renderGlyph(text: string, font: string | null): string {
 }
 
 /** A bullet typed as a character at the start of the line ("➢ Led …") rather than Word numbering. */
-const TYPED_BULLET = /^\s*([^\p{L}\p{N}\s"'“”‘’([{$€£₹#@&+%.,:;!?/\\|])\s/u;
+export const TYPED_BULLET = /^\s*([^\p{L}\p{N}\s"'“”‘’([{$€£₹#@&+%.,:;!?/\\|])\s/u;
 
 function bulletGlyphs(doc: Xml, numbering: Xml | null, theme: FontScheme): string[] {
   const glyphs = new Set<string>();
