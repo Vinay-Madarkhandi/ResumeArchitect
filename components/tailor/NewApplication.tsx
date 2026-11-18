@@ -130,7 +130,7 @@ export function NewApplication({ sources, hasKey, retryId, tracked }: {
     if (jd.trim().length < MIN_JOB_DESCRIPTION_LENGTH) return setFormError("Paste the full job post, including the requirements.");
     setFormError(null);
     void run(tracked ? { sourceResumeId: sourceId, trackedJobId: tracked.id }
-      : { sourceResumeId: sourceId, jobDescriptionText: jd, jobTitle: title, company });
+      : { sourceResumeId: sourceId, jobDescriptionText: jd, jobTitle: title, company, sourceUrl: jobUrl });
   }
 
   if (running) {

@@ -15,7 +15,9 @@ export function extractJob(doc = document, href = location.href) {
       n.before(doc.createTextNode("\n"));
       n.after(doc.createTextNode("\n"));
     });
-    return (copy.textContent ?? "").replaceAll("\u00a0", " ").split(/\r?\n/)
+    const text = copy.textContent ?? [...copy.childNodes]
+      .filter((child) => child.nodeType !== 8).map((child) => child.textContent ?? "").join("");
+    return text.replaceAll("\u00a0", " ").split(/\r?\n/)
       .map((line) => line.replace(/[^\S\n]+/g, " ").trim()).filter(Boolean).join("\n");
   }
 
@@ -24,9 +26,7 @@ export function extractJob(doc = document, href = location.href) {
     if (!/<[!a-z][^>]*>|&(?:#\d+|#x[\da-f]+|[a-z]+);/i.test(value)) return value.trim();
     const template = doc.createElement("template");
     template.innerHTML = value;
-    const container = doc.createElement("div");
-    container.append(template.content);
-    return readable(container);
+    return readable(template.content);
   }
 
   function postings(input) {

@@ -1,3 +1,4 @@
+import { postingUrlSchema } from "@/lib/tracker/schema";
 import { getTrackedJob } from "@/lib/data/jobs";
 import { getResume } from "@/lib/data/resumes";
 import { getTailoringSession } from "@/lib/data/tailoring";
@@ -46,6 +47,7 @@ export async function POST(request: Request) {
   let jobTitle = str(body?.jobTitle) || null;
   let company = str(body?.company) || null;
 
+  const sourceUrl = postingUrlSchema.safeParse(str(body?.sourceUrl));
   const trackedJobId = str(body?.trackedJobId);
   const retrySessionId = str(body?.retrySessionId);
   if (retrySessionId) {
@@ -95,7 +97,10 @@ export async function POST(request: Request) {
   }
 
   if (!jobDescriptionId) {
-    const jdId = await createJobDescription(user.id, { raw_text: jobDescriptionText, company, job_title: jobTitle })
+    const jdId = await createJobDescription(user.id, {
+      raw_text: jobDescriptionText, company, job_title: jobTitle,
+      source_url: sourceUrl.data || null,
+    })
       .catch(() => null);
     if (!jdId) return fail(500, "unknown", "Couldn't save the job description. Try again.");
     jobDescriptionId = jdId;

@@ -1,12 +1,12 @@
 import { z } from "zod";
 import { stages } from "./stages";
 
-const webUrl = z.url({ protocol: /^https?$/ }).max(2048).or(z.literal(""));
+export const postingUrlSchema = z.url({ protocol: /^https?$/ }).max(2048).or(z.literal(""));
 const contactSchema = z.object({
   name: z.string().trim().min(1).max(160),
   role: z.string().trim().max(160),
   email: z.email().max(254).or(z.literal("")),
-  linkedin: webUrl,
+  linkedin: postingUrlSchema,
 });
 
 export const jobClipSchema = z.object({
@@ -14,7 +14,7 @@ export const jobClipSchema = z.object({
   company: z.string().trim().max(250).default(""),
   location: z.string().trim().max(250).default(""),
   salary: z.string().trim().max(250).default(""),
-  url: webUrl.default(""),
+  url: postingUrlSchema.default(""),
   description: z.string().max(50_000).default(""),
 });
 
@@ -30,5 +30,6 @@ export const jobSchema = jobClipSchema.extend({
 export const historySchema = z.array(z.object({ stage: z.enum(stages), at: z.iso.datetime({ offset: true }) })).min(1);
 export type StageChange = z.infer<typeof historySchema>[number];
 export type Contact = z.infer<typeof contactSchema>;
+export type JobClip = z.infer<typeof jobClipSchema>;
 export type JobInput = z.infer<typeof jobSchema>;
 export type JobRecord = JobInput & { archived: boolean; history: StageChange[]; updatedAt: string };

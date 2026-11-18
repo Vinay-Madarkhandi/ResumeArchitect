@@ -2,7 +2,7 @@ import { and, desc, eq, isNotNull, isNull, sql } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { jobDescriptions as jobs, resumes, scans } from "@/lib/db/schema";
-import { jobSchema, type JobInput, type JobRecord, type StageChange } from "@/lib/tracker/schema";
+import { jobSchema, type JobClip, type JobInput, type JobRecord, type StageChange } from "@/lib/tracker/schema";
 import type { ApplicationStatus } from "@/lib/tracker/stages";
 
 const owned = (userId: string, id: string) => and(eq(jobs.user_id, userId), eq(jobs.id, id));
@@ -86,7 +86,7 @@ export async function addJobs(userId: string, input: Array<JobInput & { history?
   }))).returning({ id: jobs.id });
 }
 
-export async function clipJob(userId: string, input: z.infer<typeof import("@/lib/tracker/schema").jobClipSchema>) {
+export async function clipJob(userId: string, input: JobClip) {
   const [job] = await addJobs(userId, [jobSchema.parse(input)]);
   return job;
 }
