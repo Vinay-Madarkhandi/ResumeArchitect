@@ -59,5 +59,6 @@ export async function writeCoverLetter(
     "Sincerely,",
     "Best regards,",
   ].join("\n");
-  return checkGrounding([input.sourceMarkdown ?? input.resumeMarkdown, safeLetterText], letter.trim()).text;
+  const sources = [input.sourceMarkdown, input.resumeMarkdown, safeLetterText].filter(Boolean) as string[];
+  return checkGrounding(sources, letter.trim()).text;
 }

@@ -20,6 +20,10 @@ const fallback = {
   },
 };
 
+function assertsCandidateExperience(question: string): boolean {
+  return /\b(?:your|you've|you have|did you|when you built|when you led|when you ran|tell me about a time you|describe a time you)\b/i.test(question);
+}
+
 export function groundInterviewQuestion(
   draft: InterviewQuestion & { resumeEvidence?: string },
   resume: string,
@@ -32,17 +36,40 @@ export function groundInterviewQuestion(
     && !/\.\s|\b(?:you|your|candidate)\b/i.test(topic)
   ) ?? null;
   const evidence = draft.resumeEvidence ? answerQuote(resume, draft.resumeEvidence) : null;
-  const check = checkGrounding([resume], [draft.question, draft.assessing].join("\n"));
-  const question = !check.flags.length
+
+  // Questions about the job itself ("How would you design an idempotent payment retry?")
+  // make no claim about the candidate and are allowed. Statements of fact about candidate need support.
+  const isHypotheticalJobQuestion = (draft.category === "technical" || draft.category === "role") && !assertsCandidateExperience(draft.question);
+
+  let questionOk = false;
+  let assessingOk = false;
+
+  if (isHypotheticalJobQuestion) {
+    questionOk = true;
+    assessingOk = true;
+  } else {
+    const check = checkGrounding([resume], [draft.question, draft.assessing].join("\n"));
+    if (!check.flags.length) {
+      questionOk = true;
+      assessingOk = true;
+    } else if (evidence && checkGrounding([resume], evidence).flags.length === 0) {
+      // Evidence is grounded in resume
+      questionOk = true;
+      assessingOk = true;
+    }
+  }
+
+  const question = questionOk
     ? draft.question
     : evidence
       ? `Your resume says “${evidence}”. What was your role in that work, and what did you learn?`
       : requirement ? safe.topical(requirement) : safe.question;
+
   return {
     id: draft.id,
     category: draft.category,
     question,
-    assessing: check.flags.length ? safe.assessing : draft.assessing,
+    assessing: assessingOk ? draft.assessing : safe.assessing,
     requirement,
     grounded: true,
   };

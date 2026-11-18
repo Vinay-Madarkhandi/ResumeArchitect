@@ -58,7 +58,8 @@ export function verifyChange(
 ): ChangeFlag[] {
   if (!change.after) return [];
   const text = plain(change.after);
-  const flags = checkGrounding([change.before ?? anchor ?? sourceText], change.after).flags;
+  const sources = [sourceText, change.before, anchor].filter(Boolean) as string[];
+  const flags = checkGrounding(sources, change.after).flags;
 
   for (const req of job.requirements) {
     const terms = [req.label, ...req.aliases].filter((t) => t.trim());

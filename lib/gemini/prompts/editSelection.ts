@@ -56,7 +56,13 @@ function buildPrompt(contextBefore: string, selectedText: string, contextAfter: 
 
 export async function editSelection(
   model: JsonModel,
-  input: { contextBefore: string; selectedText: string; contextAfter: string; instruction: string },
+  input: {
+    contextBefore: string;
+    selectedText: string;
+    contextAfter: string;
+    instruction: string;
+    resumeMarkdown?: string;
+  },
 ): Promise<SelectionEditResult> {
   const result = await generateStructured(model, {
     label: "editSelection",
@@ -65,7 +71,13 @@ export async function editSelection(
     schema: SelectionEditResultSchema,
     temperature: 0.5,
   });
-  const { flags } = checkGrounding([input.selectedText], result.replacementText);
+  const sources = [
+    input.resumeMarkdown,
+    input.contextBefore,
+    input.selectedText,
+    input.contextAfter,
+  ].filter(Boolean) as string[];
+  const { flags } = checkGrounding(sources.length ? sources : [input.selectedText], result.replacementText);
   if (!flags.length && !result.flagged) return result;
   return {
     replacementText: VERIFY_CLAIM,
