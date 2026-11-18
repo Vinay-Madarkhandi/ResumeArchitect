@@ -92,7 +92,7 @@ export async function POST(request: Request) {
 
   const events = runPipeline(
     {
-      model: geminiModel(key.apiKey),
+      model: geminiModel(key.apiKey, user.id),
       store: postgresPipelineStore(user.id, {
         sourceResumeId: source.id,
         sourceTitle: source.title,

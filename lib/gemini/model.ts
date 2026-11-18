@@ -1,5 +1,6 @@
 import { ApiError } from "@google/genai";
 import { z } from "zod";
+import { recordAiCall } from "@/lib/data/ai-calls";
 import { createGeminiClient } from "./client";
 import { TAILOR_MODEL } from "./config";
 import { stripNulls } from "./stripNulls";
@@ -54,6 +55,7 @@ export interface JsonModel {
   generate(request: JsonRequest): Promise<string>;
   /** Tokens used so far, per step label. */
   usage?: Record<string, TokenUsage>;
+  recordAttempt?(kind: string, elapsed: number, errorCode: AiErrorCode | null, tokensIn?: number, tokensOut?: number): Promise<void>;
 }
 
 const CALL_TIMEOUT_MS = 50_000;
@@ -75,12 +77,15 @@ function classify(error: unknown): AiError {
   return new AiError("gemini_error");
 }
 
-export function geminiModel(apiKey: string): JsonModel {
+export function geminiModel(apiKey: string, userId?: string): JsonModel {
   const client = createGeminiClient(apiKey);
   const usage: Record<string, TokenUsage> = {};
   return {
     name: TAILOR_MODEL,
     usage,
+    recordAttempt: userId ? (kind, latency_ms, error_code, tokens_in, tokens_out) => recordAiCall(userId, {
+      kind, model: TAILOR_MODEL, ok: error_code === null, error_code, latency_ms, tokens_in, tokens_out,
+    }) : undefined,
     async generate({ label, system, prompt, jsonSchema, temperature }) {
       const response = await client.models.generateContent({
         model: TAILOR_MODEL,
@@ -140,6 +145,9 @@ export async function generateStructured<T>(
   let lastError: AiError = new AiError("gemini_error");
 
   for (let attempt = 1; attempt <= attempts; attempt++) {
+    const started = performance.now();
+    const previous = model.usage?.[request.label];
+    let errorCode: AiErrorCode | null = null;
     try {
       const text = await model.generate({
         label: request.label,
@@ -159,9 +167,16 @@ export async function generateStructured<T>(
       return parsed.data;
     } catch (error) {
       lastError = classify(error);
+      errorCode = lastError.code;
       if (!RETRYABLE.includes(lastError.code) || attempt === attempts) break;
-      await new Promise((r) => setTimeout(r, backoffMs * attempt));
+    } finally {
+      const now = model.usage?.[request.label];
+      const hasUsage = now && now !== previous;
+      await model.recordAttempt?.(request.label, Math.round(performance.now() - started), errorCode,
+        hasUsage ? now.prompt - (previous?.prompt ?? 0) : undefined,
+        hasUsage ? now.output - (previous?.output ?? 0) : undefined);
     }
+    await new Promise((resolve) => setTimeout(resolve, backoffMs * attempt));
   }
   throw lastError;
 }

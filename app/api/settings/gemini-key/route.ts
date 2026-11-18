@@ -22,7 +22,7 @@ export async function POST(request: Request) {
   const limited = await limitAi(user.id, "key-test");
   if (limited) return limited;
 
-  const result = await testGeminiApiKey(apiKey);
+  const result = await testGeminiApiKey(apiKey, user.id);
   if (!result.valid) {
     // A rejected replacement key is simply not saved: the key already on
     // file (if any) keeps working, so its status is left alone.

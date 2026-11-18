@@ -48,7 +48,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   if (!key.ok) return NextResponse.json({ error: key.message }, { status: 400 });
 
   try {
-    const letter = await writeCoverLetter(geminiModel(key.apiKey), {
+    const letter = await writeCoverLetter(geminiModel(key.apiKey, user.id), {
       resumeMarkdown: documentToMarkdown(content.data),
       job: job.data,
       jobText: jd?.raw_text ?? null,

@@ -46,7 +46,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   if (!key.ok) return NextResponse.json({ error: key.message }, { status: 400 });
 
   try {
-    const result = await editSelection(geminiModel(key.apiKey), { contextBefore, selectedText, contextAfter, instruction });
+    const result = await editSelection(geminiModel(key.apiKey, user.id), { contextBefore, selectedText, contextAfter, instruction });
     return NextResponse.json(result);
   } catch (error) {
     const message = error instanceof AiError ? error.message : "Something went wrong. Try again.";

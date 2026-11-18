@@ -71,6 +71,7 @@ export function plainTextToDocument(text: string): DocumentContent {
  * through the rule-based parser and other text is split by line.
  */
 export async function importResume(
+  userId: string,
   input: { kind: SourceKind; buffer: ArrayBuffer } | { kind: "text"; text: string },
   apiKey: string | null,
 ): Promise<{ title: string; content: DocumentContent; usedAi: boolean; keepsDesign: boolean }> {
@@ -92,7 +93,7 @@ export async function importResume(
 
   if (apiKey) {
     try {
-      const parsed = await parseResume(geminiModel(apiKey), text);
+      const parsed = await parseResume(geminiModel(apiKey, userId), text);
       const content = markdownToDocument(parsed.markdown);
       if (content.content.length >= 3) return { title: parsed.title.trim() || "Master resume", content, usedAi: true, keepsDesign: false };
     } catch {

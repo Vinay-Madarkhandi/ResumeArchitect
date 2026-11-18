@@ -61,10 +61,10 @@ export async function POST(request: Request) {
         storagePath = null;
       }
 
-      result = await importResume({ kind, buffer }, apiKey);
+      result = await importResume(user.id, { kind, buffer }, apiKey);
     } else if (typeof pasted === "string" && pasted.trim()) {
       if (pasted.length > MAX_PASTE_CHARS) return fail(400, "too_long", "That's longer than a resume. Paste just your resume text.");
-      result = await importResume({ kind: "text", text: pasted }, apiKey);
+      result = await importResume(user.id, { kind: "text", text: pasted }, apiKey);
     } else {
       return fail(400, "no_file", "Upload a file or paste your resume.");
     }

@@ -20,7 +20,7 @@ export async function POST(request: Request) {
   const limited = await limitAi(user.id, "key-test");
   if (limited) return limited;
 
-  const result = await testGeminiApiKey(key.apiKey);
+  const result = await testGeminiApiKey(key.apiKey, user.id);
   const now = new Date().toISOString();
   // Only a definite answer from Google changes the stored status.
   if (result.valid || result.rejected) {
