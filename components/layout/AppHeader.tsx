@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Briefcase, Columns3, ContactRound, LogOut, MessagesSquare, PenLine, Plus, Settings, ShieldCheck, UserRound } from "lucide-react";
+import { Briefcase, Columns3, ContactRound, LogOut, MessagesSquare, PenLine, Plus, ScanSearch, Settings, ShieldCheck, UserRound } from "lucide-react";
 import { signOut } from "@/app/actions/auth";
 import { Logo } from "@/components/ui/Logo";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
@@ -12,6 +12,7 @@ import { cn } from "@/lib/cn";
 
 const NAV = [
   { href: "/dashboard", label: "Applications", icon: Briefcase },
+  { href: "/scan", label: "Scanner", icon: ScanSearch },
   { href: "/tracker", label: "Job tracker", icon: Columns3 },
   { href: "/linkedin", label: "LinkedIn review", icon: ContactRound },
   { href: "/interview", label: "Interview prep", icon: MessagesSquare },
