@@ -64,6 +64,13 @@
       "when": 1794990656356,
       "tag": "0008_resume_shares",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1794995378145,
+      "tag": "0009_scanner",
+      "breakpoints": true
     }
   ]
 }
