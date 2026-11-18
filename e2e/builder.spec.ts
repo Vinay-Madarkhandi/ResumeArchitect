@@ -77,10 +77,11 @@ test("build a master from scratch, switch templates, download a PDF, and toggle 
   await page.getByRole("tab", { name: "Career history" }).click();
   const toggle = page.getByRole("checkbox", { name: `Use in this resume: ${bullet}` });
   await expect(toggle).toBeChecked();
+  const saved = page.waitForResponse((r) => r.request().method() === "PATCH" && /\/api\/resumes\//.test(r.url()) && r.request().postData()?.includes('"content"') === true);
   await toggle.uncheck();
   await expect(doc).not.toContainText(bullet);
   await expect(toggle).not.toBeChecked();
-  await expect(page.getByRole("status").filter({ hasText: /^Saved$/ })).toBeVisible();
+  expect((await saved).ok()).toBe(true);
   await page.reload();
   await page.getByRole("tab", { name: "Career history" }).click();
   await expect(toggle).not.toBeChecked();
