@@ -72,7 +72,8 @@ function contactLinkedIn({ resume }: SearchabilityInput): SearchabilityCheck {
   const label = "LinkedIn profile";
   const url = findLinkedIn(resume);
   if (url) return pass("contact-linkedin", label, `Found ${url}.`);
-  if (/\blinked\s?in\b/i.test(resume.text)) {
+  // Only the contact lines count: "LinkedIn Ads" in a bullet is a skill, not a profile.
+  if (resume.header.some((u) => /\blinked\s?in\b/i.test(u.text))) {
     return warn(
       "contact-linkedin",
       label,
@@ -143,8 +144,10 @@ function sectionHeadings({ resume }: SearchabilityInput): SearchabilityCheck {
 
 function dateFormat({ resume }: SearchabilityInput): SearchabilityCheck {
   const label = "Date format";
-  const scoped = [sectionText(resume, "experience"), sectionText(resume, "education")].filter((t) => t !== null);
-  const dates = findDates(scoped.length > 0 ? scoped.join("\n") : resume.text);
+  // Roles under a creative heading ("My Journey") still carry dates an ATS has to read.
+  const dated = resume.sections.filter((s) => s.kind === "experience" || s.kind === "education" || s.kind === null);
+  const scoped = dated.flatMap((s) => s.units.map((u) => u.text)).join("\n");
+  const dates = findDates(dated.length > 0 ? scoped : resume.text);
   if (dates.length === 0) {
     return fail("date-format", label, "No dates were found, so an ATS can't work out how long you held each role.", 'Give every role a start and end date, e.g. "Jan 2021 – Present".');
   }

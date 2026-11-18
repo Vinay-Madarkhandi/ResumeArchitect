@@ -114,8 +114,15 @@ describe("contact checks", () => {
   });
 
   it("warns when LinkedIn is named but the URL is hidden", () => {
-    expect(check("contact-linkedin", "# Ada Lovelace\n\nLinkedIn | GitHub")?.status).toBe("warn");
+    const hidden = check("contact-linkedin", "# Ada Lovelace\n\nLinkedIn | GitHub");
+    expect(hidden?.status).toBe("warn");
+    expect(hidden?.detail).toMatch(/URL isn't written out/);
     expect(check("contact-linkedin", "# Ada Lovelace\n\n[LinkedIn](https://linkedin.com/in/ada)")?.status).toBe("pass");
+  });
+
+  it("does not read LinkedIn Ads in a bullet as a hidden profile link", () => {
+    const c = check("contact-linkedin", "# Ada Lovelace\n\n## Experience\n\n- Ran LinkedIn Ads campaigns");
+    expect(c?.detail).toMatch(/^No LinkedIn URL was found/);
   });
 });
 
@@ -157,6 +164,12 @@ describe("date format", () => {
   it("warns on seasons and two-digit years", () => {
     expect(check("date-format", withDates("Intern · Summer 2019"))?.status).toBe("warn");
     expect(check("date-format", withDates("Intern · Jun '19 – Aug '19"))?.status).toBe("warn");
+  });
+
+  it("reads dates under a creative section name", () => {
+    const c = check("date-format", "# Ada\n\n## My Journey\n\n### Engineer · 03/2022 – Present\n\n### Analyst · June 2020 – Feb 2022");
+    expect(c?.status).toBe("warn");
+    expect(c?.detail).toContain('"03/2022", "June 2020", "Feb 2022"');
   });
 
   it("warns on years without months and fails with no dates", () => {
