@@ -10,7 +10,7 @@ describe("admin authorization", () => {
     expect(isAdmin({ role: "admin" })).toBe(true);
   });
 
-  it.each(["ban", "delete"])("blocks self-%s even with other admins", (action) => {
+  it.each(["ban", "delete", "demote"])("blocks self-%s even with other admins", (action) => {
     expect(accountActionError(action, target.id, target, 1)).toBeDefined();
   });
 

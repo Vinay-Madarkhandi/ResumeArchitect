@@ -114,7 +114,6 @@ export async function updateUser(_previous: AdminResult, form: FormData): Promis
     await clearSessionCookie();
     redirect("/sign-in");
   }
-  if (id === actor.id && command === "demote") redirect("/dashboard");
   refresh();
   return { success: userMessages[command] };
 }

@@ -51,7 +51,7 @@ export default async function UserPage({ params }: PageProps<"/admin/users/[id]"
           )}
           <ActionForm action={updateUser} fields={{ id, command: "revoke" }} label="Revoke all sessions"
             confirmation="This signs the user out on every device." />
-          {(user.role === "admin" || (user.email_verified_at && !user.banned_at)) && (
+          {!self && (user.role === "admin" || (user.email_verified_at && !user.banned_at)) && (
             <ActionForm key={roleCommand} action={updateUser} fields={{ id, command: roleCommand }}
               label={roleCommand === "promote" ? "Promote to admin" : "Demote to user"}
               confirmation={roleCommand === "promote" ? "This account will gain full access to the admin panel." : "This account will lose access to the admin panel."} />

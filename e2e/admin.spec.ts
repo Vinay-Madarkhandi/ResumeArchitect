@@ -94,6 +94,15 @@ test("admin publishes announcements, suspends users, and sees audited actions", 
       await queue.close();
     }
 
+    await admin.getByRole("link", { name: "Users", exact: true }).click();
+    await admin.getByLabel("Search by email").fill(adminEmail);
+    await admin.getByRole("button", { name: "Search" }).click();
+    await admin.getByRole("link", { name: adminEmail, exact: true }).click();
+    await expect(admin.getByText("Your account", { exact: true })).toBeVisible();
+    await expect(admin.getByRole("button", { name: "Revoke all sessions" })).toBeVisible();
+    await expect(admin.getByRole("button", { name: "Demote to user" })).toHaveCount(0);
+    await expect(admin.getByRole("button", { name: "Ban user" })).toHaveCount(0);
+
     await admin.getByRole("link", { name: "Audit log" }).click();
     const audit = admin.getByRole("table", { name: "Audit log" });
     const adminEntries = audit.getByRole("row").filter({ hasText: adminEmail });

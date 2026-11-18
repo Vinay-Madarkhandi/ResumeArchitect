@@ -8,8 +8,8 @@ export function accountActionError(
   target: { id: string; role: string; banned_at: string | null; email_verified_at: string | null },
   otherActiveAdmins: number,
 ) {
-  if (actorId === target.id && (action === "ban" || action === "delete")) {
-    return "You cannot ban or delete your own account here.";
+  if (actorId === target.id && ["ban", "delete", "demote"].includes(action)) {
+    return "You cannot ban, delete, or demote your own account here.";
   }
   if (["ban", "delete", "demote"].includes(action) && target.role === "admin" &&
       !target.banned_at && target.email_verified_at && otherActiveAdmins === 0) {
