@@ -3,8 +3,9 @@ import { eq } from "drizzle-orm";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { db } from "@/lib/db";
 import { cache } from "@/lib/cache";
-import { authTokens, recoveryCodes, sessions, users } from "@/lib/db/schema";
+import { authTokens, personalTokens, recoveryCodes, sessions, users } from "@/lib/db/schema";
 import { clearSessionCache, createSession, removeSessions, revokeSession, validateSession } from "./sessions";
+import { authenticatePersonalToken, createPersonalToken, listPersonalTokens, readBearer, revokePersonalToken } from "./personal-tokens";
 import { hashToken } from "./secrets";
 import { authenticator, checkSecondFactor, protectTotp, replaceRecoveryCodes } from "./totp";
 import { consumeToken, findToken, issueToken } from "./tokens";
@@ -131,4 +132,37 @@ it("validates authenticator codes and consumes hashed recovery codes once", asyn
   } finally {
     vi.unstubAllEnvs();
   }
+});
+
+
+describe("personal API tokens", () => {
+  it("stores a SHA-256 digest, scopes metadata to its owner, and records use", async () => {
+    const token = await createPersonalToken(userId, "Chrome clipper");
+    const [row] = await db.select().from(personalTokens).where(eq(personalTokens.user_id, userId));
+    expect(row).toMatchObject({ token_hash: hashToken(token), last_used_at: null });
+    expect(readBearer(`bEaReR ${token}`)).toBe(token);
+    expect(readBearer(`Bearer ${"A".repeat(43)}`)).toBeNull();
+    expect(readBearer(`Basic ${token}`)).toBeNull();
+    expect(readBearer(`Bearer ${token} other`)).toBeNull();
+
+    const [result] = await listPersonalTokens(userId);
+    expect(result).toEqual({ id: row.id, name: "Chrome clipper", createdAt: row.created_at, lastUsedAt: null });
+    await expect(listPersonalTokens(randomUUID())).resolves.toEqual([]);
+    await expect(authenticatePersonalToken(token)).resolves.toMatchObject({ id: userId });
+    expect(Date.parse((await listPersonalTokens(userId))[0].lastUsedAt!)).toBeGreaterThan(0);
+  });
+
+  it("denies cross-account revocation, banned or unverified users, and revoked tokens", async () => {
+    const token = await createPersonalToken(userId, "Firefox clipper");
+    const [entry] = await listPersonalTokens(userId);
+    await expect(revokePersonalToken(randomUUID(), entry.id)).resolves.toBe(false);
+
+    await db.update(users).set({ banned_at: new Date().toISOString() }).where(eq(users.id, userId));
+    await expect(authenticatePersonalToken(token)).resolves.toBeUndefined();
+    await db.update(users).set({ banned_at: null, email_verified_at: null }).where(eq(users.id, userId));
+    await expect(authenticatePersonalToken(token)).resolves.toBeUndefined();
+    await db.update(users).set({ email_verified_at: new Date().toISOString() }).where(eq(users.id, userId));
+    await expect(revokePersonalToken(userId, entry.id)).resolves.toBe(true);
+    await expect(authenticatePersonalToken(token)).resolves.toBeUndefined();
+  });
 });

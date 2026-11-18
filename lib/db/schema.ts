@@ -185,6 +185,15 @@ export const authTokens = pgTable("auth_tokens", {
   index("auth_tokens_expires_idx").on(t.expires_at),
 ]);
 
+export const personalTokens = pgTable("personal_api_tokens", {
+  id: id(),
+  user_id: owner(),
+  name: text("name").notNull(),
+  token_hash: text("token_hash").notNull().unique(),
+  created_at: created(),
+  last_used_at: date("last_used_at"),
+}, (t) => [index("personal_api_tokens_user_idx").on(t.user_id)]);
+
 export const recoveryCodes = pgTable("recovery_codes", {
   user_id: owner(),
   code_hash: text("code_hash").notNull(),
