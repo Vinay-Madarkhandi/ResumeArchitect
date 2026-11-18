@@ -29,8 +29,14 @@ function escapeRegExp(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+/** "payments" → "payment", so the plural suffix below matches both. Product names ("Kubernetes", "Teams") keep their s. */
+function singular(word: string): string {
+  return /^[a-z]{4,}s$/.test(word) && !/(ss|us|is)$/.test(word) ? word.slice(0, -1) : word;
+}
+
 export function formPattern(form: string): RegExp {
-  const parts = form.trim().split(/[\s\-_/.,]+/).filter(Boolean).map(escapeRegExp);
+  const words = form.trim().split(/[\s\-_/.,]+/).filter(Boolean);
+  const parts = words.map((w, i) => escapeRegExp(i === words.length - 1 ? singular(w) : w));
   const plural = /[A-Za-z]$/.test(form) ? "(?:e?s)?" : "";
   const body = parts.join("[\\s\\-_/.]*");
   return new RegExp(`(?<![A-Za-z0-9])${body}${plural}(?![A-Za-z0-9])`, caseSensitive(form) ? "g" : "gi");

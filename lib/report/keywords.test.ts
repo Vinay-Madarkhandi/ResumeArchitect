@@ -32,6 +32,13 @@ describe("matchTerm", () => {
     expect(matchTerm("Front-end", ctx("frontend work")).status).toBe("found");
   });
 
+  it("matches the singular of a plural job term, but leaves product names alone", () => {
+    expect(matchTerm("payments", ctx("Built payment services")).status).toBe("found");
+    expect(matchTerm("data pipelines", ctx("Owned the data pipeline")).status).toBe("found");
+    expect(matchTerm("Teams", ctx("Team lead for 4 engineers")).status).toBe("missing");
+    expect(matchTerm("business", ctx("Grew the busines")).status).toBe("missing");
+  });
+
   it("treats punctuation-only respellings as the same term", () => {
     expect(matchTerm("ReactJS", ctx("Built React.js apps"))).toMatchObject({ status: "found", matchedForm: "React.js" });
   });
