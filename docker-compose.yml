@@ -106,7 +106,7 @@ services:
       redis: { condition: service_healthy }
       localstack: { condition: service_healthy }
     healthcheck:
-      test: ["CMD", "node", "-e", "const Redis=require('ioredis');const r=new Redis(process.env.REDIS_URL);r.get('worker:heartbeat:'+require('node:os').hostname()).then(v=>process.exit(v==='1'?0:1)).catch(()=>process.exit(1))"]
+      test: ["CMD", "node", "-e", "const Redis=require('./dist/node_modules/ioredis');const r=new Redis(process.env.REDIS_URL);r.get('worker:heartbeat:'+require('node:os').hostname()).then(v=>process.exit(v==='1'?0:1)).catch(()=>process.exit(1))"]
       interval: 15s
       timeout: 5s
       retries: 10
