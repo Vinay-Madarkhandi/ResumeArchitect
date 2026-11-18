@@ -1,4 +1,5 @@
-import { getDocumentProxy, getResolvedPDFJS } from "unpdf";
+import { getResolvedPDFJS } from "unpdf";
+import { InspectionLimit, MAX_PDF_PAGES, inspectWithinBudget } from "./inspectBudget";
 import { TYPED_BULLET } from "./inspectDocx";
 import type { ResumeFileFacts } from "./report";
 
@@ -115,56 +116,67 @@ interface PdfTextItem {
   fontName: string;
 }
 
-export async function inspectPdf(file: ArrayBuffer | Uint8Array): Promise<Extract<ResumeFileFacts, { format: "pdf" }>> {
-  const pdf = await getDocumentProxy(new Uint8Array(file.slice(0)));
-  const { OPS } = await getResolvedPDFJS();
-  const imageOps = new Set<number>([OPS.paintImageXObject, OPS.paintInlineImageXObject, OPS.paintImageXObjectRepeat]);
+export function inspectPdf(file: ArrayBuffer | Uint8Array) {
+  return inspectWithinBudget("pdf", file);
+}
 
-  let images = 0;
-  let columns = 1;
-  let characters = 0;
-  const fonts = new Set<string>();
-  const bullets = new Set<string>();
+export async function readPdfLayout(file: Uint8Array): Promise<Extract<ResumeFileFacts, { format: "pdf" }>> {
+  const { getDocument, OPS } = await getResolvedPDFJS();
+  const task = getDocument({ data: file, stopAtErrors: true, maxImageSize: 16_000_000, useSystemFonts: true });
+  try {
+    const pdf = await task.promise;
+    if (pdf.numPages > MAX_PDF_PAGES) throw new InspectionLimit();
+    const imageOps = new Set<number>([OPS.paintImageXObject, OPS.paintInlineImageXObject, OPS.paintImageXObjectRepeat]);
 
-  for (let n = 1; n <= pdf.numPages; n++) {
-    const page = await pdf.getPage(n);
-    const ops = await page.getOperatorList();
-    images += ops.fnArray.filter((fn) => imageOps.has(fn)).length;
+    let images = 0;
+    let columns = 1;
+    let characters = 0;
+    const fonts = new Set<string>();
+    const bullets = new Set<string>();
 
-    const content = await page.getTextContent();
-    const items = (content.items as PdfTextItem[]).filter((i) => typeof i.str === "string" && i.str.trim());
-    for (const item of items) {
-      characters += item.str.replace(/\s/g, "").length;
-      const font = page.commonObjs.has(item.fontName) ? (page.commonObjs.get(item.fontName) as { name?: string }).name : undefined;
-      const family = font ? fontFamily(font) : "";
-      if (family && !SYMBOL_FONTS.test(family)) fonts.add(family);
+    for (let n = 1; n <= pdf.numPages; n++) {
+      const page = await pdf.getPage(n);
+      const ops = await page.getOperatorList();
+      images += ops.fnArray.filter((fn) => imageOps.has(fn)).length;
+
+      const content = await page.getTextContent();
+      const items = (content.items as PdfTextItem[]).filter((i) => typeof i.str === "string" && i.str.trim());
+      for (const item of items) {
+        characters += item.str.replace(/\s/g, "").length;
+        const font = page.commonObjs.has(item.fontName) ? (page.commonObjs.get(item.fontName) as { name?: string }).name : undefined;
+        const family = font ? fontFamily(font) : "";
+        if (family && !SYMBOL_FONTS.test(family)) fonts.add(family);
+      }
+
+      const placed = items.map((i) => ({
+        str: i.str,
+        x: i.transform[4],
+        y: i.transform[5],
+        width: i.width,
+        size: Math.hypot(i.transform[2], i.transform[3]) || 10,
+      }));
+      const segments = segmentsOf(placed);
+      columns = Math.max(columns, countColumns(segments, page.view[2] - page.view[0]));
+      for (const seg of segments) {
+        const typed = TYPED_BULLET.exec(seg.text);
+        if (typed) bullets.add(typed[1]);
+      }
+      page.cleanup();
     }
 
-    const placed = items.map((i) => ({
-      str: i.str,
-      x: i.transform[4],
-      y: i.transform[5],
-      width: i.width,
-      size: Math.hypot(i.transform[2], i.transform[3]) || 10,
-    }));
-    const segments = segmentsOf(placed);
-    columns = Math.max(columns, countColumns(segments, page.view[2] - page.view[0]));
-    for (const seg of segments) {
-      const typed = TYPED_BULLET.exec(seg.text);
-      if (typed) bullets.add(typed[1]);
-    }
+    return {
+      format: "pdf",
+      hasTextLayer: characters >= 20,
+      tables: null,
+      images,
+      textBoxes: null,
+      columns,
+      headerText: null,
+      footerText: null,
+      fonts: [...fonts],
+      bulletChars: [...bullets],
+    };
+  } finally {
+    await task.destroy();
   }
-
-  return {
-    format: "pdf",
-    hasTextLayer: characters >= 20,
-    tables: null,
-    images,
-    textBoxes: null,
-    columns,
-    headerText: null,
-    footerText: null,
-    fonts: [...fonts],
-    bulletChars: [...bullets],
-  };
 }

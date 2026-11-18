@@ -1,5 +1,6 @@
-import JSZip from "jszip";
+import yauzl, { type Entry, type ZipFile } from "yauzl";
 import { DOMParser } from "@xmldom/xmldom";
+import { InspectionLimit, MAX_DOCX_BYTES, MAX_DOCX_ENTRIES, MAX_XML_BYTES, inspectWithinBudget } from "./inspectBudget";
 import type { LayoutFacts, ResumeFileFacts } from "./report";
 
 /**
@@ -14,9 +15,37 @@ function parse(text: string): Xml {
   return new DOMParser().parseFromString(text, "text/xml");
 }
 
-async function part(zip: JSZip, path: string): Promise<Xml | null> {
-  const file = zip.file(path);
-  return file ? parse(await file.async("string")) : null;
+async function indexParts(zip: ZipFile): Promise<Map<string, Entry>> {
+  if (zip.entryCount > MAX_DOCX_ENTRIES) throw new InspectionLimit();
+  const entries = new Map<string, Entry>();
+  let total = 0;
+  for await (const entry of zip.eachEntry()) {
+    total += entry.uncompressedSize;
+    if (total > MAX_DOCX_BYTES || (/\.xml$/i.test(entry.fileName) && entry.uncompressedSize > MAX_XML_BYTES)) {
+      throw new InspectionLimit();
+    }
+    if (entries.has(entry.fileName)) throw new Error("Duplicate Word archive part.");
+    entries.set(entry.fileName, entry);
+  }
+  return entries;
+}
+
+async function part(zip: ZipFile, entry: Entry | undefined): Promise<Xml | null> {
+  if (!entry) return null;
+  // yauzl validates the declared size while inflating. Keep our own bounded
+  // buffer and stop the stream immediately if any chunk would exceed it.
+  const stream = await zip.openReadStreamPromise(entry);
+  const bytes = Buffer.alloc(entry.uncompressedSize);
+  let offset = 0;
+  try {
+    for await (const chunk of stream as AsyncIterable<Buffer>) {
+      if (offset + chunk.byteLength > Math.min(bytes.byteLength, MAX_XML_BYTES)) throw new InspectionLimit();
+      offset += chunk.copy(bytes, offset);
+    }
+  } finally {
+    stream.destroy();
+  }
+  return parse(bytes.toString("utf8", 0, offset));
 }
 
 /** Word writes a modern and a legacy copy of drawings; only the modern one counts. */
@@ -192,34 +221,46 @@ function graphics(xml: Xml): number {
   return ["pic:pic", "v:imagedata", "c:chart", "dgm:relIds"].reduce((n, tag) => n + all(xml, tag).length, 0);
 }
 
-export async function inspectDocx(file: ArrayBuffer | Uint8Array): Promise<Extract<ResumeFileFacts, { format: "docx" }>> {
-  const zip = await JSZip.loadAsync(file);
-  const doc = await part(zip, "word/document.xml");
-  if (!doc) throw new Error("Not a Word document.");
-  const theme = themeFonts(await part(zip, "word/theme/theme1.xml"));
-  const styles = readStyles(await part(zip, "word/styles.xml"), theme);
-  const numbering = await part(zip, "word/numbering.xml");
+export function inspectDocx(file: ArrayBuffer | Uint8Array) {
+  return inspectWithinBudget("docx", file);
+}
 
-  const sideParts = async (kind: "header" | "footer") =>
-    Promise.all(
-      Object.keys(zip.files)
-        .filter((name) => new RegExp(`^word/${kind}\\d*\\.xml$`).test(name))
-        .sort()
-        .map((name) => part(zip, name)),
-    ).then((parts) => parts.filter((p): p is Xml => p !== null));
-  const headers = await sideParts("header");
-  const footers = await sideParts("footer");
-  const margins = [...headers, ...footers];
+export async function readDocxLayout(file: Uint8Array): Promise<Extract<ResumeFileFacts, { format: "docx" }>> {
+  const zip = await yauzl.fromBufferPromise(Buffer.from(file.buffer, file.byteOffset, file.byteLength), { autoClose: false });
+  try {
+    const entries = await indexParts(zip);
+    const read = (path: string) => part(zip, entries.get(path));
+    const doc = await read("word/document.xml");
+    if (!doc) throw new Error("Not a Word document.");
+    const theme = themeFonts(await read("word/theme/theme1.xml"));
+    const styles = readStyles(await read("word/styles.xml"), theme);
+    const numbering = await read("word/numbering.xml");
 
-  const facts: LayoutFacts = {
-    tables: all(doc, "w:tbl").length,
-    images: [doc, ...margins].reduce((n, xml) => n + graphics(xml), 0),
-    textBoxes: [doc, ...margins].reduce((n, xml) => n + all(xml, "w:txbxContent").length, 0),
-    columns: columnCount(doc),
-    headerText: headers.map(partText).filter(Boolean).join("\n"),
-    footerText: footers.map(partText).filter(Boolean).join("\n"),
-    fonts: usedFonts(doc, styles, theme),
-    bulletChars: bulletGlyphs(doc, numbering, theme),
-  };
-  return { format: "docx", ...facts };
+    const facts: LayoutFacts = {
+      tables: all(doc, "w:tbl").length,
+      images: graphics(doc),
+      textBoxes: all(doc, "w:txbxContent").length,
+      columns: columnCount(doc),
+      headerText: "",
+      footerText: "",
+      fonts: usedFonts(doc, styles, theme),
+      bulletChars: bulletGlyphs(doc, numbering, theme),
+    };
+    const headers = [];
+    const footers = [];
+    for (const path of [...entries.keys()].sort()) {
+      const margin = /^word\/(header|footer)\d*\.xml$/.exec(path);
+      if (!margin) continue;
+      const xml = (await read(path))!;
+      facts.images += graphics(xml);
+      facts.textBoxes += all(xml, "w:txbxContent").length;
+      const text = partText(xml);
+      if (text) (margin[1] === "header" ? headers : footers).push(text);
+    }
+    facts.headerText = headers.join("\n");
+    facts.footerText = footers.join("\n");
+    return { format: "docx", ...facts };
+  } finally {
+    zip.close();
+  }
 }

@@ -109,6 +109,7 @@ describe("inspectDocx", () => {
       headerText: "Ada Lovelace · ada@example.com · +1 415 555 0100",
       footerText: "",
     });
+    if (facts.format !== "docx") throw new Error(facts.reason);
     expect(facts.fonts.sort()).toEqual(["Calibri", "Lobster"]);
     expect(facts.bulletChars.sort()).toEqual(["➢", "★"].sort());
   });
@@ -172,6 +173,8 @@ describe("inspectDocx", () => {
     const JSZip = (await import("jszip")).default;
     const zip = new JSZip();
     zip.file("hello.txt", "hi");
-    await expect(inspectDocx(await zip.generateAsync({ type: "uint8array" }))).rejects.toThrow("Not a Word document.");
+    await expect(inspectDocx(await zip.generateAsync({ type: "uint8array" }))).resolves.toMatchObject({
+      format: "invalid", reason: "unreadable",
+    });
   });
 });

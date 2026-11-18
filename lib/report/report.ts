@@ -135,9 +135,16 @@ export interface LayoutFacts {
   bulletChars: string[];
 }
 
+export type FileInspectionFailure = {
+  format: "invalid";
+  extension: "docx" | "pdf";
+  reason: "too-large" | "unreadable";
+};
+
 export type ResumeFileFacts =
   | ({ format: "docx" } & LayoutFacts)
   | ({ format: "pdf"; /** False for a scanned PDF: an ATS sees a blank page. */ hasTextLayer: boolean } & LayoutFacts)
+  | FileInspectionFailure
   | { format: "other"; /** Lower-case, without the dot ("pages", "png"). */ extension: string };
 
 export interface ReportInput {

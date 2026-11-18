@@ -54,23 +54,29 @@ describe("inspectPdf", () => {
       footerText: null,
       bulletChars: ["•"],
     });
+    if (facts.format !== "pdf") throw new Error(facts.reason);
     expect(facts.fonts.sort()).toEqual(["Helvetica", "Times"]);
   });
 
   it("finds a sidebar layout's two columns", async () => {
-    expect((await inspectPdf(await twoColumn())).columns).toBe(2);
+    expect(await inspectPdf(await twoColumn())).toMatchObject({ columns: 2 });
   });
 
   it("counts drawn images and reports odd bullet glyphs", async () => {
     const photo = h(Image, { key: "photo", src: { data: tinyPng(), format: "png" }, style: { width: 40, height: 40 } });
     const facts = await inspectPdf(await singleColumn("»", [photo]));
-    expect(facts.images).toBe(1);
-    expect(facts.bulletChars).toEqual(["»"]);
+    expect(facts).toMatchObject({ images: 1, bulletChars: ["»"] });
   });
 
   it("flags a scanned PDF as having no text", async () => {
     const scan = await pdf(h(Image, { src: { data: tinyPng(), format: "png" }, style: { width: 500, height: 700 } }));
     expect(await inspectPdf(scan)).toMatchObject({ hasTextLayer: false, images: 1, fonts: [] });
+  });
+
+  it("rejects a PDF with more pages than the inspection budget", async () => {
+    const pages = Array.from({ length: 21 }, (_, i) => h(Page, { key: i }, name()));
+    const file = await renderToBuffer(h(Document, null, ...pages));
+    await expect(inspectPdf(file)).resolves.toMatchObject({ format: "invalid", reason: "too-large" });
   });
 
   it("feeds the formatting checks: only what a PDF can show is checked", async () => {

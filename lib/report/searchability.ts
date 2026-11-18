@@ -28,7 +28,7 @@ export interface SearchabilityInput {
 }
 
 function inWordHeaderOnly(file: ResumeFileFacts | null, find: (text: string) => string | null): boolean {
-  if (!file || file.format === "other") return false;
+  if (file?.format !== "docx") return false;
   return [file.headerText, file.footerText].some((t) => t !== null && find(t) !== null);
 }
 
@@ -271,6 +271,13 @@ function fileType({ file }: SearchabilityInput): SearchabilityCheck | null {
             "This PDF is a picture of text, so an ATS sees a blank page.",
             "Export the PDF from Word or Google Docs instead of scanning it, or upload the .docx.",
           );
+    case "invalid":
+      return fail(
+        "file-type",
+        label,
+        file.reason === "too-large" ? "This file exceeds the size or complexity limits for inspection." : "This file could not be read.",
+        "Export a smaller, text-based PDF or a new .docx and upload it.",
+      );
     case "other": {
       const ext = `.${file.extension}`;
       return ["doc", "rtf", "txt"].includes(file.extension)

@@ -135,7 +135,7 @@ function specialCharacters(facts: LayoutFacts | null, text: string): FormattingC
 }
 
 export function formattingChecks(file: ResumeFileFacts | null, resumeText: string): FormattingCheck[] {
-  const facts = file && file.format !== "other" ? file : null;
+  const facts = file?.format === "docx" || file?.format === "pdf" ? file : null;
   const layout = facts
     ? [tables(facts), headerFooter(facts), images(facts), columns(facts), textBoxes(facts), fonts(facts)]
     : [];
