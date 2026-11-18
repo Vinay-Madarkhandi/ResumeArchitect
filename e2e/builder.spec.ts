@@ -25,10 +25,11 @@ test("build a master from scratch, switch templates, download a PDF, and toggle 
   await page.getByLabel("Company").fill("Analytical Engines");
   await page.getByLabel("Describe what you did").fill("Sorted 38% of the incoming product samples.");
   await page.getByRole("button", { name: "Suggest with Gemini" }).click();
-  await expect(page.getByText("[Verify claim]", { exact: true })).toBeVisible();
+  await expect(page.getByRole("listitem").filter({ hasText: "[Verify claim]" })).toBeVisible();
   await expect(page.getByText(/Verify “38%”/)).toBeVisible();
   await expect(page.getByRole("button", { name: "Use suggestion" })).toBeDisabled();
   const bullet = "Built a Kafka pipeline that cut invoice latency by 21%";
+  await page.getByRole("button", { name: "Add bullet" }).click();
   await page.getByLabel("Bullet 1", { exact: true }).fill(bullet);
   await expect(preview.getByText(bullet)).toBeVisible();
   await next.click();

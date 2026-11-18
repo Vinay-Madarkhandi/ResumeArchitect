@@ -21,7 +21,7 @@ test("sign up, tailor a resume, review every change, edit, and download", async 
   // Lands in the review once all five stages finish.
   await expect(page).toHaveURL(/\/resumes\/[0-9a-f-]+\?view=review/, { timeout: 60_000 });
   const rail = page.getByRole("complementary");
-  await expect(rail.getByText(/to review/)).toBeVisible();
+  await expect(rail.getByText(/need checking/)).toBeVisible();
   await expect(page.locator(".rl-hunk")).toHaveCount(4);
 
   // The new number, the unbacked Kubernetes skill, and the new mentoring claim are all flagged.
@@ -31,6 +31,8 @@ test("sign up, tailor a resume, review every change, edit, and download", async 
   await page.getByRole("button", { name: "Download" }).click();
   await expect(page.getByRole("menuitem", { name: "PDF" })).toBeDisabled();
   await page.keyboard.press("Escape");
+  const savedExport = await page.request.get(`/api${new URL(page.url()).pathname}/export?format=pdf`);
+  expect(savedExport.status()).toBe(422);
   for (const id of [2, 3, 4]) {
     await rail.getByText(`[Verify claim ${id}]`, { exact: true }).click();
     await expect(rail.getByText("Replace this placeholder with details you can verify, or revert the change.")).toBeVisible();

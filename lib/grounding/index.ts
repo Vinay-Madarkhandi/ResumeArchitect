@@ -22,7 +22,7 @@ const NAME = /\b[A-Z][\w&/-]*(?:[ \t]+[A-Z][\w&/-]*){1,4}\b/g;
 
 // Each evidence unit is checked as a whole. A bag of terms would join unrelated
 // jobs, strip negation, or attach the right number to the wrong result.
-const LEADER = /^\s*(?:#{1,6}\s+|[-*•]\s+|\d+\.\s+)/gm;
+const LEADER = /^[ \t]*(?:#{1,6}|[-*•]|\d+\.)[ \t]+/gm;
 
 function canonical(text: string) {
   let value = text.normalize("NFKC").toLowerCase()
@@ -108,7 +108,7 @@ export function uniqueFlags(flags: ChangeFlag[]) {
  */
 export function checkGrounding(sources: readonly string[], output: string) {
   const evidence = sources.flatMap((source) => {
-    const parts = split(source.replace(LEADER, ""));
+    const parts = split(source.replace(/\r\n?/g, "\n").replace(LEADER, ""));
     return parts.flatMap((part, index) => index % 2 === 0 && !parts[index + 1]?.startsWith("?") ? [describe(part)] : []);
   }).filter(({ key }) => key);
   const parts = split(output.replace(/\r\n/g, "\n"));

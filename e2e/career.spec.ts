@@ -39,7 +39,7 @@ test("flags unsupported LinkedIn headlines, About text and tips, and blocks copy
   await drafts.getByText("Review and edit About section").click();
   await drafts.getByLabel("Edit About section").fill("I sorted product samples.");
   await expect(drafts.getByRole("button", { name: "Copy About section" })).toHaveCount(0);
-  await drafts.getByLabel("I verified the details in this draft").check();
+  await drafts.getByRole("checkbox", { name: "I verified the details in this draft" }).check();
   await expect(drafts.getByRole("button", { name: "Copy About section" })).toBeVisible();
 
   await page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: "LinkedIn review" }).click();

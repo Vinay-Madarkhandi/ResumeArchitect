@@ -38,6 +38,11 @@ describe("candidate claim grounding", () => {
     expect(result.supported.map((claim) => claim.evidence)).toEqual(["Built Golang services", "Cut invoice latency by 38%"]);
   });
 
+  it("keeps bullet boundaries in form submissions with CRLF line endings", () => {
+    const source = "2020 – Present\r\n- Worked on services in Go backed by PostgreSQL\r\n- Sorted samples";
+    expect(checkGrounding([source], "2020 – Present\nWorked on services in Go backed by PostgreSQL\nSorted samples").flags).toEqual([]);
+  });
+
   it("keeps dates, durations, employers and titles tied to the stated role", () => {
     const source = "Engineer at Acme Corp for 3 years\nManager at Example Ltd for 2 years";
     expect(checkGrounding([source], "Engineer at Acme Corp for 3 years").flags).toEqual([]);
