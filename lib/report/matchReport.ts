@@ -1,9 +1,9 @@
 import type { Importance } from "@/lib/schemas/jobFacts";
 import { formattingChecks } from "./formatting";
-import { groundJobSkills, matchPredictedSkills, matchSkills, type MatchContext } from "./keywords";
+import { groundJobSkills, matchPredictedSkills, matchSkills, matchTerm, type MatchContext } from "./keywords";
 import { recruiterTips } from "./recruiterTips";
 import type { Check, CheckStatus, ComponentId, MatchReport, ReportInput, ScoreComponent, SkillMatch, TermMatch } from "./report";
-import { readResume } from "./resume";
+import { readResume, sectionText, type ResumeModel, type SectionKind } from "./resume";
 import { searchabilityChecks } from "./searchability";
 import { buildLexicon } from "./synonyms";
 
@@ -19,11 +19,12 @@ import { buildLexicon } from "./synonyms";
  * | education        | 5%     | 5–10%                                          |
  * | formatting       | 5%     | ~5%                                            |
  * | predicted skills | 5%     | §10: "less weight than explicitly listed"      |
- * | searchability    | 10%    | the remaining 15%, which §15 calls "other"     |
- * | recruiter tips   | 5%     |   and §3 fills with parse and recruiter checks |
+ * | other keywords   | 10%    | 10–15%                                         |
+ * | searchability    | 3%     | §3 parsing checks                              |
+ * | recruiter tips   | 2%     | §3 recruiter preferences                      |
  *
- * Hard skills take the middle of their range and the rest the low end, so
- * the parts sum to 100%.
+ * The estimated weight for hard skills uses the middle of the range. Other
+ * estimates use the lower end to leave room for predicted skills and checks.
  * A part with nothing to measure (no soft skills in the posting, no degree
  * asked for) hands its weight to the rest in proportion.
  */
@@ -32,10 +33,11 @@ export const WEIGHTS: Readonly<Record<ComponentId, number>> = {
   jobTitle: 0.15,
   softSkills: 0.1,
   education: 0.05,
-  searchability: 0.1,
+  searchability: 0.03,
   formatting: 0.05,
-  recruiterTips: 0.05,
+  recruiterTips: 0.02,
   predictedSkills: 0.05,
+  otherKeywords: 0.1,
 };
 
 const LABELS: Record<ComponentId, string> = {
@@ -47,6 +49,7 @@ const LABELS: Record<ComponentId, string> = {
   formatting: "Formatting",
   recruiterTips: "Recruiter tips",
   predictedSkills: "Predicted skills",
+  otherKeywords: "Other keywords",
 };
 
 /** The match rate Jobscan recommends reaching before applying (§2, §15). */
@@ -76,11 +79,33 @@ function termCredit(match: TermMatch, jdCount = 1): number {
   }
 }
 
-function skillsRatio(skills: SkillMatch[]): number | null {
+function skillsRatio(skills: SkillMatch[], placement: (term: string) => number = () => 1): number | null {
   if (skills.length === 0) return null;
   const weights = skills.map((s) => IMPORTANCE_WEIGHT[s.importance] * frequencyWeight(s.jdCount));
-  const earned = skills.reduce((sum, s, i) => sum + weights[i] * termCredit(s, s.jdCount), 0);
+  const earned = skills.reduce((sum, s, i) => sum + weights[i] * termCredit(s, s.jdCount) * (s.status === "missing" ? 1 : placement(s.term)), 0);
   return earned / weights.reduce((a, b) => a + b, 0);
+}
+
+/**
+ * §15 notes Jobscan scores keywords by section ("skills section vs buried in a
+ * paragraph") without saying how much. This estimate gives full credit to a
+ * skill shown in work (any line outside the Skills and Summary sections), a
+ * little less to one only listed under Skills, and less again to one only
+ * claimed in the summary.
+ */
+function placementCredit(resume: ResumeModel, match: MatchContext) {
+  const listedIn = new Set<SectionKind>(["skills", "summary"]);
+  const work = [
+    ...resume.header,
+    ...resume.sections.filter((s) => s.kind === null || !listedIn.has(s.kind)).flatMap((s) => s.units),
+  ].map((u) => u.text).join("\n");
+  const skills = sectionText(resume, "skills");
+  const found = (term: string, resumeText: string) => matchTerm(term, { ...match, resumeText }).status !== "missing";
+  return (term: string) => {
+    if (work && found(term, work)) return 1;
+    if (skills && found(term, `Skills\n${skills}`)) return 0.95;
+    return 0.9;
+  };
 }
 
 const CHECK_CREDIT: Record<CheckStatus, number> = { pass: 1, warn: 0.5, fail: 0 };
@@ -112,6 +137,8 @@ export function buildMatchReport({ job: facts, jobText, resume: doc, file, asOf 
 
   const hardSkills = matchSkills(job.hardSkills, match);
   const softSkills = matchSkills(job.softSkills, match);
+  const otherKeywords = matchSkills(job.otherKeywords ?? [], match);
+  const placement = placementCredit(resume, match);
   const predictedSkills = matchPredictedSkills(job.predictedSkills, match);
   const searchability = searchabilityChecks({ resume, job, file, match });
   const formatting = formattingChecks(file, resume);
@@ -122,9 +149,10 @@ export function buildMatchReport({ job: facts, jobText, resume: doc, file, asOf 
   const parsing = searchability.filter((c) => c.id !== "job-title-match" && c.id !== "education-match");
 
   const ratios: Record<ComponentId, number | null> = {
-    hardSkills: skillsRatio(hardSkills),
+    hardSkills: skillsRatio(hardSkills, placement),
     jobTitle: checksRatio(title),
     softSkills: skillsRatio(softSkills),
+    otherKeywords: skillsRatio(otherKeywords, placement),
     education: education.length > 0 ? checksRatio(education) : null,
     searchability: checksRatio(parsing),
     formatting: checksRatio(formatting),
@@ -147,6 +175,7 @@ export function buildMatchReport({ job: facts, jobText, resume: doc, file, asOf 
     breakdown,
     hardSkills,
     softSkills,
+    otherKeywords,
     searchability,
     formatting,
     recruiterTips: tips,

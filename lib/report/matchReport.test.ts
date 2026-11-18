@@ -66,7 +66,7 @@ describe("buildMatchReport", () => {
   it("returns every section of the report", () => {
     const r = report(STRONG);
     expect(Object.keys(r).sort()).toEqual(
-      ["breakdown", "formatting", "hardSkills", "matchRate", "predictedSkills", "recruiterTips", "searchability", "softSkills", "verdict"].sort(),
+      ["breakdown", "formatting", "hardSkills", "matchRate", "otherKeywords", "predictedSkills", "recruiterTips", "searchability", "softSkills", "verdict"].sort(),
     );
     expect(r.hardSkills.map((s) => s.status)).toEqual(["found", "found", "found", "found"]);
     expect(r.predictedSkills[0]).toMatchObject({ term: "Docker", status: "found" });
@@ -94,7 +94,7 @@ describe("buildMatchReport", () => {
   it("hands an empty part's weight to the rest", () => {
     const r = report(STRONG, { ...JOB, softSkills: [], predictedSkills: [] });
     expect(r.breakdown.map((c) => c.id)).toEqual(["hardSkills", "jobTitle", "searchability", "formatting", "recruiterTips"]);
-    expect(r.breakdown.find((c) => c.id === "hardSkills")!.weight).toBeCloseTo(0.45 / 0.8, 10);
+    expect(r.breakdown.find((c) => c.id === "hardSkills")!.weight).toBeCloseTo(0.45 / 0.7, 10);
   });
 
   it("redistributes every unmeasurable skill component for a sparse posting", () => {
@@ -109,7 +109,7 @@ describe("buildMatchReport", () => {
   });
 
   it("ranks exact over synonym over missing, and a missing must-have over a missing nice-to-have", () => {
-    const hard = (body: string) => report(body).breakdown.find((c) => c.id === "hardSkills")!.ratio;
+    const hard = (body: string) => report(`## Experience\n\n- Built with ${body}`).breakdown.find((c) => c.id === "hardSkills")!.ratio;
     const exact = hard("Go, PostgreSQL, Kubernetes, Terraform");
     const synonym = hard("Go, Postgres, Kubernetes, Terraform");
     const missing = hard("Go, Kubernetes, Terraform");
@@ -121,8 +121,8 @@ describe("buildMatchReport", () => {
 
   it("gives one mention of a skill the posting repeats partial credit", () => {
     const repeated = "Go programming, Go services, Go APIs. PostgreSQL. Kubernetes. Terraform.";
-    const once = report("Go, PostgreSQL, Kubernetes, Terraform", JOB, repeated).breakdown[0].ratio;
-    const twice = report("Go, Go, PostgreSQL, Kubernetes, Terraform", JOB, repeated).breakdown[0].ratio;
+    const once = report("## Experience\n\n- Built with Go, PostgreSQL, Kubernetes, Terraform", JOB, repeated).breakdown[0].ratio;
+    const twice = report("## Experience\n\n- Built with Go, Go, PostgreSQL, Kubernetes, Terraform", JOB, repeated).breakdown[0].ratio;
     expect(once).toBeLessThan(1);
     expect(twice).toBe(1);
   });
@@ -157,6 +157,35 @@ describe("buildMatchReport", () => {
     expect(stuffed.hardSkills[0].advice).toMatch(/6 times.*posting.*once/i);
     expect(normal.hardSkills[0].advice).toBeNull();
     expect(stuffed.breakdown[0].ratio).toBe(normal.breakdown[0].ratio);
+  });
+
+  it("gives experience mentions more credit than a skills list or summary mention", () => {
+    const job = { ...JOB, hardSkills: [{ term: "PostgreSQL", importance: "high" as const }] };
+    const ratio = (resume: string) => report(resume, job).breakdown.find((c) => c.id === "hardSkills")!.ratio;
+    const experience = ratio("## Experience\n\n- Built reporting queries in PostgreSQL");
+    const skills = ratio("## Skills\n\nPostgreSQL");
+    expect(experience).toBe(1);
+    expect(experience).toBeGreaterThan(skills);
+    expect(skills).toBeGreaterThan(ratio("## Summary\n\nExperience with PostgreSQL."));
+  });
+
+  it("scores documented industry terms without duplicating hard skills", () => {
+    const job = {
+      ...JOB,
+      otherKeywords: [
+        { term: "payment settlement", importance: "high" as const },
+        { term: "Postgres", importance: "high" as const },
+        { term: "unlisted jargon", importance: "high" as const },
+      ],
+    };
+    const jobText = `${JOB_TEXT} Own payment settlement.`;
+    const matched = report(`${STRONG}\n\n## Projects\n\n- Improved payment settlement`, job, jobText);
+    const missed = report(STRONG, job, jobText);
+    expect(matched.otherKeywords.map((skill) => skill.term)).toEqual(["payment settlement"]);
+    expect(matched.breakdown.find((c) => c.id === "otherKeywords")).toMatchObject({ ratio: 1 });
+    expect(missed.breakdown.find((c) => c.id === "otherKeywords")).toMatchObject({ ratio: 0 });
+    expect(matched.matchRate).toBeGreaterThan(missed.matchRate);
+    expect(report(STRONG).breakdown.some((c) => c.id === "otherKeywords")).toBe(false);
   });
 
   it("is reproducible: the same input always gives the same report", () => {

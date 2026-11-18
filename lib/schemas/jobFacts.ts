@@ -48,6 +48,8 @@ export const JobFactsSchema = z.object({
   level: JobLevelSchema,
   hardSkills: z.array(JobSkillSchema),
   softSkills: z.array(JobSkillSchema).default([]),
+  /** Explicit posting terms that describe the industry or work without naming a skill. */
+  otherKeywords: z.array(JobSkillSchema).optional(),
   education: EducationRequirementSchema.nullable().default(null),
   /** Minimum years of experience the posting asks for. */
   yearsRequired: z.number().int().min(0).max(40).nullable().default(null),

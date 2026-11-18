@@ -86,6 +86,7 @@ export type ComponentId =
   | "hardSkills"
   | "jobTitle"
   | "softSkills"
+  | "otherKeywords"
   | "education"
   | "searchability"
   | "formatting"
@@ -111,6 +112,7 @@ export interface MatchReport {
   breakdown: ScoreComponent[];
   hardSkills: SkillMatch[];
   softSkills: SkillMatch[];
+  otherKeywords: SkillMatch[];
   searchability: Check<SearchabilityCheckId>[];
   formatting: Check<FormattingCheckId>[];
   recruiterTips: Check<RecruiterTipId>[];

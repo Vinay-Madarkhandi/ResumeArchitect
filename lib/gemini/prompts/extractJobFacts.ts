@@ -24,6 +24,9 @@ Return:
 - softSkills: 0 to 10 interpersonal or work-style skills the posting asks for
   ("communication", "leadership", "stakeholder management"), worded as the
   posting words them, with importance by the same rules.
+- otherKeywords: 0 to 12 industry terms, specific responsibilities, or action
+  phrases worth searching for. Use the posting's wording and the same
+  importance rules. Exclude generic filler and terms already listed as skills.
 - education: the lowest degree the posting requires or prefers, as
   { degree, fields, equivalentExperience }. degree is high_school, associate,
   bachelor, master, or doctorate. fields lists the fields of study it names

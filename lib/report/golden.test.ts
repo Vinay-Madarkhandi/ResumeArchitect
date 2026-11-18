@@ -203,9 +203,9 @@ Nice to have
     ]);
   });
 
-  it("scores 81%, past the 75% target", async () => {
+  it("scores 80%, past the 75% target", async () => {
     const r = await report();
-    expect(r.matchRate).toBe(81);
+    expect(r.matchRate).toBe(80);
     expect(r.verdict).toEqual({
       target: 75,
       reached: true,
