@@ -265,6 +265,40 @@ describe("sign-in throttling", () => {
     await expect(signInWithLink(lastLink(email, "signIn"), "")).resolves.toEqual({});
   });
 
+  it("emails at most three sign-in links an hour per address", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    try {
+      const email = await verifiedOwner();
+      for (let request = 1; request <= 4; request++) await expect(requestSignInLink(email)).resolves.toEqual({});
+      const links = () => fixture.mail.filter((job) => "to" in job && job.to === email && job.template === "signIn");
+      expect(links()).toHaveLength(3);
+      vi.setSystemTime(Date.now() + 3_600_000);
+      await requestSignInLink(email);
+      expect(links()).toHaveLength(4);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("stops taking codes for a link after five wrong ones", async () => {
+    vi.stubEnv("KEY_ENCRYPTION_SECRET", Buffer.alloc(32, 7).toString("base64"));
+    try {
+      const email = await verifiedOwner();
+      const totp = authenticator(email);
+      await db.update(users).set({ totp_secret_ciphertext: protectTotp(totp), totp_enabled_at: sql`now()` })
+        .where(eq(users.email, email));
+      await requestSignInLink(email);
+      const token = lastLink(email, "signIn");
+      for (let attempt = 1; attempt <= 5; attempt++) {
+        await expect(signInWithLink(token, `wrong-code-${attempt}`)).resolves.toEqual({ needsCode: true, error: "That code couldn't be verified." });
+      }
+      await expect(signInWithLink(token, totp.generate())).resolves.toEqual(tooMany);
+      expect(fixture.cookies.has("ra_session")).toBe(false);
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
   it("rejects an expired sign-in link", async () => {
     const email = await verifiedOwner();
     await requestSignInLink(email);
