@@ -2,7 +2,7 @@ import { hostname } from "node:os";
 import { Worker } from "bullmq";
 import { cache, redisUrl } from "@/lib/cache";
 import { sqlClient } from "@/lib/db";
-import { deliverEmail } from "@/lib/email";
+import { sendEmailJob } from "@/lib/email";
 import { logger } from "@/lib/logger";
 import { maintenanceQueue, type EmailJob, type MaintenanceJob, type MaintenancePayload } from "@/lib/queue";
 import { purgeExpiredAuth } from "@/lib/auth/purge";
@@ -35,7 +35,7 @@ async function main() {
   await queue.upsertJobScheduler("orphaned-objects", { every: 86_400_000 }, { name: "orphaned-objects" });
 
   const connection = { url: redisUrl(), maxRetriesPerRequest: null };
-  const email = new Worker<EmailJob>("email", (job) => deliverEmail(job.data, job.id!), { connection, concurrency: 4 });
+  const email = new Worker<EmailJob>("email", sendEmailJob, { connection, concurrency: 4 });
   const maintenance = new Worker<MaintenancePayload, void, MaintenanceJob>("maintenance", async (job) => {
     if (job.name === "delete-user-objects") {
       if (!job.data.userId) throw new Error("Account ID is required");

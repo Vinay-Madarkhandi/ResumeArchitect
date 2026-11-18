@@ -21,6 +21,19 @@ export async function mailboxLink(email: string, template: "verify" | "reset" | 
   return link;
 }
 
+export async function queuedEmailsContaining(text: string) {
+  const redis = new Redis(process.env.REDIS_URL ?? "redis://localhost:16379");
+  try {
+    let count = 0;
+    for (const key of await redis.keys("bull:email:*")) {
+      if (await redis.type(key) === "hash" && (await redis.hget(key, "data"))?.includes(text)) count++;
+    }
+    return count;
+  } finally {
+    await redis.quit();
+  }
+}
+
 export async function submitSignUp(page: Page, email = `e2e-${randomUUID()}@example.com`, password = TEST_PASSWORD) {
   const unique = randomUUID();
   // The loopback Next server receives synthetic client addresses so each

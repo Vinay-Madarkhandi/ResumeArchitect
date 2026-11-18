@@ -12,7 +12,7 @@ let maintenance: Queue<MaintenancePayload, void, MaintenanceJob> | undefined;
 export function emailQueue() {
   return emails ??= new Queue<EmailJob>("email", {
     connection: { url: redisUrl(), maxRetriesPerRequest: 1, connectTimeout: 3000 },
-    defaultJobOptions: { attempts: 5, backoff: { type: "exponential", delay: 1000 }, removeOnComplete: { age: 86_400 }, removeOnFail: { age: 86_400 } },
+    defaultJobOptions: { attempts: 5, backoff: { type: "exponential", delay: 1000 }, removeOnComplete: true, removeOnFail: { age: 86_400 } },
   });
 }
 

@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { mailboxLink, signIn, signUp, submitSignUp, TEST_PASSWORD, verifySignUp } from "./auth-helpers";
+import { mailboxLink, queuedEmailsContaining, signIn, signUp, submitSignUp, TEST_PASSWORD, verifySignUp } from "./auth-helpers";
 import { onboard } from "./onboard";
 
 test("sign-up requires email verification and the link works once", async ({ page }) => {
@@ -7,6 +7,7 @@ test("sign-up requires email verification and the link works once", async ({ pag
   await signIn(page, email);
   await expect(page.getByText(/verify your email before signing in/i)).toBeVisible();
   const link = await mailboxLink(email, "verify");
+  await expect.poll(() => queuedEmailsContaining(new URL(link).searchParams.get("token")!)).toBe(0);
   await verifySignUp(page, link);
   await page.goto(link);
   await expect(page.getByRole("heading", { name: "This link isn't valid" })).toBeVisible();

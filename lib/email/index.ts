@@ -34,3 +34,17 @@ export async function deliverEmail(job: EmailJob, id: string) {
   const result = await new Resend(key).emails.send({ from: process.env.EMAIL_FROM, to: job.to, subject, html }, { idempotencyKey: id });
   if (result.error) throw new Error(`Resend delivery failed: ${result.error.name}`);
 }
+
+type EmailAttempt = { id?: string; data: EmailJob; attemptsMade: number; opts: { attempts?: number }; updateData(data: EmailJob): Promise<void> };
+
+export async function sendEmailJob(job: EmailAttempt) {
+  try {
+    await deliverEmail(job.data, job.id!);
+  } catch (error) {
+    // A job that will not be retried is kept for inspection without its usable link.
+    if (job.attemptsMade + 1 >= (job.opts.attempts ?? 1) && job.data.template !== "alert") {
+      await job.updateData({ ...job.data, data: { link: "" } });
+    }
+    throw error;
+  }
+}
