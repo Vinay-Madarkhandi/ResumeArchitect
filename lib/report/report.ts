@@ -150,3 +150,15 @@ export interface ReportInput {
   /** "Present" in a date range means this day. */
   asOf: Date;
 }
+
+export function pass<Id extends string>(id: Id, label: string, detail: string): Check<Id> {
+  return { id, label, status: "pass", detail, fix: null };
+}
+
+export function warn<Id extends string>(id: Id, label: string, detail: string, fix: string): Check<Id> {
+  return { id, label, status: "warn", detail, fix };
+}
+
+export function fail<Id extends string>(id: Id, label: string, detail: string, fix: string): Check<Id> {
+  return { id, label, status: "fail", detail, fix };
+}
