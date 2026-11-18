@@ -207,7 +207,7 @@ export async function changeEmail(rawEmail: string, password: string, code: stri
   if (!user) return fail("Sign in again to change your email.");
   if (!validEmail(email) || email === user.email) return fail("Enter a different, valid email address.");
   if (await credentialLimit(user.id)) return fail("Too many attempts. Try again later.");
-  if (await accountByEmail(email)) return fail("That email address is already in use.");
+  // Whether the address is taken is only revealed to its inbox, when the link is used.
   const sent = await sendAccountLink(user.id, "change_email", {
     recipient: email,
     authorize: (tx, account) => account.email !== email

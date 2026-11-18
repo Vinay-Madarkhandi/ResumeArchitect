@@ -6,7 +6,7 @@ import { cache } from "@/lib/cache";
 import { authTokens, users } from "@/lib/db/schema";
 import type { EmailJob } from "@/lib/queue";
 import { seedAdmins } from "@/lib/auth/accounts";
-import { forgotPassword, resetPassword, signIn, signUp, verifyEmail } from "./auth";
+import { changeEmail, forgotPassword, resetPassword, signIn, signUp, verifyEmail } from "./auth";
 
 const fixture = vi.hoisted(() => ({
   close: async () => {},
@@ -174,4 +174,21 @@ describe("sign-in throttling", () => {
     await failFromManyAddresses(email);
     await expect(signIn(email, OWNER, "")).resolves.toEqual(tooMany);
   });
+});
+
+it("answers an email change the same whether or not the new address is registered", async () => {
+  const signedUp = async (email: string) => {
+    fixture.cookies.clear();
+    await signUp(email, OWNER);
+    await verifyEmail(lastLink(email, "verify"), false, OWNER);
+  };
+  const [taken, current] = [victim(), victim()];
+  await signedUp(taken);
+  await signedUp(current);
+  fixture.mail.length = 0;
+
+  const free = victim();
+  await expect(changeEmail(free, OWNER, "")).resolves.toEqual({});
+  await expect(changeEmail(taken, OWNER, "")).resolves.toEqual({});
+  expect(fixture.mail.map(({ to, template }) => [to, template])).toEqual([[free, "changeEmail"], [taken, "changeEmail"]]);
 });
