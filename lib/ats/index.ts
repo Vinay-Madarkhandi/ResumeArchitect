@@ -1,4 +1,5 @@
 import { atsRegistry } from './registry';
+import { atsTips, type AtsGuidance } from './tips';
 export { atsRegistry } from './registry';
 export { atsTips } from './tips';
 
@@ -23,4 +24,13 @@ export function identifyAts(input: { url?: string; html?: string; text?: string 
     if (entry.htmlMarkers.some(marker => marker.test(page))) return matches(entry);
   }
   return null;
+}
+
+export interface DetectedAts { id: string; name: string; parsingNotes: string; guidance: AtsGuidance[]; }
+
+/** The ATS a posting runs on, with what its documentation says to check, or null when it can't be told. */
+export function detectAts(input: { url?: string | null; text?: string | null }): DetectedAts | null {
+  const match = identifyAts({ url: input.url ?? undefined, text: input.text ?? undefined });
+  if (!match) return null;
+  return { ...match, guidance: atsTips(match.id)?.guidance ?? [] };
 }
