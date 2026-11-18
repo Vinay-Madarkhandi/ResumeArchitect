@@ -62,7 +62,7 @@ checks are the app's job). Put those queries in small per-entity modules
 - Rate limits (Redis): sign-in 5/15 min per email+IP and 20 failures/h per email (sliding, so it lapses), sign-up 5/h per IP, reset 3/h per
   email, AI endpoints per user.
 - While an address is backing off, the sign-in page offers "Email me a sign-in link"
-  (3/h per email). The link is hashed, single use, valid 15 min, still asks for the
+  (3/h per email), whatever the per-client limit says. The link is hashed, single use, valid 15 min, still asks for the
   TOTP code when 2FA is on, and clears the failure count, so guessing cannot keep
   the inbox owner out.
 - Optional TOTP 2FA (`otpauth`), with 10 hashed recovery codes.

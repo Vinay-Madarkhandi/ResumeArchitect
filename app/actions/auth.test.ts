@@ -244,6 +244,16 @@ describe("sign-in throttling", () => {
     await expect(signIn(email, OWNER, "")).resolves.toEqual({});
   });
 
+  it("offers the emailed link to an owner whose own address has hit its limit too", async () => {
+    const email = await verifiedOwner();
+    from("192.0.2.50");
+    for (let attempt = 1; attempt <= 5; attempt++) await signIn(email, "owner-typo-guess", "");
+    await expect(signIn(email, OWNER, "")).resolves.toEqual(tooMany);
+    await failFromManyAddresses(email);
+    from("192.0.2.50");
+    await expect(signIn(email, OWNER, "")).resolves.toEqual(backingOff);
+  }, 20_000);
+
   it("rejects an expired sign-in link", async () => {
     const email = await verifiedOwner();
     await requestSignInLink(email);

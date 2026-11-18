@@ -45,14 +45,18 @@ test("sign in and out with a password", async ({ page, context }) => {
 
 test("an owner whose account is backing off signs in with an emailed link", async ({ browser, page }) => {
   const email = await signUp(page);
-  const owner = await browser.newPage();
+  const [owner, guesser] = [await browser.newPage(), await browser.newPage()];
   try {
-    for (let attempt = 1; attempt <= 20; attempt++) {
-      await owner.setExtraHTTPHeaders({ "x-forwarded-for": `198.51.100.${attempt}` });
-      await signIn(owner, email, "someone-elses-guess");
+    await owner.setExtraHTTPHeaders({ "x-forwarded-for": "192.0.2.77" });
+    for (let attempt = 1; attempt <= 5; attempt++) {
+      await signIn(owner, email, "owner-typo-guess");
       await expect(owner.getByText("That email and password don't match an account.")).toBeVisible();
     }
-    await owner.setExtraHTTPHeaders({ "x-forwarded-for": "192.0.2.77" });
+    for (let attempt = 1; attempt <= 15; attempt++) {
+      await guesser.setExtraHTTPHeaders({ "x-forwarded-for": `198.51.100.${attempt}` });
+      await signIn(guesser, email, "someone-elses-guess");
+      await expect(guesser.getByText("That email and password don't match an account.")).toBeVisible();
+    }
     await signIn(owner, email);
     await expect(owner.getByText("Too many sign-in attempts.")).toBeVisible();
     await owner.getByRole("button", { name: "Email me a sign-in link" }).click();
@@ -65,7 +69,7 @@ test("an owner whose account is backing off signs in with an emailed link", asyn
     await owner.goto(link);
     await expect(owner.getByRole("heading", { name: "This link isn't valid" })).toBeVisible();
   } finally {
-    await owner.close();
+    await Promise.all([owner.close(), guesser.close()]);
   }
 });
 

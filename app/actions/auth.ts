@@ -50,8 +50,9 @@ export async function signIn(rawEmail: string, password: string, code: string): 
   const email = normalizeEmail(rawEmail);
   const { ip, userAgent } = await requestDetails();
   if (!validEmail(email) || password.length > 1024) return fail(invalidCredentials);
-  if (await rateLimit("sign-in", JSON.stringify([email, ip]), 5, HOUR / 4)) return fail(tooManySignIns);
+  // Checked first: the per-client limit must not hide the emailed-link recovery.
   if (await signInBackoff(email)) return backingOff;
+  if (await rateLimit("sign-in", JSON.stringify([email, ip]), 5, HOUR / 4)) return fail(tooManySignIns);
   const rejected = async () => {
     await recordSignInFailure(email);
     return fail(invalidCredentials);
