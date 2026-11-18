@@ -34,8 +34,8 @@ export function targetLabel(job: JobAnalysis): string {
  * Gives a route the user's Gemini model, after the per-user AI rate limit.
  * Every AI call goes through this, so a missing key reads the same everywhere.
  */
-export async function aiModel(userId: string, kind: string): Promise<Outcome<JsonModel>> {
-  const limited = await limitAi(userId, kind);
+export async function aiModel(userId: string, kind: string, limit?: number): Promise<Outcome<JsonModel>> {
+  const limited = await limitAi(userId, kind, limit);
   if (limited) return { ok: false, response: limited };
   const key = await loadGeminiKey(userId);
   if (!key.ok) return { ok: false, response: NextResponse.json({ error: key.message, code: key.code }, { status: 400 }) };
@@ -70,10 +70,11 @@ export async function resolveTarget(
   userId: string,
   input: Exclude<TargetInput, { kind: "none" }>,
   kind: string,
+  existing?: JsonModel,
 ): Promise<Outcome<Target>> {
   if (input.kind === "application") return applicationTarget(userId, input.resumeId);
 
-  const model = await aiModel(userId, kind);
+  const model: Outcome<JsonModel> = existing ? { ok: true, value: existing } : await aiModel(userId, kind);
   if (!model.ok) return model;
   try {
     if (input.kind === "role") {

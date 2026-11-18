@@ -7,17 +7,21 @@ import { ChangeFlagSchema, MAX_JOB_DESCRIPTION_LENGTH, MIN_JOB_DESCRIPTION_LENGT
  * stored as JSON, and parsed with these schemas again when they are read.
  */
 
+const ApplicationTarget = z.object({ kind: z.literal("application"), resumeId: z.uuid() });
+const PostingTarget = z.object({
+  kind: z.literal("posting"),
+  text: z.string().trim().min(MIN_JOB_DESCRIPTION_LENGTH, "Paste the full job post, including the requirements.")
+    .max(MAX_JOB_DESCRIPTION_LENGTH, "That job post is too long. Trim it to the role details."),
+});
+const RoleTarget = z.object({ kind: z.literal("role"), role: z.string().trim().min(2, "Name the role.").max(120) });
+
 /** What a tool measures against: a saved application, a pasted posting, or just a role title. */
-export const TargetInputSchema = z.discriminatedUnion("kind", [
-  z.object({ kind: z.literal("none") }),
-  z.object({ kind: z.literal("application"), resumeId: z.uuid() }),
-  z.object({
-    kind: z.literal("posting"),
-    text: z.string().trim().min(MIN_JOB_DESCRIPTION_LENGTH, "Paste the full job post, including the requirements.")
-      .max(MAX_JOB_DESCRIPTION_LENGTH, "That job post is too long. Trim it to the role details."),
-  }),
-  z.object({ kind: z.literal("role"), role: z.string().trim().min(2, "Name the role.").max(120) }),
-]);
+export const TargetInputSchema = z.discriminatedUnion("kind", [z.object({ kind: z.literal("none") }), ApplicationTarget, PostingTarget, RoleTarget]);
+/** A cover letter is written to one job, so it needs a real posting. */
+export const JobTargetSchema = z.discriminatedUnion("kind", [ApplicationTarget, PostingTarget], { error: "Pick an application or paste the job post." });
+export const InterviewTargetSchema = z.discriminatedUnion("kind", [ApplicationTarget, PostingTarget, RoleTarget], {
+  error: "Pick an application, paste a job post, or name a role.",
+});
 export type TargetInput = z.infer<typeof TargetInputSchema>;
 
 export const CheckSchema = z.object({
