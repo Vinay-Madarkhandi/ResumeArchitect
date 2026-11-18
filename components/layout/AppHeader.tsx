@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LogOut, Plus, Settings, UserRound } from "lucide-react";
+import { Briefcase, ContactRound, LogOut, MessagesSquare, PenLine, Plus, Settings, UserRound } from "lucide-react";
 import { signOut } from "@/app/actions/auth";
 import { Logo } from "@/components/ui/Logo";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
@@ -11,8 +11,11 @@ import { Menu, MenuContent, MenuItem, MenuLabel, MenuSeparator, MenuTrigger } fr
 import { cn } from "@/lib/cn";
 
 const NAV = [
-  { href: "/dashboard", label: "Applications" },
-  { href: "/settings", label: "Settings" },
+  { href: "/dashboard", label: "Applications", icon: Briefcase },
+  { href: "/linkedin", label: "LinkedIn review", icon: ContactRound },
+  { href: "/interview", label: "Interview prep", icon: MessagesSquare },
+  { href: "/cover-letter", label: "Cover letter scan", icon: PenLine },
+  { href: "/settings", label: "Settings", icon: Settings },
 ];
 
 export function AppHeader({ email }: { email: string }) {
@@ -29,7 +32,7 @@ export function AppHeader({ email }: { email: string }) {
     <header className="sticky top-0 z-40 border-b border-line bg-ground/90 backdrop-blur-md">
       <div className="mx-auto flex h-14 max-w-6xl items-center gap-6 px-4 sm:px-6">
         <Logo href="/dashboard" />
-        <nav aria-label="Main" className="hidden items-center gap-1 sm:flex">
+        <nav aria-label="Main" className="hidden items-center gap-1 lg:flex">
           {NAV.map((item) => {
             const active = pathname.startsWith(item.href);
             return (
@@ -59,12 +62,11 @@ export function AppHeader({ email }: { email: string }) {
             <MenuContent>
               <MenuLabel className="max-w-56 truncate">{email}</MenuLabel>
               <MenuSeparator />
-              <MenuItem onSelect={() => router.push("/settings")} className="sm:hidden">
-                <Settings /> Settings
-              </MenuItem>
-              <MenuItem onSelect={() => router.push("/dashboard")} className="sm:hidden">
-                <Plus /> Applications
-              </MenuItem>
+              {NAV.map(({ href, label, icon: Icon }) => (
+                <MenuItem key={href} onSelect={() => router.push(href)} className="lg:hidden">
+                  <Icon aria-hidden /> {label}
+                </MenuItem>
+              ))}
               <MenuItem onSelect={leaveAccount}>
                 <LogOut /> Sign out
               </MenuItem>

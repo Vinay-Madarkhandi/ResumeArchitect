@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { CoverLetterReportSchema } from "@/lib/schemas/career";
-import { findCliches, namesCompany, namesRole, scanCoverLetter } from "./coverLetter";
+import { clicheSpans, findCliches, namesCompany, namesRole, scanCoverLetter } from "./coverLetter";
 import { NORTHWIND } from "./fixtures";
 
 const filler = (n: number) => Array.from({ length: n }, () => "steady").join(" ");
@@ -68,5 +68,14 @@ describe("naming the role and company", () => {
     expect(namesCompany("I admire Global.", "Global Payments")).toBe(false);
     expect(namesRole("I love backend work.", "Senior Backend Engineer")).toBe(false);
     expect(namesRole("the backend engineer opening", "Senior Backend Engineer")).toBe(true);
+  });
+});
+
+describe("clicheSpans", () => {
+  it("marks each cliché where it appears, keeping the rest of the text intact", () => {
+    const text = "I'm a Team Player and a team player.";
+    const spans = clicheSpans(text, findCliches(text));
+    expect(spans.filter((s) => s.cliche).map((s) => s.text)).toEqual(["Team Player", "team player"]);
+    expect(spans.map((s) => s.text).join("")).toBe(text);
   });
 });

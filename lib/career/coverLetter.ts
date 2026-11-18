@@ -161,3 +161,19 @@ export function scanCoverLetter(letter: string, job: JobAnalysis): CoverLetterRe
 
   return { score, checks, keywords, cliches, words };
 }
+
+/** Splits the letter so each cliché found can be struck through where it appears. */
+export function clicheSpans(text: string, cliches: string[]): Array<{ text: string; cliche: boolean }> {
+  if (!cliches.length) return [{ text, cliche: false }];
+  const escaped = cliches.map((c) => c.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/'/g, "['’]"));
+  const pattern = new RegExp(`(?<![a-z])(${escaped.join("|")})(?![a-z])`, "gi");
+  const spans: Array<{ text: string; cliche: boolean }> = [];
+  let last = 0;
+  for (const match of text.matchAll(pattern)) {
+    if (match.index > last) spans.push({ text: text.slice(last, match.index), cliche: false });
+    spans.push({ text: match[0], cliche: true });
+    last = match.index + match[0].length;
+  }
+  if (last < text.length) spans.push({ text: text.slice(last), cliche: false });
+  return spans;
+}
