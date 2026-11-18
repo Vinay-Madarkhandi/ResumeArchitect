@@ -1,26 +1,29 @@
 import { z } from "zod";
 import { stages } from "./stages";
 
+/** Postgres text and jsonb reject U+0000, so a pasted NUL would fail the write; drop it before validating. */
+const text = (schema: z.ZodString) => z.preprocess((value) => typeof value === "string" ? value.replaceAll("\0", "") : value, schema);
+
 export const postingUrlSchema = z.url({ protocol: /^https?$/ }).max(2048).or(z.literal(""));
 const contactSchema = z.object({
-  name: z.string().trim().min(1).max(160),
-  role: z.string().trim().max(160),
+  name: text(z.string().trim().min(1).max(160)),
+  role: text(z.string().trim().max(160)),
   email: z.email().max(254).or(z.literal("")),
   linkedin: postingUrlSchema,
 });
 
 export const jobClipSchema = z.object({
-  title: z.string().trim().min(1, "Enter a job title.").max(250),
-  company: z.string().trim().max(250).default(""),
-  location: z.string().trim().max(250).default(""),
-  salary: z.string().trim().max(250).default(""),
+  title: text(z.string().trim().min(1, "Enter a job title.").max(250)),
+  company: text(z.string().trim().max(250)).default(""),
+  location: text(z.string().trim().max(250)).default(""),
+  salary: text(z.string().trim().max(250)).default(""),
   url: postingUrlSchema.default(""),
-  description: z.string().max(50_000).default(""),
+  description: text(z.string().max(50_000)).default(""),
 });
 
 export const jobSchema = jobClipSchema.extend({
   stage: z.enum(stages).default("saved"),
-  notes: z.string().max(20_000).default(""),
+  notes: text(z.string().max(20_000)).default(""),
   contacts: z.array(contactSchema).max(25).default([]),
   interviews: z.array(z.iso.date()).max(50).default([]).transform((dates) => [...new Set(dates)].sort()),
   followUp: z.iso.date().nullable().default(null),
