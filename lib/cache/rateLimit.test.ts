@@ -24,7 +24,8 @@ it("bounds concurrent attempts and isolates subjects and scopes", async () => {
 });
 
 it("frees an attempt at the rolling boundary", async () => {
-  vi.useFakeTimers({ toFake: ["Date"] });
+  // The Redis mock uses Date for seconds and hrtime for fractional seconds.
+  vi.useFakeTimers({ toFake: ["Date", "hrtime"] });
   const start = Date.now();
   const subject = randomUUID();
   await expect(rateLimit("reset", subject, 2, 60_000)).resolves.toBe(0);
