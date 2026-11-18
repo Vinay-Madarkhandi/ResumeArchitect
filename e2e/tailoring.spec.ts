@@ -25,7 +25,7 @@ test("sign up, tailor a resume, review every change, edit, and download", async 
   await expect(page.locator(".rl-hunk")).toHaveCount(4);
 
   // The new number, the unbacked Kubernetes skill, and the new mentoring claim are all flagged.
-  await expect(rail.getByText("Verify")).toHaveCount(3);
+  await expect(rail.getByText("Verify", { exact: true })).toHaveCount(3);
 
   // Server-produced placeholders require review before export.
   await page.getByRole("button", { name: "Download" }).click();
