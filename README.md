@@ -102,3 +102,7 @@ GEMINI_API_KEY=AIza... npm run smoke:gemini
 ```
 
 Set `GEMINI_MODEL` (server env) to switch models without a code change; it defaults to `gemini-2.5-flash`.
+
+## Job tracker and browser clipper
+
+Open **Job tracker** to manage applications, import or export CSV, and track interviews and follow-ups. Enable the daily digest in **Settings**. To install and connect the browser clipper, follow the [extension setup](extension/README.md).

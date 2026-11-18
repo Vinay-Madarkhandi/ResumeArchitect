@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ResumeArchitect clipper settings</title>
+  <link rel="stylesheet" href="style.css">
+  <script type="module" src="options.js"></script>
+</head>
+<body class="options">
+  <main>
+    <h1>Clipper settings</h1>
+    <form>
+      <label for="server">Server URL</label>
+      <input id="server" name="server" type="url" placeholder="https://resume.example.com" required>
+      <label for="token">Personal API token</label>
+      <input id="token" name="token" type="password" placeholder="ra_pat_…" autocomplete="off" required>
+      <p>Create a personal API token in your server’s Settings page.</p>
+      <div class="actions">
+        <button type="submit">Verify and save</button>
+        <button type="button" id="forget" class="secondary">Disconnect</button>
+      </div>
+      <p id="status" role="status"></p>
+    </form>
+    <section>
+      <h2>Extension origin</h2>
+      <p>Copy this value into your server’s <code>CLIPPER_EXTENSION_ORIGINS</code> setting.</p>
+      <input id="origin" aria-label="Extension origin" readonly>
+    </section>
+  </main>
+</body>
+</html>
