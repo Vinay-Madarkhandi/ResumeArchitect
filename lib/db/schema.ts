@@ -143,6 +143,21 @@ export const tailoringSessions = pgTable("tailoring_sessions", {
   index("tailoring_sessions_user_created_idx").on(t.user_id, t.created_at.desc()),
 ]);
 
+/** Career history: every bullet the user has written, kept even when no resume uses it (lib/resume/bulletBank.ts). */
+export const careerBullets = pgTable("career_bullets", {
+  id: id(),
+  user_id: owner(),
+  key: text("key").notNull(),
+  markdown: text("markdown").notNull(),
+  section: text("section"),
+  role: text("role"),
+  source_resume_id: uuid("source_resume_id").references(() => resumes.id, { onDelete: "set null" }),
+  created_at: created(),
+}, (t) => [
+  uniqueIndex("career_bullets_user_key_idx").on(t.user_id, t.key),
+  index("career_bullets_source_resume_idx").on(t.source_resume_id),
+]);
+
 export const sessions = pgTable("sessions", {
   id: text("id").primaryKey(),
   user_id: owner(),

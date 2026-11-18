@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { aiCalls, jobDescriptions, profiles, resumes, scans, tailoringSessions, users } from "@/lib/db/schema";
+import { aiCalls, careerBullets, jobDescriptions, profiles, resumes, scans, tailoringSessions, users } from "@/lib/db/schema";
 
 export async function clearAccountData(userId: string) {
   await db.transaction(async (tx) => {
@@ -10,6 +10,7 @@ export async function clearAccountData(userId: string) {
     await tx.delete(tailoringSessions).where(eq(tailoringSessions.user_id, userId));
     await tx.delete(jobDescriptions).where(eq(jobDescriptions.user_id, userId));
     await tx.delete(aiCalls).where(eq(aiCalls.user_id, userId));
+    await tx.delete(careerBullets).where(eq(careerBullets.user_id, userId));
     await tx.update(profiles).set({
       full_name: null, headline: null, avatar_url: null, phone: null, location: null, links: [],
       default_resume_id: null, onboarding_completed_at: null,
@@ -38,6 +39,7 @@ export async function exportAccountData(userId: string) {
       tailoringSessions: await tx.select().from(tailoringSessions).where(eq(tailoringSessions.user_id, userId)),
       scans: await tx.select().from(scans).where(eq(scans.user_id, userId)),
       aiCalls: await tx.select().from(aiCalls).where(eq(aiCalls.user_id, userId)),
+      careerBullets: await tx.select().from(careerBullets).where(eq(careerBullets.user_id, userId)),
     };
   }, { isolationLevel: "repeatable read", accessMode: "read only" });
 }
