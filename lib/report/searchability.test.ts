@@ -26,7 +26,7 @@ Senior Backend Engineer with eight years building payment services in Go.
 
 ## Work Experience
 
-### Backend Engineer · Jan 2018 – Present
+### Senior Backend Engineer · Jan 2018 – Present
 
 - Built Go services
 
@@ -109,6 +109,17 @@ describe("contact checks", () => {
     expect(check("contact-name", "## Skills\n\nGo", { file })?.detail).toMatch(/Word header/);
   });
 
+  it("ignores contact details and hidden links belonging to a reference", () => {
+    const resume = `# Ada Lovelace
+
+## References
+
+Grace Hopper · [Email](mailto:grace@example.com) · 415 555 0100 · [LinkedIn](https://linkedin.com/in/grace)`;
+    expect(check("contact-email", resume)?.status).toBe("fail");
+    expect(check("contact-phone", resume)?.status).toBe("fail");
+    expect(check("contact-linkedin", resume)?.status).toBe("warn");
+  });
+
   it("reads an email behind a mailto link", () => {
     expect(check("contact-email", "# Ada Lovelace\n\n[Email me](mailto:ada@example.com)")?.status).toBe("pass");
   });
@@ -127,6 +138,13 @@ describe("contact checks", () => {
 });
 
 describe("summary", () => {
+  it.each([
+    "# Ada Lovelace\n\n## Summary\n\n## Experience\n\nBuilt things",
+    "# Ada Lovelace\n\n## Experience\n\nBuilt things\n\n## Summary\n\nEngineer with eight years of experience.",
+  ])("fails empty or late summary sections", (resume) => {
+    expect(check("summary", resume)?.status).toBe("fail");
+  });
+
   it("warns on an untitled summary paragraph and fails with none", () => {
     const untitled = `# Ada Lovelace\n\n${"Backend engineer who builds reliable payment systems at scale for fast growing fintech companies across three continents."}\n\n## Experience`;
     expect(check("summary", untitled)?.status).toBe("warn");
@@ -191,6 +209,17 @@ describe("education match", () => {
     expect(check("education-match", GOOD.replace("B.S. Computer Science", "B.A. History"))?.status).toBe("warn");
   });
 
+  it.each(["\n\n", "; "])("does not borrow a field from a different degree entry", (separator) => {
+    const resume = `# Ada\n\n## Education\n\nM.S. History${separator}B.S. Computer Science`;
+    const job = { ...JOB, education: { ...JOB.education!, degree: "master" as const } };
+    expect(check("education-match", resume, { job })?.status).toBe("warn");
+  });
+
+  it("reads a field on the next line of a split degree entry", () => {
+    const resume = "# Ada\n\n## Education\n\n### Example University\n\nB.S.\n\nComputer Science";
+    expect(check("education-match", resume)?.status).toBe("pass");
+  });
+
   it("fails a missing degree, and warns when experience can stand in", () => {
     const noDegree = GOOD.replace("B.S. Computer Science", "Coursework in Go");
     expect(check("education-match", noDegree)?.status).toBe("fail");
@@ -216,6 +245,27 @@ describe("job title match", () => {
   it("passes the exact title and ignores team and location suffixes", () => {
     const job = { ...JOB, title: "Senior Backend Engineer - Payments (Remote)" };
     expect(check("job-title-match", GOOD, { job })?.status).toBe("pass");
+  });
+
+  it("ignores aspirational titles, collaborating with the role, and summary mentions", () => {
+    const resume = `# Ada Lovelace
+
+Seeking a Senior Backend Engineer role
+
+## Summary
+
+Aspiring Senior Backend Engineer with a background in data analytics.
+
+## Experience
+
+### Data Analyst · Acme
+
+- Collaborated with a Senior Backend Engineer`;
+    expect(check("job-title-match", resume)?.status).toBe("fail");
+  });
+
+  it("accepts a standalone professional title in the contact block", () => {
+    expect(check("job-title-match", "# Ada Lovelace\n\nSenior Backend Engineer\n\nada@example.com")?.status).toBe("pass");
   });
 
   it("warns when only the title without seniority appears", () => {

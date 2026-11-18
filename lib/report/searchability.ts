@@ -1,6 +1,6 @@
 import { DEGREES, type Degree, type JobFacts } from "@/lib/schemas/jobFacts";
 import { dateStyles, findDates } from "./dates";
-import { formPattern, matchTerm, type MatchContext } from "./keywords";
+import { matchTerm, type MatchContext } from "./keywords";
 import { fail, pass, warn, type Check, type ResumeFileFacts, type SearchabilityCheckId } from "./report";
 import {
   findEmail,
@@ -10,6 +10,7 @@ import {
   sectionText,
   type ResumeModel,
   type SectionKind,
+  wordCount,
 } from "./resume";
 
 /**
@@ -50,7 +51,7 @@ function contactName({ resume, file }: SearchabilityInput): SearchabilityCheck {
 
 function contactEmail({ resume, file }: SearchabilityInput): SearchabilityCheck {
   const label = "Email address";
-  const email = findEmail(resume.text) ?? resume.links.map((l) => l.replace(/^mailto:/i, "")).map(findEmail).find(Boolean);
+  const email = findEmail(resume.contact.text) ?? resume.contact.links.filter((link) => /^mailto:/i.test(link)).map(findEmail).find(Boolean);
   if (email) return pass("contact-email", label, `Found ${email}.`);
   if (inWordHeaderOnly(file, findEmail)) {
     return fail("contact-email", label, "Your email address is only in the Word header or footer.", HEADER_FIX);
@@ -60,7 +61,8 @@ function contactEmail({ resume, file }: SearchabilityInput): SearchabilityCheck 
 
 function contactPhone({ resume, file }: SearchabilityInput): SearchabilityCheck {
   const label = "Phone number";
-  const phone = findPhone(resume.text);
+  const phone = resume.contact.units.map((unit) => findPhone(unit.text)).find(Boolean) ??
+    resume.contact.links.filter((link) => /^tel:/i.test(link)).map(findPhone).find(Boolean);
   if (phone) return pass("contact-phone", label, `Found ${phone}.`);
   if (inWordHeaderOnly(file, findPhone)) {
     return fail("contact-phone", label, "Your phone number is only in the Word header or footer.", HEADER_FIX);
@@ -70,10 +72,10 @@ function contactPhone({ resume, file }: SearchabilityInput): SearchabilityCheck 
 
 function contactLinkedIn({ resume }: SearchabilityInput): SearchabilityCheck {
   const label = "LinkedIn profile";
-  const url = findLinkedIn(resume);
+  const url = findLinkedIn(resume.contact);
   if (url) return pass("contact-linkedin", label, `Found ${url}.`);
   // Only the contact lines count: "LinkedIn Ads" in a bullet is a skill, not a profile.
-  if (resume.header.some((u) => /\blinked\s?in\b/i.test(u.text))) {
+  if (resume.contact.units.some((u) => /\blinked\s?in\b/i.test(u.text))) {
     return warn(
       "contact-linkedin",
       label,
@@ -86,9 +88,13 @@ function contactLinkedIn({ resume }: SearchabilityInput): SearchabilityCheck {
 
 function summary({ resume }: SearchabilityInput): SearchabilityCheck {
   const label = "Summary";
-  const titled = resume.sections.find((s) => s.kind === "summary");
-  if (titled) return pass("summary", label, `Your resume opens with a "${titled.heading}" section.`);
-  const untitled = resume.header.find((u) => u.kind === "paragraph" && !u.text.includes("@") && u.text.split(/\s+/).length >= 15);
+  const [first] = resume.sections;
+  if (resume.header.length <= 8 && first?.kind === "summary" && first.units.some((u) => wordCount(u.text) > 0)) {
+    return pass("summary", label, `Your resume opens with a "${first.heading}" section.`);
+  }
+  const untitled = resume.header.slice(0, 8).find((u) =>
+    u.kind === "paragraph" && !findEmail(u.text) && !findPhone(u.text) && wordCount(u.text) >= 15,
+  );
   if (untitled) {
     return warn("summary", label, "You have a summary paragraph, but no heading tells an ATS what it is.", 'Put a "Summary" heading above it.');
   }
@@ -182,9 +188,9 @@ const DEGREE_NAMES: Record<Degree, string> = {
 /** Spelled-out names match anywhere; abbreviations like "BS" or "MA" only inside an Education section. */
 const DEGREE_FORMS: ReadonlyArray<[Degree, RegExp, RegExp | null]> = [
   ["doctorate", /\b(ph\.?\s?d|doctorate|doctor of|d\.?phil)\b/i, null],
-  ["master", /\b(master'?s?|mba|m\.?eng|m\.?tech)\b/i, /(?<![A-Za-z])(M\.?Sc?\.?|M\.A\.|MS|MA|MCA|MPH|MFA|LLM|M\.?Ed\.?)(?![A-Za-z])/],
-  ["bachelor", /\b(bachelor'?s?|b\.?tech|b\.?eng|undergraduate degree)\b/i, /(?<![A-Za-z])(B\.?Sc?\.?|B\.A\.|BA|B\.E\.|BE|BCA|BBA|B\.?Com|LLB)(?![A-Za-z])/],
-  ["associate", /\bassociate'?s? (degree|of)\b/i, /(?<![A-Za-z])(A\.A\.S?|A\.S\.|AAS)(?![A-Za-z])/],
+  ["master", /\b(master[’']?s?|mba|m\.?eng|m\.?tech)\b/i, /(?<![A-Za-z])(M\.?Sc?\.?|M\.A\.|MS|MA|MCA|MPH|MFA|LLM|M\.?Ed\.?)(?![A-Za-z])/],
+  ["bachelor", /\b(bachelor[’']?s?|b\.?tech|b\.?eng|undergraduate degree)\b/i, /(?<![A-Za-z])(B\.?Sc?\.?|B\.A\.|BA|B\.E\.|BE|BCA|BBA|B\.?Com|LLB)(?![A-Za-z])/],
+  ["associate", /\bassociate[’']?s? (degree|of)\b/i, /(?<![A-Za-z])(A\.A\.S?|A\.S\.|AAS)(?![A-Za-z])/],
   ["high_school", /\b(high school|secondary school|GED)\b/i, null],
 ];
 
@@ -197,26 +203,56 @@ export function resumeDegree(resume: ResumeModel): Degree | null {
   return null;
 }
 
+function degreeEntries(resume: ResumeModel): { degree: Degree; text: string }[] {
+  const sections = resume.sections.filter((s) => s.kind === "education");
+  const inEducation = sections.length > 0;
+  const groups = inEducation ? sections.map((s) => s.units) : [
+    resume.header,
+    ...resume.sections.filter((s) => s.kind === null).map((s) => s.units),
+  ];
+
+  return groups.flatMap((units) => units.flatMap((unit, index) => unit.text.split(/; */).flatMap((line) => {
+    const markers = DEGREE_FORMS.flatMap(([degree, spelled, short]) =>
+      [spelled, ...(inEducation && short ? [short] : [])].flatMap((pattern) =>
+        Array.from(line.matchAll(new RegExp(pattern, `${pattern.flags}g`)), (match) =>
+          ({ degree, start: match.index, end: match.index + match[0].length })),
+      ),
+    ).sort((a, b) => a.start - b.start || b.end - a.end);
+
+    return markers.map(({ degree, start, end }, i) => {
+      let text = line.slice(i === 0 ? 0 : start, markers[i + 1]?.start);
+      const next = units[index + 1];
+      const bareDegree = !line.slice(0, start).trim() &&
+        /^(?: degree| of (?:arts|science|engineering))?[., ]*$/i.test(line.slice(end));
+      if (inEducation && bareDegree && next?.kind === "paragraph" && wordCount(next.text) <= 10 &&
+          !DEGREE_FORMS.some(([, long, short]) => long.test(next.text) || short?.test(next.text))) {
+        text += ` ${next.text}`;
+      }
+      return { degree, text };
+    });
+  })));
+}
+
 function educationMatch({ resume, job, match }: SearchabilityInput): SearchabilityCheck | null {
   const required = job.education;
   if (!required) return null;
   const label = "Education";
-  const have = resumeDegree(resume);
+  const eligible = degreeEntries(resume).filter(({ degree }) => DEGREES.indexOf(degree) >= DEGREES.indexOf(required.degree));
   const need = DEGREE_NAMES[required.degree];
   const inFields = required.fields.length > 0 ? ` in ${required.fields.join(" or ")}` : "";
-  const meets = have !== null && DEGREES.indexOf(have) >= DEGREES.indexOf(required.degree);
+  const meets = eligible.find(({ text }) =>
+    required.fields.length === 0 ||
+    required.fields.some((f) => matchTerm(f, { ...match, resumeText: text }).status !== "missing"),
+  );
+  if (meets) return pass("education-match", label, `Your ${DEGREE_NAMES[meets.degree]} meets the ${need}${inFields} the posting asks for.`);
 
-  if (meets) {
-    const educationText = sectionText(resume, "education") ?? resume.text;
-    const fieldFound =
-      required.fields.length === 0 ||
-      required.fields.some((f) => matchTerm(f, { ...match, resumeText: educationText }).status !== "missing");
-    if (fieldFound) return pass("education-match", label, `Your ${DEGREE_NAMES[have]} meets the ${need}${inFields} the posting asks for.`);
+  if (eligible.length > 0) {
+    const have = eligible.reduce((highest, entry) => DEGREES.indexOf(entry.degree) > DEGREES.indexOf(highest) ? entry.degree : highest, eligible[0].degree);
     return warn(
       "education-match",
       label,
       `Your ${DEGREE_NAMES[have]} meets the level, but the posting asks for it${inFields}.`,
-      `If your degree, minor, or coursework covers ${required.fields.join(" or ")}, name it in your Education section.`,
+      `If your degree is in ${required.fields.join(" or ")}, write the field beside the degree in your Education section.`,
     );
   }
   if (required.equivalentExperience) {
@@ -242,18 +278,40 @@ function cleanTitle(title: string): string {
   return title.replace(/\([^)]*\)/g, " ").split(/\s[-–—|]\s|,|\s\/\s/)[0].replace(/\s+/g, " ").trim();
 }
 
+const ASPIRATIONAL = /\b(?:aspiring|seeking|target(?:ed)? role|looking for|interested in|transitioning (?:to|into)|objective)\b/i;
+
+function titleParts(line: string): string[] {
+  if (ASPIRATIONAL.test(line)) return [];
+  return line.split(/\s+[·|–—-]\s+|,|\s+at\s+/i).map((part) => {
+    const [date] = findDates(part);
+    return cleanTitle(date ? part.slice(0, date.start) : part);
+  });
+}
+
+const titleKey = (title: string) => title.toLowerCase().replace(/[-–—\s]+/g, " ").trim();
+const titleCore = (title: string) => titleKey(title.replace(SENIORITY_WORDS, " "));
+
 export function jobTitleMatch({ resume, job }: SearchabilityInput): SearchabilityCheck {
   const label = "Job title";
   const title = cleanTitle(job.title);
-  if (formPattern(title).test(resume.text)) {
+  const positions = resume.sections.flatMap((section) => section.units.flatMap((unit) => {
+    if (unit.kind !== "heading" && unit.kind !== "paragraph") return [];
+    if (section.kind === "experience" || (section.kind === null && findDates(unit.text).length > 0)) return titleParts(unit.text);
+    return [];
+  }));
+  const name = findName(resume);
+  const headlines = resume.contact.units.filter((u) => u.text !== name).flatMap((u) => titleParts(u.text));
+  const titles = [...headlines, ...positions];
+  if (titles.some((value) => titleKey(value) === titleKey(title))) {
     return pass("job-title-match", label, `Your resume uses the posting's title, "${title}". Recruiters search by title first.`);
   }
-  const core = title.replace(SENIORITY_WORDS, " ").replace(/\s+/g, " ").trim();
-  const fix = `If it's accurate, use the exact title "${title}" in your summary or headline.`;
-  if (core && core !== title && formPattern(core).test(resume.text)) {
-    return warn("job-title-match", label, `Your resume says "${core}", but the posting's title is "${title}".`, fix);
+  const core = titleCore(title);
+  const fix = `If it accurately describes your work, use "${title}" in your headline or experience.`;
+  const related = core && titles.find((value) => titleCore(value) === core);
+  if (related) {
+    return warn("job-title-match", label, `Your resume says "${related}", but the posting's title is "${title}".`, fix);
   }
-  return fail("job-title-match", label, `The posting's title, "${title}", isn't anywhere in your resume. Recruiters search by title first.`, fix);
+  return fail("job-title-match", label, `Your headline and experience do not list "${title}". Recruiters search by title first.`, fix);
 }
 
 function fileType({ file }: SearchabilityInput): SearchabilityCheck | null {

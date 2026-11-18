@@ -40,7 +40,7 @@ const SECTION_NAMES: ReadonlyArray<[SectionKind, RegExp]> = [
   ["publications", /^(publications|research|presentations|patents)$/],
   ["languages", /^languages$/],
   ["interests", /^(interests|hobbies)( and [a-z]+)?$/],
-  ["references", /^references$/],
+  ["references", /^(professional |personal )?references$/],
 ];
 
 function normalizeHeading(text: string): string {
@@ -73,6 +73,7 @@ export interface ResumeModel {
   /** Lines before the first section heading: name, contact, sometimes an untitled summary. */
   header: Unit[];
   sections: ResumeSection[];
+  contact: { units: Unit[]; text: string; links: string[] };
 }
 
 /**
@@ -103,7 +104,18 @@ export function readResume(doc: DocumentContent): ResumeModel {
     else if (sections.length > 0) sections[sections.length - 1].units.push(unit);
     else header.push(unit);
   });
-  return { units, text: units.map((u) => u.text).join("\n"), links: linksIn(doc.content), header, sections };
+  const contactUnits = header.slice(0, 6);
+  const bodyStart = contactUnits.findIndex((unit) =>
+    unit.node.type === "listItem" || /^(?:professional |personal )?references?\b/i.test(unit.text) ||
+    (wordCount(unit.text) > 12 && !findEmail(unit.text) && !findPhone(unit.text) && !findLinkedIn({ text: unit.text, links: [] })),
+  );
+  if (bodyStart >= 0) contactUnits.splice(bodyStart);
+  const contact = {
+    units: contactUnits,
+    text: contactUnits.map((unit) => unit.text).join("\n"),
+    links: linksIn(contactUnits.flatMap((unit) => unit.node.type === "listItem" ? [] : [unit.node])),
+  };
+  return { units, text: units.map((u) => u.text).join("\n"), links: linksIn(doc.content), header, sections, contact };
 }
 
 /** Text of every section of a kind, or null when the resume has none. */
@@ -155,7 +167,7 @@ const NOT_A_NAME = /^(resume|résumé|curriculum vitae|cv)$/i;
 
 /** The candidate's name: the first line, when it reads like a name. */
 export function findName(resume: ResumeModel): string | null {
-  const first = resume.header.find((u) => !NOT_A_NAME.test(u.text));
+  const first = resume.contact.units.find((u) => !NOT_A_NAME.test(u.text));
   if (!first) return null;
   const words = first.text.split(/\s+/);
   const looksLikeName =
