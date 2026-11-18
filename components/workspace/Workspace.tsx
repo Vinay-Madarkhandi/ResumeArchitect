@@ -3,16 +3,17 @@
 import { useCallback, useDeferredValue, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import type { Editor } from "@tiptap/react";
-import { ArrowLeft, Check, CircleAlert, Columns2, FileCheck2, LoaderCircle, Mail, PenLine, RotateCcw } from "lucide-react";
+import { ArrowLeft, Check, CircleAlert, Columns2, FileCheck2, LayoutTemplate, LoaderCircle, Mail, PenLine, RotateCcw } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/Tabs";
 import { Button } from "@/components/ui/Button";
-import { Select } from "@/components/ui/Field";
+import { Dialog, DialogContent } from "@/components/ui/Dialog";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { useToast } from "@/components/ui/Toast";
 import { DocumentView, Paper } from "@/components/paper/Paper";
 import { PaperEditor } from "@/components/paper/PaperEditor";
 import { FormatBar } from "@/components/paper/FormatBar";
 import { AskAi } from "@/components/paper/AskAi";
+import { TemplateGallery } from "@/components/paper/TemplateGallery";
 import { Redline } from "@/components/workspace/Redline";
 import { ChangeList, type ChangeEntry } from "@/components/workspace/ChangeList";
 import { AtsList, ScoreLockup, ScorePanel } from "@/components/workspace/ScorePanel";
@@ -103,6 +104,7 @@ export function Workspace({ resume, session, jobText, initialView }: WorkspacePr
   const [focusedId, setFocusedId] = useState<string | null>(null);
   const [editor, setEditor] = useState<Editor | null>(null);
   const [rail, setRail] = useState<Rail>("changes");
+  const [choosingTemplate, setChoosingTemplate] = useState(false);
 
   const { status, flush } = useAutosave(doc, (content) => patch(resume.id, { content }));
   const deferredDoc = useDeferredValue(doc);
@@ -255,16 +257,18 @@ export function Workspace({ resume, session, jobText, initialView }: WorkspacePr
                 {pages.pageCount} {pages.pageCount === 1 ? "page" : "pages"}
               </span>
             )}
-            <label className="hidden items-center gap-2 text-small text-ink-3 md:flex">
-              <span className="sr-only">Template</span>
-              <Select value={template} onChange={(e) => changeTemplate(e.target.value as TemplateId)} className="h-8 w-32 text-small">
-                {Object.values(TEMPLATES).map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.label}
-                  </option>
-                ))}
-              </Select>
-            </label>
+            <Button size="sm" variant="ghost" onClick={() => setChoosingTemplate(true)} aria-label={`Template: ${TEMPLATES[template].label}`}>
+              <LayoutTemplate aria-hidden /> <span className="hidden md:inline">{TEMPLATES[template].label}</span>
+            </Button>
+            <Dialog open={choosingTemplate} onOpenChange={setChoosingTemplate}>
+              <DialogContent
+                title="Templates"
+                description="Every template is a single column of real text with standard headings, so it reads cleanly in any applicant tracking system. Switching never changes your wording."
+                className="max-h-[calc(100dvh-2rem)] max-w-5xl overflow-y-auto"
+              >
+                <TemplateGallery doc={deferredDoc} value={template} onChange={changeTemplate} />
+              </DialogContent>
+            </Dialog>
             <ThemeToggle />
             <ExportMenu
               resumeId={resume.id}
