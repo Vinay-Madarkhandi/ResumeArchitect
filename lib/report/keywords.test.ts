@@ -50,6 +50,37 @@ describe("matchTerm", () => {
     expect(matchTerm("React", ctx("Quick to react to incidents")).status).toBe("missing");
   });
 
+  it.each([
+    ["Go", "Go to market in 2027"],
+    ["R", "Worked in R&D on Python projects"],
+    ["React", "React promptly to JavaScript errors"],
+    ["C", "C++ and C# programming"],
+    ["Swift", "Swift response to customer issues"],
+    ["Rust", "Rust removal from steel"],
+    ["Spark", "Spark interest in STEM"],
+    ["Python", "PréPythonÉ"],
+    ["Python", "Python\u0301"],
+    ["数据分析", "大数据分析师"],
+  ])("ignores ambiguous or embedded %s in %s", (term, text) => {
+    expect(matchTerm(term, ctx(text)).status).toBe("missing");
+    expect(postingCount(term, ctx("", text))).toBe(1); // Minimum score weight for older stored facts.
+  });
+
+  it.each([
+    ["Go", "Built services in Golang", "synonym"],
+    ["Go", "Skills: Go", "found"],
+    ["R", "Used the R language for modeling", "found"],
+    ["R", "Technical Skills\nR", "found"],
+    ["C", "Implemented device drivers in C", "found"],
+    ["React", "Built a front-end with React and JavaScript", "found"],
+    ["Swift", "Built an iOS app in Swift", "found"],
+    ["Rust", "Developed Rust crates", "found"],
+    ["Spark", "Ran Spark workloads on Databricks", "found"],
+    ["数据分析", "技能：数据分析、机器学习", "found"],
+  ])("finds %s with clear boundaries and context in %s", (term, text, status) => {
+    expect(matchTerm(term, ctx(text)).status).toBe(status);
+  });
+
   it("matches short acronyms by case only", () => {
     expect(matchTerm("IT", ctx("it was great")).status).toBe("missing");
     expect(matchTerm("IT", ctx("Ran IT support")).status).toBe("found");
@@ -96,14 +127,14 @@ describe("postingCount", () => {
 
 describe("matchSkills", () => {
   it("orders high importance first, then by mentions in the posting", () => {
-    const job = "Go Go Go. Docker. Kubernetes Kubernetes.";
+    const job = "Go programming, Go services, Go APIs. Docker. Kubernetes Kubernetes.";
     const skills = matchSkills(
       [
         { term: "Docker", importance: "medium" },
         { term: "Go", importance: "high" },
         { term: "Kubernetes", importance: "medium" },
       ],
-      ctx("Go", job),
+      ctx("Skills: Go", job),
     );
     expect(skills.map((s) => [s.term, s.jdCount])).toEqual([
       ["Go", 3],

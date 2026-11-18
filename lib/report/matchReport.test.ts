@@ -120,7 +120,7 @@ describe("buildMatchReport", () => {
   });
 
   it("gives one mention of a skill the posting repeats partial credit", () => {
-    const repeated = "Go Go Go. PostgreSQL. Kubernetes. Terraform.";
+    const repeated = "Go programming, Go services, Go APIs. PostgreSQL. Kubernetes. Terraform.";
     const once = report("Go, PostgreSQL, Kubernetes, Terraform", JOB, repeated).breakdown[0].ratio;
     const twice = report("Go, Go, PostgreSQL, Kubernetes, Terraform", JOB, repeated).breakdown[0].ratio;
     expect(once).toBeLessThan(1);
