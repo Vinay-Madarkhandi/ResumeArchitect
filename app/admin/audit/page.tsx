@@ -36,7 +36,7 @@ export default async function AuditPage({ searchParams }: PageProps<"/admin/audi
             <td>{row.action}</td>
             <td className="max-w-56 wrap-anywhere">{row.target ?? "—"}</td>
             <td className="max-w-72 wrap-anywhere text-small text-ink-2">
-              {row.meta && typeof row.meta === "object" && Object.entries(row.meta).map(([key, value]) => (
+              {row.meta !== null && typeof row.meta === "object" && Object.entries(row.meta).map(([key, value]) => (
                 <div key={key}>{key}: {typeof value === "object" ? JSON.stringify(value) : String(value)}</div>
               ))}
             </td>

@@ -2,7 +2,7 @@ import { emailQueue, maintenanceQueue } from "@/lib/queue";
 
 export const queueNames = ["email", "maintenance"] as const;
 export type QueueName = typeof queueNames[number];
-export const queueStates = ["waiting", "active", "delayed", "completed", "failed", "paused", "prioritized", "waiting-children"] as const;
+export const queueStates = ["waiting", "active", "delayed", "completed", "failed", "prioritized", "waiting-children"] as const;
 
 export function operatorQueue(name: QueueName) {
   return name === "email" ? emailQueue() : maintenanceQueue();

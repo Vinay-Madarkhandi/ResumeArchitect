@@ -66,15 +66,16 @@ test("admin publishes announcements, suspends users, and sees audited actions", 
 
     await admin.getByRole("link", { name: "Audit log" }).click();
     const audit = admin.getByRole("table", { name: "Audit log" });
-    await expect(audit.getByText("announcement.create", { exact: true })).toBeVisible();
-    await expect(audit.getByText("announcement.end", { exact: true })).toBeVisible();
-    await expect(audit.getByText("feature_flag.toggle", { exact: true })).toHaveCount(2);
-    await expect(audit.getByText("user.ban", { exact: true })).toBeVisible();
+    const adminEntries = audit.getByRole("row").filter({ hasText: adminEmail });
+    await expect(adminEntries.getByText("announcement.create", { exact: true })).toBeVisible();
+    await expect(adminEntries.getByText("announcement.end", { exact: true })).toBeVisible();
+    await expect(adminEntries.getByText("feature_flag.toggle", { exact: true })).toHaveCount(2);
+    await expect(adminEntries.getByText("user.ban", { exact: true })).toBeVisible();
     await admin.getByLabel("Action", { exact: true }).selectOption("user.ban");
     await admin.getByLabel("Actor email").fill(adminEmail);
     await admin.getByRole("button", { name: "Filter" }).click();
     await expect(audit.getByRole("row").filter({ hasText: "Abusive activity confirmed" })).toHaveCount(1);
-    await expect(audit.getByText("announcement.create", { exact: true })).toHaveCount(0);
+    await expect(adminEntries.getByText("announcement.create", { exact: true })).toHaveCount(0);
   } finally {
     await admin.close();
   }

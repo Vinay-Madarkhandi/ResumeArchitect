@@ -1,4 +1,4 @@
-import { and, count, desc, eq, gt, gte, ilike, sql } from "drizzle-orm";
+import { and, count, desc, eq, gt, gte, lt, ilike, sql, type SQLWrapper } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { aiCalls, auditLog, resumes, scans, sessions, tailoringSessions, users } from "@/lib/db/schema";
 import { fillDays, utcDays } from "./metrics";
@@ -8,7 +8,7 @@ type SearchParams = Record<string, string | string[] | undefined>;
 
 export function filter(params: SearchParams, key: string, max = 254) {
   const input = params[key];
-  return typeof input === "string" ? input.trim().slice(0, max) : "";
+  return typeof input === "string" ? input.replaceAll("\0", "").trim().slice(0, max) : "";
 }
 
 export function pageNumber(params: SearchParams) {
@@ -55,12 +55,15 @@ export async function getUserDetails(id: string) {
   return { user, resumeCount: resumeCount.count, activeSessions, usage, sessionCount: activeSessions[0]?.total ?? 0 };
 }
 
-const utcDay = (column: typeof users.created_at | typeof aiCalls.at) =>
+const utcDay = (column: SQLWrapper) =>
   sql<string>`to_char(${column} at time zone 'UTC', 'YYYY-MM-DD')`;
 
 export async function overview() {
   const days = utcDays(new Date());
   const start = `${days[0]}T00:00:00.000Z`;
+  const end = new Date(Date.parse(`${days.at(-1)}T00:00:00Z`) + 86_400_000).toISOString();
+  const inWindow = (at: typeof users.created_at | typeof scans.created_at | typeof tailoringSessions.created_at | typeof aiCalls.at) =>
+    and(gte(at, start), lt(at, end));
   const userDay = utcDay(users.created_at);
   const scanDay = utcDay(scans.created_at);
   const tailoringDay = utcDay(tailoringSessions.created_at);
@@ -71,15 +74,15 @@ export async function overview() {
       verified: sql<number>`count(${users.email_verified_at})`.mapWith(Number),
     }).from(users),
     db.select({ day: userDay, count: count() }).from(users)
-      .where(gte(users.created_at, start)).groupBy(userDay),
+      .where(inWindow(users.created_at)).groupBy(userDay),
     db.select({ day: scanDay, count: count() }).from(scans)
-      .where(gte(scans.created_at, start)).groupBy(scanDay),
+      .where(inWindow(scans.created_at)).groupBy(scanDay),
     db.select({ day: tailoringDay, count: count() }).from(tailoringSessions)
-      .where(gte(tailoringSessions.created_at, start)).groupBy(tailoringDay),
+      .where(inWindow(tailoringSessions.created_at)).groupBy(tailoringDay),
     db.select({ day: aiDay, count: count() }).from(aiCalls)
-      .where(gte(aiCalls.at, start)).groupBy(aiDay),
+      .where(inWindow(aiCalls.at)).groupBy(aiDay),
     db.select({ code: aiCalls.error_code, count: count() }).from(aiCalls)
-      .where(and(gte(aiCalls.at, start), eq(aiCalls.ok, false)))
+      .where(and(inWindow(aiCalls.at), eq(aiCalls.ok, false)))
       .groupBy(aiCalls.error_code).orderBy(desc(count()), aiCalls.error_code),
   ]);
   return {
@@ -114,4 +117,3 @@ export async function listAudit(params: SearchParams, page: number) {
   ]);
   return { rows: rows.slice(0, PAGE_SIZE), hasNext: rows.length > PAGE_SIZE, actions };
 }
-
