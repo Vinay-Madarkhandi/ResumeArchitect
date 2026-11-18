@@ -25,6 +25,7 @@ export const users = pgTable("users", {
   ban_reason: text("ban_reason"),
   totp_secret_ciphertext: bytea("totp_secret_ciphertext"),
   totp_enabled_at: date("totp_enabled_at"),
+  totp_last_step: integer("totp_last_step"),
   created_at: created(),
   last_sign_in_at: date("last_sign_in_at"),
 }, (t) => [check("users_role_check", sql`${t.role} in ('user', 'admin')`)]);

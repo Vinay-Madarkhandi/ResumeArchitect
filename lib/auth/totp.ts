@@ -1,8 +1,8 @@
 import { randomBytes } from "node:crypto";
-import { and, eq, isNull, sql } from "drizzle-orm";
+import { and, eq, isNull, lt, or, sql } from "drizzle-orm";
 import { Secret, TOTP } from "otpauth";
 import { encryptApiKey, decryptApiKey } from "@/lib/crypto/keyCipher";
-import { recoveryCodes } from "@/lib/db/schema";
+import { recoveryCodes, users } from "@/lib/db/schema";
 import type { Transaction } from "@/lib/db";
 import { hashToken } from "./secrets";
 
@@ -21,7 +21,15 @@ export async function checkSecondFactor(tx: Transaction, userId: string, email: 
   if (!secret) return false;
   const cleaned = code.trim();
   if (/^\d{6}$/.test(cleaned)) {
-    return authenticator(email, decryptApiKey(secret)).validate({ token: cleaned, window: 1 }) !== null;
+    const timestamp = Date.now();
+    const delta = authenticator(email, decryptApiKey(secret)).validate({ token: cleaned, window: 1, timestamp });
+    if (delta === null) return false;
+    // Each time step is accepted once, so an observed code cannot be replayed.
+    const step = Math.floor(timestamp / 30_000) + delta;
+    const [accepted] = await tx.update(users).set({ totp_last_step: step })
+      .where(and(eq(users.id, userId), or(isNull(users.totp_last_step), lt(users.totp_last_step, step))))
+      .returning({ id: users.id });
+    return Boolean(accepted);
   }
   const [used] = await tx.update(recoveryCodes).set({ used_at: sql`now()` })
     .where(and(eq(recoveryCodes.user_id, userId), eq(recoveryCodes.code_hash, hashToken(cleaned.toLowerCase())), isNull(recoveryCodes.used_at)))

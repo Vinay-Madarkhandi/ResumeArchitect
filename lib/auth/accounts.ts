@@ -94,7 +94,7 @@ export async function seedAdmins() {
 }
 
 export async function disableTotp(tx: Transaction, userId: string) {
-  await tx.update(users).set({ totp_enabled_at: null, totp_secret_ciphertext: null }).where(eq(users.id, userId));
+  await tx.update(users).set({ totp_enabled_at: null, totp_secret_ciphertext: null, totp_last_step: null }).where(eq(users.id, userId));
   await tx.delete(recoveryCodes).where(eq(recoveryCodes.user_id, userId));
 }
 

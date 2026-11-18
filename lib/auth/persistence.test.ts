@@ -121,7 +121,11 @@ it("validates authenticator codes and consumes hashed recovery codes once", asyn
     const totp = authenticator("test@example.com");
     const ciphertext = protectTotp(totp);
     const check = (code: string) => db.transaction((tx) => checkSecondFactor(tx, userId, "test@example.com", ciphertext, code));
-    await expect(check(totp.generate())).resolves.toBe(true);
+    const code = totp.generate();
+    await expect(check(code)).resolves.toBe(true);
+    await expect(check(code)).resolves.toBe(false);
+    await expect(check(totp.generate({ timestamp: Date.now() - 30_000 }))).resolves.toBe(false);
+    await expect(check(totp.generate({ timestamp: Date.now() + 30_000 }))).resolves.toBe(true);
     await expect(check("wrong")).resolves.toBe(false);
     const codes = await db.transaction((tx) => replaceRecoveryCodes(tx, userId));
     const rows = await db.select().from(recoveryCodes).where(eq(recoveryCodes.user_id, userId));
