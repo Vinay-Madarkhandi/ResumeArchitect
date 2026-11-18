@@ -14,7 +14,7 @@ export async function clearAccountData(userId: string) {
       full_name: null, headline: null, avatar_url: null, phone: null, location: null, links: [],
       default_resume_id: null, onboarding_completed_at: null,
       gemini_key_ciphertext: null, gemini_key_last4: null, gemini_key_status: "not_configured",
-      gemini_key_updated_at: null, gemini_key_validated_at: null, preferences: {},
+      gemini_key_updated_at: null, gemini_key_validated_at: null, tracker_reminders: false, preferences: {},
     }).where(eq(profiles.id, userId));
   });
 }
@@ -29,7 +29,7 @@ export async function exportAccountData(userId: string) {
       id: profiles.id, full_name: profiles.full_name, headline: profiles.headline, avatar_url: profiles.avatar_url,
       phone: profiles.phone, location: profiles.location, links: profiles.links, default_resume_id: profiles.default_resume_id,
       onboarding_completed_at: profiles.onboarding_completed_at, gemini_key_status: profiles.gemini_key_status,
-      preferences: profiles.preferences, created_at: profiles.created_at, updated_at: profiles.updated_at,
+      tracker_reminders: profiles.tracker_reminders, preferences: profiles.preferences, created_at: profiles.created_at, updated_at: profiles.updated_at,
     }).from(profiles).where(eq(profiles.id, userId));
     return {
       account, profile,

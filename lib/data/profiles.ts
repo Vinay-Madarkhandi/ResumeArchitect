@@ -7,6 +7,7 @@ export async function getProfileStatus(userId: string) {
     gemini_key_status: profiles.gemini_key_status,
     gemini_key_last4: profiles.gemini_key_last4,
     onboarding_completed_at: profiles.onboarding_completed_at,
+    tracker_reminders: profiles.tracker_reminders,
   }).from(profiles).where(eq(profiles.id, userId));
   return profile;
 }

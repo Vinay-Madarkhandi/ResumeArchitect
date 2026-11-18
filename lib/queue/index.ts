@@ -3,8 +3,9 @@ import { redisUrl } from "@/lib/cache";
 
 export type EmailJob =
   | { template: "verify" | "reset" | "changeEmail"; to: string; data: { link: string } }
-  | { template: "alert"; to: string; data: { message: string } };
-export type MaintenanceJob = "purge-auth" | "orphaned-objects" | "delete-user-objects";
+  | { template: "alert"; to: string; data: { message: string } }
+  | { template: "trackerDigest"; data: { userId: string; day: string } };
+export type MaintenanceJob = "purge-auth" | "orphaned-objects" | "delete-user-objects" | "tracker-reminders";
 export type MaintenancePayload = { userId?: string };
 let emails: Queue<EmailJob> | undefined;
 let maintenance: Queue<MaintenancePayload, void, MaintenanceJob> | undefined;
