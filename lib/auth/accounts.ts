@@ -1,8 +1,8 @@
-import { and, eq, gt, inArray, isNotNull, isNull, sql } from "drizzle-orm";
+import { and, eq, inArray, isNotNull, isNull, sql } from "drizzle-orm";
 import { db, type Transaction } from "@/lib/db";
 import { authTokens, profiles, recoveryCodes, users } from "@/lib/db/schema";
 import { appUrl, adminEmails } from "./config";
-import { issueToken, tokenLifetime } from "./tokens";
+import { issueToken } from "./tokens";
 import { sealText } from "@/lib/crypto/keyCipher";
 import { emailQueue } from "@/lib/queue";
 import { verifyPassword } from "./password";
@@ -56,17 +56,11 @@ export async function sendAccountLink(
     if (purpose === "verify_email" ? user.email_verified_at : purpose !== "reset_password" && !user.email_verified_at) return;
     if (options && !await options.authorize(tx, user)) return;
     const recipient = options?.recipient;
-    const scope = and(eq(authTokens.user_id, userId), eq(authTokens.purpose, purpose), isNull(authTokens.used_at));
-    const [recent] = await tx.select({ id: authTokens.id }).from(authTokens).where(and(
-      scope, gt(authTokens.expires_at, new Date(Date.now() + tokenLifetime(purpose) - 20_000).toISOString()),
-      recipient ? sql`${authTokens.payload}->>'email' = ${recipient}` : undefined,
-    )).limit(1);
-    if (recent) return { queued: true } as const;
-    await tx.delete(authTokens).where(scope);
+    // Each request gets its own link (callers rate-limit), replacing any unused one.
+    await tx.delete(authTokens).where(and(eq(authTokens.user_id, userId), eq(authTokens.purpose, purpose), isNull(authTokens.used_at)));
     return { ...await issueToken(tx, userId, purpose, recipient ? { email: recipient } : undefined), to: recipient ?? user.email };
   });
   if (!result) return false;
-  if ("queued" in result) return true;
 
   const { template, path } = emailDetails[purpose];
   const link = new URL(path, appUrl());

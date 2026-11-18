@@ -93,7 +93,6 @@ describe("an unverified address squatted by someone else", () => {
     from("198.51.100.7");
     await signUp(email, ATTACKER);
     fixture.mail.length = 0;
-    await ageLinks(email, 60_000);
 
     from("203.0.113.9");
     await expect(signUp(email, OWNER)).resolves.toEqual({});
@@ -102,6 +101,14 @@ describe("an unverified address squatted by someone else", () => {
     fixture.cookies.clear();
     await expect(signIn(email, ATTACKER, "")).resolves.toHaveProperty("error");
     await expect(signIn(email, OWNER, "")).resolves.toEqual({});
+  });
+
+  it("sends a fresh, working link for every accepted sign-up, however close together", async () => {
+    const email = victim();
+    await signUp(email, ATTACKER);
+    await signUp(email, OWNER);
+    expect(fixture.mail.filter((job) => "to" in job && job.to === email && job.template === "verify")).toHaveLength(2);
+    await expect(verifyEmail(lastLink(email, "verify"), false, OWNER)).resolves.toEqual({});
   });
 
   it("verifies from a link the owner did not request without knowing the squatter's password", async () => {
