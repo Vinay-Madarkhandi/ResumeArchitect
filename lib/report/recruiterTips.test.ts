@@ -47,6 +47,12 @@ describe("measurable results", () => {
     expect(tip("measurable-results", experience(metrics)).status).toBe("pass");
   });
 
+  it("counts quantified lines without any section headings", () => {
+    const result = tip("measurable-results", ["Ada Lovelace", "ada@example.com", ...metrics].join("\n\n"));
+    expect(result.status).toBe("pass");
+    expect(result.detail).toMatch(/^5 of your 5 achievement lines/);
+  });
+
   it("warns with two to four and fails with fewer", () => {
     expect(tip("measurable-results", experience(metrics.slice(0, 2))).status).toBe("warn");
     const none = tip("measurable-results", experience(["Built services", "Wrote docs"]));

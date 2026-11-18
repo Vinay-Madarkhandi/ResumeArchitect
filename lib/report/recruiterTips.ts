@@ -1,7 +1,7 @@
 import type { JobFacts, JobLevel } from "@/lib/schemas/jobFacts";
 import { findDates, findRanges, yearsCovered } from "./dates";
 import { fail, pass, warn, type Check, type RecruiterTipId } from "./report";
-import { sectionText, webProfiles, wordCount, type ResumeModel, type SectionKind } from "./resume";
+import { findEmail, findLinkedIn, findName, findPhone, sectionText, webProfiles, wordCount, type ResumeModel, type SectionKind } from "./resume";
 
 /** What a recruiter notices in the first skim (docs/research/jobscan.md §3.5). */
 
@@ -35,9 +35,12 @@ export function hasMetric(line: string): boolean {
 
 function measurableResults({ resume }: RecruiterTipsInput): RecruiterTip {
   const label = "Measurable results";
-  const lines = resume.sections
-    .filter((s) => ACHIEVEMENT_SECTIONS.has(s.kind))
-    .flatMap((s) => s.units)
+  // A headingless resume keeps every bullet before the first heading, so count those lines too.
+  const name = findName(resume);
+  const untitled = resume.header.filter((u) =>
+    u.text !== name && !findEmail(u.text) && !findPhone(u.text) && !findLinkedIn({ text: u.text, links: [] }),
+  );
+  const lines = [...untitled, ...resume.sections.filter((s) => ACHIEVEMENT_SECTIONS.has(s.kind)).flatMap((s) => s.units)]
     .filter((u) => u.kind !== "heading");
   const measured = lines.filter((u) => hasMetric(u.text)).length;
   const detail = `${measured} of your ${lines.length} achievement lines ${measured === 1 ? "includes" : "include"} a number.`;
