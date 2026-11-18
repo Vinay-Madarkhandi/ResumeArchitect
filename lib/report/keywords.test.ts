@@ -91,6 +91,13 @@ describe("matchTerm", () => {
     expect(matchTerm(term, ctx(text)).status).toBe(status);
   });
 
+  it("reads ambiguous mentions in time linear in the text, even on one long line", () => {
+    const jobText = "Go ".repeat(40_000);
+    const started = performance.now();
+    expect(postingCount("Go", ctx("", jobText))).toBe(0);
+    expect(performance.now() - started).toBeLessThan(1_000);
+  });
+
   it("matches short acronyms by case only", () => {
     expect(matchTerm("IT", ctx("it was great")).status).toBe("missing");
     expect(matchTerm("IT", ctx("Ran IT support")).status).toBe("found");

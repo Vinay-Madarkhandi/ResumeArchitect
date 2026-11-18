@@ -90,6 +90,22 @@ function everydayUse(form: string, left: string, right: string): boolean {
   }
 }
 
+/** The line around any offset, from line starts found once. */
+function lineIndex(text: string) {
+  const starts = [0];
+  for (let i = text.indexOf("\n"); i >= 0; i = text.indexOf("\n", i + 1)) starts.push(i + 1);
+  return (at: number) => {
+    let lo = 0;
+    let hi = starts.length - 1;
+    while (lo < hi) {
+      const mid = (lo + hi + 1) >> 1;
+      if (starts[mid] <= at) lo = mid;
+      else hi = mid - 1;
+    }
+    return { start: starts[lo], end: lo + 1 < starts.length ? starts[lo + 1] - 1 : text.length };
+  };
+}
+
 interface Span {
   start: number;
   end: number;
@@ -99,6 +115,7 @@ interface Span {
 /** Mentions of any of `forms`, overlapping hits ("REST" inside "REST API") counted once. */
 function mentions(forms: readonly string[], text: string): Span[] {
   let skillStarts: Set<number> | undefined;
+  let lineAt: ReturnType<typeof lineIndex> | undefined;
   const spans = forms.flatMap((form) => {
     const canonical = CANONICAL_CASE.get(formKey(form)) ?? form;
     const technical = AMBIGUOUS.get(canonical);
@@ -106,10 +123,9 @@ function mentions(forms: readonly string[], text: string): Span[] {
       const start = m.index;
       const end = start + m[0].length;
       if (CANONICAL_CASE.has(formKey(canonical))) {
-        const lineStart = text.lastIndexOf("\n", start - 1) + 1;
-        const nextLine = text.indexOf("\n", end);
+        const { start: lineStart, end: lineEnd } = (lineAt ??= lineIndex(text))(start);
         const left = text.slice(Math.max(lineStart, start - 45), start);
-        const right = text.slice(end, Math.min(nextLine < 0 ? text.length : nextLine, end + 45));
+        const right = text.slice(end, Math.min(lineEnd, end + 45));
         if (everydayUse(canonical, left, right)) return [];
         const context = `${left} ${right}`;
         const listed = SKILL_QUALIFIER.test(left) || LIST_LABEL.test(left) || (canonical === "C" && C_SIBLING.test(context));
