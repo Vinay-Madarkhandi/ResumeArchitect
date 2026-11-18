@@ -81,10 +81,12 @@ export const LinkedInDraftSchema = z.object({
   notes: z.array(z.string()).max(6).default([]),
 });
 
+const VerifiedDraft = z.object({ text: z.string(), flags: z.array(ChangeFlagSchema) });
 export const LinkedInSuggestionsSchema = z.object({
-  headlines: z.array(z.object({ text: z.string(), flags: z.array(ChangeFlagSchema) })),
-  about: z.object({ text: z.string(), flags: z.array(ChangeFlagSchema) }),
-  notes: z.array(z.string()),
+  headlines: z.array(VerifiedDraft),
+  about: VerifiedDraft,
+  notes: z.array(z.union([VerifiedDraft, z.string()])),
+  grounded: z.literal(true).optional(),
 });
 export type LinkedInSuggestions = z.infer<typeof LinkedInSuggestionsSchema>;
 
@@ -110,6 +112,7 @@ export const InterviewQuestionSchema = z.object({
   assessing: z.string().min(1),
   /** The job requirement this question probes, when there is one. */
   requirement: z.string().nullable().default(null),
+  grounded: z.literal(true).optional(),
 });
 export type InterviewQuestion = z.infer<typeof InterviewQuestionSchema>;
 
@@ -137,5 +140,6 @@ export const AnswerFeedbackSchema = z.object({
   rating: AnswerRatingSchema,
   words: z.number().int(),
   measurable: z.boolean(),
+  grounded: z.literal(true).optional(),
 });
 export type AnswerFeedback = z.infer<typeof AnswerFeedbackSchema>;

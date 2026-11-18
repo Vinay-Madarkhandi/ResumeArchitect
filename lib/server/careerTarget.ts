@@ -89,10 +89,13 @@ export async function resolveTarget(
   }
 }
 
-/** The resume a tool grounds its AI in: the application's tailored copy, or the master. */
+/** The resume a tool grounds its AI in: the application's source snapshot, or the master. */
 export async function groundingResume(userId: string, resumeId: string | null): Promise<Outcome<{ id: string; markdown: string }>> {
   const resume = resumeId ? await getResume(userId, resumeId) : await getDefaultMaster(userId);
-  const doc = resume ? resolveDocument(resume.content) : null;
+  const snapshot = resume?.tailoring_session_id
+    ? (await getTailoringSession(userId, resume.tailoring_session_id))?.source_snapshot
+    : null;
+  const doc = resume ? resolveDocument(resume.tailoring_session_id ? snapshot : resume.content) : null;
   if (!resume || !doc) return fail("Add a master resume first.");
   return { ok: true, value: { id: resume.id, markdown: documentToMarkdown(doc) } };
 }

@@ -1,9 +1,15 @@
+import { z } from "zod";
+import { groundInterviewQuestion } from "@/lib/grounding/interview";
 import { generateStructured, type JsonModel } from "@/lib/gemini/model";
-import { QUESTION_CATEGORIES, InterviewQuestionSetSchema, type InterviewQuestion } from "@/lib/schemas/career";
+import { QUESTION_CATEGORIES, InterviewQuestionSchema, type InterviewQuestion } from "@/lib/schemas/career";
 import type { JobAnalysis } from "@/lib/schemas/jobAnalysis";
 import { uniqueIds } from "./uniqueIds";
 
-const GeneratedQuestionsSchema = InterviewQuestionSetSchema.refine(
+const GeneratedQuestionsSchema = z.object({
+  questions: z.array(InterviewQuestionSchema.omit({ grounded: true }).extend({
+    resumeEvidence: z.string().optional(),
+  })).min(3).max(15),
+}).refine(
   ({ questions }) => QUESTION_CATEGORIES.every((category) => questions.some((q) => q.category === category)),
   "Include behavioral, technical, and role-specific questions.",
 );
@@ -27,7 +33,9 @@ For each question return:
 - category: behavioral | technical | role.
 - question: the question as the interviewer would say it.
 - assessing: one or two sentences on what the interviewer is listening for.
-- requirement: the job requirement label it probes, or null.
+- requirement: the exact job requirement label it probes, or null.
+- resumeEvidence: when the question refers to past work, copy the entire
+  supporting sentence verbatim from the resume. Otherwise omit this field.
 
 Never assume experience the resume doesn't show, and never put words in the
 candidate's mouth.`;
@@ -50,5 +58,6 @@ export async function writeInterviewQuestions(
     schema: GeneratedQuestionsSchema,
     temperature: 0.5,
   });
-  return uniqueIds(questions, "q");
+  const topics = job.requirements.map((r) => r.label);
+  return uniqueIds(questions, "q").map((q) => groundInterviewQuestion(q, resumeMarkdown, topics));
 }

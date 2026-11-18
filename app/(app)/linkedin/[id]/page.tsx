@@ -36,7 +36,7 @@ export default async function LinkedInReviewPage({ params }: PageProps<"/linkedi
           <CheckList title="Profile checks" checks={report.data.checks} />
           {report.data.keywords && <KeywordList hits={report.data.keywords} places={SECTION_LABELS} />}
           {!hasKey && <KeyMissing what="get headline and About suggestions" />}
-          <LinkedInSuggestions reviewId={review.id} initial={suggestions.success ? suggestions.data : null} hasKey={hasKey} />
+          <LinkedInSuggestions reviewId={review.id} initial={suggestions.success && suggestions.data.grounded ? suggestions.data : null} hasKey={hasKey} />
         </div>
         <aside className="flex flex-col gap-4 lg:sticky lg:top-20 lg:self-start">
           <ScoreCard score={report.data.score} label="Profile strength" context={review.target_label} />
