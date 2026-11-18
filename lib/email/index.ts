@@ -2,8 +2,9 @@ import { Resend } from "resend";
 import { cache } from "@/lib/cache";
 import { logger } from "@/lib/logger";
 import { appUrl } from "@/lib/auth/config";
-import { openText } from "@/lib/crypto/keyCipher";
+import { openText, sealText } from "@/lib/crypto/keyCipher";
 import { getTrackerDigest } from "@/lib/data/tracker-reminders";
+import type { JobType } from "bullmq";
 import type { EmailJob } from "@/lib/queue";
 
 const escape = (text: string) => text.replaceAll("&", "&amp;").replaceAll("<", "&lt;")
@@ -59,4 +60,30 @@ export async function deliverEmail(job: EmailJob, id: string) {
   if (!process.env.EMAIL_FROM) throw new Error("EMAIL_FROM is required for Resend");
   const result = await new Resend(key).emails.send({ from: process.env.EMAIL_FROM, to, subject, html }, { idempotencyKey: id });
   if (result.error) throw new Error(`Resend delivery failed: ${result.error.name}`);
+}
+
+// Jobs queued before links were sealed carry them in plaintext.
+export type LegacyEmailJob = { template: "verify" | "reset" | "changeEmail" | "signIn"; to: string; data: { link: string } };
+type QueuedEmail = { id?: string; data: EmailJob | LegacyEmailJob; updateData(data: EmailJob): Promise<void> };
+
+async function sealLink(job: QueuedEmail) {
+  const { data } = job;
+  if (!("link" in data.data)) return data as EmailJob;
+  const sealed = { ...data, data: { sealedLink: sealText(data.data.link) } } as EmailJob;
+  await job.updateData(sealed);
+  return sealed;
+}
+
+export async function processEmail(job: QueuedEmail) {
+  await deliverEmail(await sealLink(job), job.id!);
+}
+
+const pending: JobType[] = ["waiting", "prioritized", "delayed", "waiting-children", "failed"];
+
+/** Run at worker startup so no queued job keeps a plaintext link, even one never retried. */
+export async function sealQueuedLinks(queue: { getJobs(states: JobType[]): Promise<QueuedEmail[]> }) {
+  for (const job of await queue.getJobs(pending)) {
+    // Another worker may finish the job first, taking its link with it.
+    await sealLink(job).catch(() => logger.warn({ jobId: job.id }, "Could not seal a queued link"));
+  }
 }

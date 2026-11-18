@@ -2,7 +2,7 @@ import { hostname } from "node:os";
 import { Worker } from "bullmq";
 import { cache, redisUrl } from "@/lib/cache";
 import { sqlClient } from "@/lib/db";
-import { deliverEmail } from "@/lib/email";
+import { processEmail, sealQueuedLinks, type LegacyEmailJob } from "@/lib/email";
 import { logger } from "@/lib/logger";
 import { emailQueue, maintenanceQueue, type EmailJob, type MaintenanceJob, type MaintenancePayload } from "@/lib/queue";
 import { purgeExpiredAuth } from "@/lib/auth/purge";
@@ -41,7 +41,8 @@ async function main() {
   });
 
   const connection = { url: redisUrl(), maxRetriesPerRequest: null };
-  const email = new Worker<EmailJob>("email", (job) => deliverEmail(job.data, job.id!), { connection, concurrency: 4 });
+  await sealQueuedLinks(emailQueue());
+  const email = new Worker<EmailJob | LegacyEmailJob>("email", processEmail, { connection, concurrency: 4 });
   const maintenance = new Worker<MaintenancePayload, void, MaintenanceJob>("maintenance", async (job) => {
     if (job.name === "delete-user-objects") {
       if (!job.data.userId) throw new Error("Account ID is required");

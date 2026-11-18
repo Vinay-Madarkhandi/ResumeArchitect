@@ -115,7 +115,9 @@ the server master key `KEY_ENCRYPTION_SECRET`). It is never logged or returned.
 ## Queues (BullMQ on Redis)
 
 - `email`: {template, to, data}; 5 attempts, exponential backoff. A delivered job is
-  removed at once; a job out of attempts is kept for a day with its link blanked.
+  removed at once; a job out of attempts is kept for a day, its link still sealed.
+  Jobs queued before sealing carry `data.link` in plaintext: the worker seals them
+  at startup (waiting, delayed and failed) and before delivering one.
 - `maintenance`: repeatable jobs: purge expired sessions, week-old expired tokens and
   abandoned unverified accounts hourly, orphaned S3 objects daily.
 Jobs carry ids derived from their purpose (e.g. `verify:<userId>:<tokenHash>`) so a
