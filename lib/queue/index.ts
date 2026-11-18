@@ -4,8 +4,10 @@ import { redisUrl } from "@/lib/cache";
 export type EmailJob =
   | { template: "verify" | "reset" | "changeEmail"; to: string; data: { link: string } }
   | { template: "alert"; to: string; data: { message: string } };
-export type MaintenanceJob = "purge-auth" | "orphaned-objects";
+export type MaintenanceJob = "purge-auth" | "orphaned-objects" | "delete-user-objects";
+export type MaintenancePayload = { userId?: string };
 let emails: Queue<EmailJob> | undefined;
+let maintenance: Queue<MaintenancePayload, void, MaintenanceJob> | undefined;
 
 export function emailQueue() {
   return emails ??= new Queue<EmailJob>("email", {
@@ -15,5 +17,8 @@ export function emailQueue() {
 }
 
 export function maintenanceQueue() {
-  return new Queue("maintenance", { connection: { url: redisUrl() }, defaultJobOptions: { removeOnComplete: 100, removeOnFail: 100 } });
+  return maintenance ??= new Queue<MaintenancePayload, void, MaintenanceJob>("maintenance", {
+    connection: { url: redisUrl(), maxRetriesPerRequest: 1, connectTimeout: 3000 },
+    defaultJobOptions: { removeOnComplete: 100, removeOnFail: 100 },
+  });
 }

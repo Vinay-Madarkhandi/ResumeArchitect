@@ -6,9 +6,9 @@ import { db, sqlClient } from "@/lib/db";
 import { authTokens, sessions } from "@/lib/db/schema";
 import { deliverEmail } from "@/lib/email";
 import { logger } from "@/lib/logger";
-import { maintenanceQueue, type EmailJob, type MaintenanceJob } from "@/lib/queue";
+import { maintenanceQueue, type EmailJob, type MaintenanceJob, type MaintenancePayload } from "@/lib/queue";
 import { clearSessionCache } from "@/lib/auth/sessions";
-import { deleteObjects, listObjects, resumeBuckets } from "@/lib/storage";
+import { deleteObjects, deleteUserObjects, listObjects, resumeBuckets } from "@/lib/storage";
 import { referencedObjects } from "@/lib/data/resumes";
 
 async function cleanOrphans() {
@@ -38,7 +38,11 @@ async function main() {
 
   const connection = { url: redisUrl(), maxRetriesPerRequest: null };
   const email = new Worker<EmailJob>("email", (job) => deliverEmail(job.data, job.id!), { connection, concurrency: 4 });
-  const maintenance = new Worker<unknown, void, MaintenanceJob>("maintenance", async (job) => {
+  const maintenance = new Worker<MaintenancePayload, void, MaintenanceJob>("maintenance", async (job) => {
+    if (job.name === "delete-user-objects") {
+      if (!job.data.userId) throw new Error("Account ID is required");
+      return deleteUserObjects(job.data.userId);
+    }
     if (job.name === "orphaned-objects") return cleanOrphans();
     if (job.name === "purge-auth") {
       const expired = await db.delete(sessions).where(lt(sessions.expires_at, sql`now()`)).returning({ id: sessions.id });

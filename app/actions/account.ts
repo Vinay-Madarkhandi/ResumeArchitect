@@ -11,6 +11,7 @@ import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
 import { deleteUserObjects } from "@/lib/storage";
 import { logger } from "@/lib/logger";
+import { maintenanceQueue } from "@/lib/queue";
 import type { ActionResult } from "./onboarding";
 
 export async function deleteAllMyData(): Promise<ActionResult> {
@@ -36,7 +37,6 @@ export async function deleteMyAccount(password: string, code: string): Promise<A
       if (!row || !await confirmCredentials(tx, row, password, code)) return;
       const ids = await removeSessions(tx, user.id);
       await tx.delete(users).where(eq(users.id, user.id));
-      await deleteUserObjects(user.id);
       return ids;
     });
     if (!removed) return { ok: false, error: "Check your password and authentication code." };
@@ -45,6 +45,15 @@ export async function deleteMyAccount(password: string, code: string): Promise<A
   } catch {
     logger.error({ userId: user.id }, "Could not finish deleting account");
     return { ok: false, error: "Couldn't finish deleting your account. Try again." };
+  }
+  try {
+    await deleteUserObjects(user.id);
+  } catch {
+    logger.warn({ userId: user.id }, "Retrying removal of account objects");
+    await maintenanceQueue().add("delete-user-objects", { userId: user.id }, {
+      jobId: `delete-user-objects-${user.id}`, attempts: 5, backoff: { type: "exponential", delay: 15_000 },
+    }).catch(() => logger.error({ userId: user.id }, "Could not schedule account object removal"));
+    // The daily orphan cleanup also removes any keys left by stalled uploads.
   }
   redirect("/");
 }
