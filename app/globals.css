@@ -211,18 +211,26 @@ a {
   color: var(--paper-ink);
   box-shadow: var(--paper-shadow);
   border-radius: 2px;
+  /* Classic's measurements; <Paper> overrides them from lib/resume/templates.ts. */
   --paper-body: var(--font-paper-serif);
   --paper-head: var(--font-paper-sans);
+  --paper-head-weight: 700;
   --paper-accent: var(--paper-ink);
+  --paper-fs: 13px;
+  --paper-fs-name: 29.33px;
+  --paper-fs-section: 14px;
+  --paper-fs-entry: 13.33px;
+  --paper-line: 1.42;
+  --paper-pad-x: 61.33px;
+  --paper-pad-y: 56px;
+  --paper-space-section: 17.33px;
+  --paper-h2-rule: 1px solid var(--paper-rule);
+  --paper-h2-pad: 4px;
+  --paper-h2-case: uppercase;
+  --paper-header-align: left;
   font-family: var(--paper-body);
-  font-size: 13.5px;
-  line-height: 1.5;
-}
-
-.paper[data-template="modern"] {
-  --paper-body: var(--font-paper-sans);
-  --paper-accent: oklch(48% 0.1 72);
-  font-size: 13px;
+  font-size: var(--paper-fs);
+  line-height: var(--paper-line);
 }
 
 .paper ::selection {
@@ -232,37 +240,34 @@ a {
 
 .paper-flow h1 {
   font-family: var(--paper-head);
-  font-size: 28px;
+  font-size: var(--paper-fs-name);
   line-height: 1.15;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-  margin: 0 0 6px;
+  font-weight: var(--paper-head-weight);
+  margin: 0 0 8px;
 }
 
+.paper-flow h1,
+.paper-flow h1 + p {
+  text-align: var(--paper-header-align);
+}
+
+/* Never letter-spaced, like the PDF: an ATS reads tracked capitals as "S U M M A R Y". */
 .paper-flow h2 {
   font-family: var(--paper-head);
-  font-size: 12.5px;
-  font-weight: 650;
-  letter-spacing: 0.09em;
-  text-transform: uppercase;
-  margin: 18px 0 7px;
-  padding-bottom: 4px;
-  border-bottom: 1px solid var(--paper-rule);
+  font-size: var(--paper-fs-section);
+  font-weight: var(--paper-head-weight);
+  text-transform: var(--paper-h2-case);
+  margin: var(--paper-space-section) 0 7px;
+  padding-bottom: var(--paper-h2-pad);
+  border-bottom: var(--paper-h2-rule);
   color: var(--paper-accent);
-}
-
-.paper[data-template="modern"] .paper-flow h2 {
-  border-bottom: 0;
-  padding-bottom: 0;
-  letter-spacing: 0.12em;
-  font-weight: 700;
 }
 
 .paper-flow h3 {
   font-family: var(--paper-head);
-  font-size: 13.5px;
+  font-size: var(--paper-fs-entry);
   font-weight: 600;
-  margin: 9px 0 2px;
+  margin: 8px 0 2px;
 }
 
 .paper-flow p {
@@ -498,21 +503,4 @@ a {
 .slug-card .mark-del {
   background: transparent;
   text-decoration-color: currentColor;
-}
-
-.paper[data-template="standard"] {
-  --paper-body: var(--font-paper-sans);
-  font-size: 13px;
-}
-
-.paper[data-template="standard"] .paper-flow h1,
-.paper[data-template="standard"] .paper-flow h1 + p {
-  text-align: center;
-}
-
-.paper[data-template="standard"] .paper-flow h2 {
-  text-transform: none;
-  letter-spacing: 0;
-  font-size: 15px;
-  font-weight: 700;
 }

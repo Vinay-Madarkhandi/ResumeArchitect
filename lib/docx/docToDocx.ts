@@ -18,6 +18,7 @@ import type { Template } from "@/lib/resume/templates";
  */
 
 const pt = (n: number) => Math.round(n * 2); // docx sizes are half-points
+const twips = (n: number) => Math.round(n * 20);
 const hex = (c: string) => c.replace("#", "");
 
 function runs(nodes: InlineNode[], t: Template, base: { bold?: boolean; size?: number; font?: string; color?: string } = {}): ParagraphChild[] {
@@ -57,7 +58,7 @@ function blockParagraphs(block: BlockNode, t: Template, ordinal: { n: number }, 
       if (block.attrs.level === 2) {
         return [
           new Paragraph({
-            spacing: { before: 240, after: 100 },
+            spacing: { before: twips(t.space.section), after: 100 },
             keepNext: true,
             border:
               t.sectionStyle === "rule"
@@ -128,7 +129,7 @@ export async function documentToDocx(doc: DocumentContent, template: Template, t
       default: {
         document: {
           run: { font: template.docxBodyFont, size: pt(template.size.body + 0.75), color: hex(template.color.ink) },
-          paragraph: { spacing: { line: 276 } },
+          paragraph: { spacing: { line: Math.round(240 * template.space.line) } },
         },
       },
     },
@@ -158,7 +159,16 @@ export async function documentToDocx(doc: DocumentContent, template: Template, t
     },
     sections: [
       {
-        properties: { page: { margin: { top: 900, bottom: 900, left: 1000, right: 1000 } } },
+        properties: {
+          page: {
+            margin: {
+              top: twips(template.space.marginY),
+              bottom: twips(template.space.marginY),
+              left: twips(template.space.marginX),
+              right: twips(template.space.marginX),
+            },
+          },
+        },
         children: doc.content.flatMap((block, i) => {
           const prev = doc.content[i - 1];
           const contact = prev?.type === "heading" && prev.attrs.level === 1 && block.type === "paragraph";
