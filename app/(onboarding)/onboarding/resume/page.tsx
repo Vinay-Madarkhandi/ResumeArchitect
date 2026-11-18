@@ -1,3 +1,5 @@
+import Link from "next/link";
+import { buttonVariants } from "@/components/ui/Button";
 import { getProfileStatus } from "@/lib/data/profiles";
 import { requireUser } from "@/lib/auth/current-user";
 import type { Metadata } from "next";
@@ -18,6 +20,9 @@ export default async function ResumeStepPage() {
       <p className="mt-3 text-lead text-ink-2">
         This becomes your master copy. Every application starts from it, and it is never changed by tailoring.
       </p>
+      <div className="mt-5">
+        <Link href="/onboarding/build" className={buttonVariants()}>Build a resume from scratch</Link>
+      </div>
       <div className="mt-8">
         <ImportResume hasKey={profile?.gemini_key_status === "valid"} next="/onboarding/review" />
       </div>

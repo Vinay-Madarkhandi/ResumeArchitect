@@ -73,6 +73,27 @@ export async function promoteMaster(userId: string, resumeId: string, content: D
   });
 }
 
+/** Build a master in the same transaction that makes it the onboarding default. */
+export async function createBuiltMaster(userId: string, values: Pick<Insert, "title" | "content" | "template">) {
+  return db.transaction(async (tx) => {
+    const [profile] = await tx.select({ defaultId: profiles.default_resume_id }).from(profiles)
+      .where(eq(profiles.id, userId)).for("update");
+    if (!profile) return undefined;
+
+    // Returning users can build another master without displacing the default.
+    const isDefault = !profile.defaultId;
+    const [resume] = await tx.insert(resumes).values({
+      ...values, user_id: userId, kind: "master", is_default: isDefault,
+    }).returning({ id: resumes.id });
+
+    if (isDefault) {
+      await tx.update(profiles).set({ default_resume_id: resume.id, onboarding_completed_at: new Date().toISOString() })
+        .where(eq(profiles.id, userId));
+    }
+    return resume.id;
+  });
+}
+
 export async function referencedObjects(userId: string, bucket: string, keys: string[]) {
   if (!keys.length || !uuid.safeParse(userId).success) return new Set<string>();
   if (bucket === RESUME_UPLOADS_BUCKET) {
