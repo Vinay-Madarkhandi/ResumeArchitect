@@ -1,7 +1,7 @@
 import { parentPort, workerData } from "node:worker_threads";
-import { InspectionLimit } from "./inspectBudget";
-import { readDocxLayout } from "./inspectDocx";
-import { readPdfLayout } from "./inspectPdf";
+import { InspectionLimit } from "./inspectLimits.ts";
+import { readDocxLayout } from "./docxLayout.ts";
+import { readPdfLayout } from "./pdfLayout.ts";
 import type { FileInspectionFailure } from "./report";
 
 async function inspect() {

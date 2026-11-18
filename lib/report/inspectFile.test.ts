@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import JSZip from "jszip";
 import { Document, Packer, Paragraph } from "docx";
-import { INSPECTION_TIMEOUT_MS, MAX_DOCX_ENTRIES, MAX_UPLOAD_BYTES, MAX_XML_BYTES } from "./inspectBudget";
+import { INSPECTION_TIMEOUT_MS, MAX_DOCX_ENTRIES, MAX_UPLOAD_BYTES, MAX_XML_BYTES } from "./inspectLimits";
 import { inspectResumeFile } from "./inspectFile";
 
 describe("inspectResumeFile", () => {

@@ -5,7 +5,7 @@ import { currentUser } from "@/lib/auth/current-user";
 import { createJobDescription, findJobDescriptionByText, getJobDescription } from "@/lib/data/job-descriptions";
 import { getResume } from "@/lib/data/resumes";
 import { resolveDocument } from "@/lib/documentConversion";
-import { MAX_UPLOAD_BYTES } from "@/lib/report/inspectBudget";
+import { MAX_UPLOAD_BYTES } from "@/lib/report/inspectLimits";
 import { inspectResumeFile } from "@/lib/report/inspectFile";
 import { MAX_JOB_DESCRIPTION_LENGTH, MIN_JOB_DESCRIPTION_LENGTH } from "@/lib/schemas/tailoring";
 import { detectKind, ImportError, importResume } from "@/lib/server/importResume";

@@ -1,17 +1,9 @@
 import { Worker } from "node:worker_threads";
 import type { FileInspectionFailure, ResumeFileFacts } from "./report";
-
-export const MAX_UPLOAD_BYTES = 8 * 1024 * 1024;
-export const MAX_DOCX_BYTES = 24 * 1024 * 1024;
-export const MAX_DOCX_ENTRIES = 256;
-export const MAX_XML_BYTES = 1024 * 1024;
-export const MAX_PDF_PAGES = 20;
-export const INSPECTION_TIMEOUT_MS = 4_000;
+import { INSPECTION_TIMEOUT_MS, MAX_UPLOAD_BYTES } from "./inspectLimits";
 
 type FileFormat = FileInspectionFailure["extension"];
 export type InspectionResult<F extends FileFormat> = Extract<ResumeFileFacts, { format: F }> | FileInspectionFailure;
-
-export class InspectionLimit extends Error {}
 
 export async function inspectWithinBudget<F extends FileFormat>(
   extension: F,
@@ -23,8 +15,8 @@ export async function inspectWithinBudget<F extends FileFormat>(
   const bytes = new Uint8Array(source);
 
   try {
-    const worker = new Worker(new URL("./inspectWorkerEntry.mjs", import.meta.url), {
-      execArgv: [],
+    const worker = new Worker(new URL("./inspectWorker.ts", import.meta.url), {
+      execArgv: process.env.VITEST ? ["--require", "tsx/cjs"] : [],
       workerData: { extension, bytes },
       transferList: [bytes.buffer],
       resourceLimits: { maxOldGenerationSizeMb: 96, maxYoungGenerationSizeMb: 16, stackSizeMb: 2 },
