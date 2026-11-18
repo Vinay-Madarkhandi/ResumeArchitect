@@ -105,6 +105,11 @@ export async function archiveJob(userId: string, id: string, archived: boolean) 
   return row;
 }
 
+export async function deleteJob(userId: string, id: string) {
+  const [row] = await db.delete(jobs).where(tracked(userId, id)).returning({ id: jobs.id });
+  return row;
+}
+
 export async function moveJob(userId: string, id: string, stage: ApplicationStatus, tx: Pick<typeof db, "update"> = db) {
   const [row] = await tx.update(jobs).set({
     tracker_stage: stage,
