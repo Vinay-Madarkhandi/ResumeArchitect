@@ -63,8 +63,9 @@ export async function sendEmailJob(job: EmailAttempt) {
     await deliverEmail(job.data, job.id!);
   } catch (error) {
     // A job that will not be retried is kept for inspection without its usable link.
-    if (job.attemptsMade + 1 >= (job.opts.attempts ?? 1) && job.data.template !== "alert") {
-      await job.updateData({ ...job.data, data: { link: "" } });
+    const { data } = job;
+    if (job.attemptsMade + 1 >= (job.opts.attempts ?? 1) && data.template !== "alert" && data.template !== "trackerDigest") {
+      await job.updateData({ ...data, data: { link: "" } });
     }
     throw error;
   }

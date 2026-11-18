@@ -65,8 +65,8 @@ const account = async (email: string) => (await db.select().from(users).where(eq
 const from = (ip: string) => { fixture.ip = ip; };
 
 function lastLink(to: string, template: "verify" | "reset" | "changeEmail") {
-  const job = fixture.mail.findLast((entry) => entry.to === to && entry.template === template);
-  if (!job || job.template === "alert") throw new Error(`No ${template} mail for ${to}`);
+  const job = fixture.mail.findLast((entry) => "to" in entry && entry.to === to && entry.template === template);
+  if (!job || !("link" in job.data)) throw new Error(`No ${template} mail for ${to}`);
   return new URL(job.data.link).searchParams.get("token")!;
 }
 
@@ -190,5 +190,5 @@ it("answers an email change the same whether or not the new address is registere
   const free = victim();
   await expect(changeEmail(free, OWNER, "")).resolves.toEqual({});
   await expect(changeEmail(taken, OWNER, "")).resolves.toEqual({});
-  expect(fixture.mail.map(({ to, template }) => [to, template])).toEqual([[free, "changeEmail"], [taken, "changeEmail"]]);
+  expect(fixture.mail.map((job) => ["to" in job && job.to, job.template])).toEqual([[free, "changeEmail"], [taken, "changeEmail"]]);
 });
