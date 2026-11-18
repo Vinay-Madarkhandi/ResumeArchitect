@@ -1,13 +1,31 @@
-import { eq } from "drizzle-orm";
+import { eq, isNotNull } from "drizzle-orm";
 import { db, type Transaction } from "@/lib/db";
 import { clearSessionCache, removeSessions } from "@/lib/auth/sessions";
 import { deleteUserObjects } from "@/lib/storage";
 import { logger } from "@/lib/logger";
 import { maintenanceQueue } from "@/lib/queue";
 import {
-  aiCalls, careerBullets, coverLetterScans, interviewAnswers, interviewSessions, jobDescriptions, linkedinReviews, personalTokens, profiles,
-  resumes, scans, tailoringSessions, users,
+  aiCalls, authTokens, careerBullets, coverLetterScans, interviewAnswers, interviewSessions, jobDescriptions, linkedinReviews, personalTokens,
+  profiles, recoveryCodes, resumes, resumeShares, scans, sessions, tailoringSessions, users,
 } from "@/lib/db/schema";
+
+/**
+ * Every table that holds an account's rows, by the export key it appears under.
+ * account.test.ts derives the owned tables from the schema and fails when one
+ * is missing here, so a new feature cannot leave its data out of the export.
+ */
+export const exportedTables = {
+  account: users, profile: profiles, resumes, resumeShares, personalTokens, jobDescriptions, tailoringSessions, scans,
+  linkedinReviews, coverLetterScans, interviewSessions, interviewAnswers, aiCalls, careerBullets,
+};
+/** Owned tables left out of the export because they only hold credentials. */
+export const credentialTables = [sessions, authTokens, recoveryCodes];
+
+// The share password's hash stays out; the export only says whether one is set.
+const shareColumns = {
+  resume_id: resumeShares.resume_id, slug: resumeShares.slug, content: resumeShares.content, template: resumeShares.template,
+  views: resumeShares.views, created_at: resumeShares.created_at,
+};
 
 export async function clearAccountData(userId: string) {
   await db.transaction(async (tx) => {
@@ -46,6 +64,8 @@ export async function exportAccountData(userId: string) {
     return {
       account, profile,
       resumes: await tx.select().from(resumes).where(eq(resumes.user_id, userId)),
+      resumeShares: await tx.select({ ...shareColumns, password_protected: isNotNull(resumeShares.password_hash) })
+        .from(resumeShares).innerJoin(resumes, eq(resumes.id, resumeShares.resume_id)).where(eq(resumes.user_id, userId)),
       personalTokens: await tx.select({
         id: personalTokens.id, name: personalTokens.name, createdAt: personalTokens.created_at, lastUsedAt: personalTokens.last_used_at,
       }).from(personalTokens).where(eq(personalTokens.user_id, userId)),
