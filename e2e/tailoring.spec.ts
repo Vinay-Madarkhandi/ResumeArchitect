@@ -52,6 +52,7 @@ test("sign up, tailor a resume, review every change, edit, and download", async 
 
   // Each change shows what it's worth.
   await rail.getByRole("tab", { name: "Changes" }).click();
+  await expect(rail.getByText(/^\+\d+ pts$/).first()).toBeVisible();
 
   // The job post panel marks what the resume shows and what it doesn't.
   await rail.getByRole("tab", { name: "Job post" }).click();
@@ -111,6 +112,7 @@ test("sign up, tailor a resume, review every change, edit, and download", async 
   // The application shows up on the dashboard with its score change.
   await page.goto("/dashboard");
   await expect(page.getByRole("link", { name: "Senior Backend Engineer" })).toBeVisible();
+  await expect(page.getByLabel(/Match score \d+ to \d+/)).toBeVisible();
   await expect(page.getByText("Average score lift")).toBeVisible();
   await expect(page.getByRole("button", { name: /Application status: Applied/ })).toBeVisible();
 
@@ -221,7 +223,7 @@ test("a Word resume comes back as the same file with only the wording changed", 
   const before = await paragraphs(original);
   const after = await paragraphs(tailored);
   const xml = after.join("\n");
-  expect(xml).toContain("Worked on the services in Go backed by PostgreSQL");
+  expect(xml).toContain("Led payment services in Go backed by PostgreSQL");
   expect(xml).not.toMatch(/2M daily transactions|Mentored engineers through on-call rotations/);
   expect(after).toHaveLength(before.length);
   // The centered header and tab-aligned dates are the original paragraphs, byte for byte.

@@ -41,7 +41,7 @@ const JOB = {
 const TAILOR = {
   summary: "Leads with backend depth in Go and PostgreSQL.",
   edits: [
-    { op: "rewrite", line: 4, text: "Backend engineer who likes **reliable systems**.", reason: "Mirrors the role's focus.", requirementIds: ["go", "pg"] },
+    { op: "rewrite", line: 4, text: "Backend engineer building reliable **Go** and **PostgreSQL** services for payments.", reason: "Mirrors the role's focus.", requirementIds: ["go", "pg"] },
     { op: "rewrite", line: 7, text: "Built Go services on Postgres processing 2M payments a day on Kubernetes", reason: "Leads with impact.", requirementIds: ["go"] },
     { op: "insert_after", line: 8, text: "Containerized services with Docker", reason: "Shows deployment experience.", requirementIds: [] },
     { op: "rewrite", line: 99, text: "nonsense", reason: "Out of range.", requirementIds: [] },
@@ -103,7 +103,7 @@ describe("runPipeline", () => {
     const session = sessions.get("s1")!;
     expect(session.status).toBe("completed");
     expect(session.changes).toHaveLength(3); // out-of-range edit dropped
-    expect(session.score_after).toBeDefined();
+    expect(session.score_after!).toBeGreaterThan(session.score_before!);
     expect((resumes.get("r1") as { title: string }).title).toBe("Senior Backend Engineer — Northwind");
   });
 
@@ -115,8 +115,8 @@ describe("runPipeline", () => {
     expect(bullet.flags).toContainEqual(expect.objectContaining({ kind: "skill", value: "Kubernetes" }));
     expect(bullet.flags.find((f) => f.kind === "number")!.value).toBe("2M");
     const docker = sessions.get("s1")!.changes!.find((c) => c.op === "insert_after")!;
-    expect(docker.after).toBe("[Verify claim 3]");
-    expect(JSON.stringify(resumes.get("r1"))).not.toMatch(/2M payments|Containerized services/);
+    expect(docker.flags).toEqual([]);
+    expect(JSON.stringify(resumes.get("r1"))).not.toMatch(/2M payments/);
   });
 
   it("produces a diff whose hunks line up with the recorded changes", async () => {

@@ -36,7 +36,7 @@ function tailor(prompt) {
     edits.push({
       op: "rewrite",
       line: bullets[0].n,
-      text: bullets[0].text.replace(/^Worked on services/i, "Worked on the services"),
+      text: bullets[0].text.replace(/^(Worked on|Helped with|Responsible for)\s*/i, "Led ").replace(/services/i, "payment services"),
       reason: "The posting centers on payments; this bullet now says so up front.",
       requirementIds: ["go"],
     });
