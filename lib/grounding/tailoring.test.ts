@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { JobAnalysis } from "@/lib/schemas/jobAnalysis";
-import { specifics, verifyChange } from "./verify";
+import { specifics, verifyChange } from "./tailoring";
 
 const job = { requirements: [] } as unknown as JobAnalysis;
 
@@ -38,7 +38,7 @@ describe("verifyChange on vaguer rewrites", () => {
     expect(
       check(
         "Built a Next.js frontend for tenant-specific dashboards",
-        "Built a Next.js frontend for tenant-specific dashboards and business workflows",
+        "I build the Next.js frontend for tenant-specific dashboards",
       ),
     ).toEqual([]);
   });

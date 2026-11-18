@@ -50,7 +50,8 @@ Hard rules, no exceptions:
    certifications, tools, skills, projects, or achievements that the resume
    does not already state or directly imply.
 2. Never invent or change numbers. Keep every existing metric exactly; never
-   add a metric that is not in the resume.
+   add a metric that is not in the resume. Keep each figure with its original
+   action, unit and result, and keep each experience under its original role.
 3. Use the job's vocabulary only when the underlying claim is already true
    ("JS" → "JavaScript" is fine; adding Kubernetes the resume never mentions is not).
 4. If a requirement is missing from the resume, do not fake it. Leave it for

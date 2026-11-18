@@ -29,6 +29,7 @@ import { setOriginalLines, setPageBreaks } from "@/lib/editor/extensions";
 import { useAutosave, type SaveStatus } from "@/lib/editor/useAutosave";
 import { usePageCount } from "@/lib/editor/usePageCount";
 import { diffUnits, revertHunk, type Hunk } from "@/lib/resume/diff";
+import { hasUnverifiedClaim } from "@/lib/grounding/placeholder";
 import { buildRedline, matchChange } from "@/lib/resume/review";
 import { addSkill } from "@/lib/resume/addSkill";
 import { documentText, fromUnits, toUnits } from "@/lib/resume/units";
@@ -185,9 +186,10 @@ export function Workspace({ resume, session, jobText, initialView }: WorkspacePr
   );
 
   function keepAll() {
-    persistReviewed(new Set([...reviewed, ...entries.map((e) => e.hunk.id)]));
+    const ready = entries.filter(({ hunk }) => !hunk.after.some((line) => hasUnverifiedClaim(line.text)));
+    persistReviewed(new Set([...reviewed, ...ready.map((e) => e.hunk.id)]));
     setFocusedId(null);
-    toast("All changes kept.", "success");
+    toast(ready.length === entries.length ? "All changes kept." : "Verification placeholders still need review.", "info");
   }
 
   function revertAll() {

@@ -1,14 +1,9 @@
 import { generateStructured, type JsonModel } from "@/lib/gemini/model";
 import { SelectionEditResultSchema, type SelectionEditResult } from "@/lib/schemas/selectionEdit";
 
-/** The scoped counterpart to lib/gemini/prompts/tailorLines.ts: instead
- * of rewriting the whole document against a job description, this rewrites
- * exactly one selected snippet per a free-text instruction, given just
- * enough surrounding context to stay coherent. Same non-fabrication
- * philosophy as the bulk flow, just phrased for a much smaller, more
- * literal task — and instead of a separate guardrail pass afterward, the
- * model self-reports uncertainty inline via "flagged"/"flagReason", since
- * there's no larger document to diff a single snippet against. */
+import { checkGrounding } from "@/lib/grounding";
+import { VERIFY_CLAIM } from "@/lib/grounding/placeholder";
+
 const SYSTEM_INSTRUCTION = `You are helping a candidate edit one specific piece of text in their resume.
 You are given the text immediately before and after their selection (for
 context only — do not rewrite it), the exact text they selected, and their
@@ -63,11 +58,18 @@ export async function editSelection(
   model: JsonModel,
   input: { contextBefore: string; selectedText: string; contextAfter: string; instruction: string },
 ): Promise<SelectionEditResult> {
-  return generateStructured(model, {
+  const result = await generateStructured(model, {
     label: "editSelection",
     system: SYSTEM_INSTRUCTION,
     prompt: buildPrompt(input.contextBefore, input.selectedText, input.contextAfter, input.instruction),
     schema: SelectionEditResultSchema,
     temperature: 0.5,
   });
+  const { flags } = checkGrounding([input.selectedText], result.replacementText);
+  if (!flags.length && !result.flagged) return result;
+  return {
+    replacementText: VERIFY_CLAIM,
+    flagged: true,
+    flagReason: flags[0]?.message ?? "Add the verified details directly to your resume.",
+  };
 }

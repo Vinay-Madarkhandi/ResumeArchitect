@@ -48,8 +48,11 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   if (!key.ok) return NextResponse.json({ error: key.message }, { status: 400 });
 
   try {
+    const source = DocumentContentSchema.safeParse(session?.source_snapshot);
+    if (!source.success) return NextResponse.json({ error: "This application has no original resume to verify the letter against." }, { status: 422 });
     const letter = await writeCoverLetter(geminiModel(key.apiKey, user.id), {
       resumeMarkdown: documentToMarkdown(content.data),
+      sourceMarkdown: documentToMarkdown(source.data),
       job: job.data,
       jobText: jd?.raw_text ?? null,
       tone,

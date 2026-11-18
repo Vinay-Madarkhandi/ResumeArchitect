@@ -1,5 +1,6 @@
 "use client";
 
+import { hasUnverifiedClaim, RESOLVE_CLAIMS } from "@/lib/grounding/placeholder";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ClipboardCopy, Download, FileText, PenLine, RefreshCw, ScanText } from "lucide-react";
@@ -48,6 +49,7 @@ export function CoverLetter({
   const toast = useToast();
   const scan = useCareerPost<{ id: string }>();
   const [text, setText] = useState(initial ?? "");
+  const needsReview = hasUnverifiedClaim(text);
   const [tone, setTone] = useState<(typeof TONES)[number]["id"]>("confident");
   const [writing, setWriting] = useState(false);
   const { status } = useAutosave(text, (value) => saveLetter(resumeId, value));
@@ -117,7 +119,7 @@ export function CoverLetter({
           {writing ? "Writing…" : text ? "Rewrite" : "Write cover letter"}
         </Button>
         {text.trim() && (
-          <Button size="sm" onClick={scanLetter} loading={scan.busy} disabled={writing}>
+          <Button size="sm" onClick={scanLetter} loading={scan.busy} disabled={writing || needsReview}>
             <ScanText aria-hidden /> {scan.busy ? "Scanning…" : "Scan letter"}
           </Button>
         )}
@@ -128,7 +130,7 @@ export function CoverLetter({
         {text && (
           <Menu>
             <MenuTrigger asChild>
-              <Button size="sm">
+              <Button size="sm" disabled={needsReview}>
                 <Download aria-hidden /> Download
               </Button>
             </MenuTrigger>
@@ -154,6 +156,7 @@ export function CoverLetter({
         )}
       </div>
 
+      {needsReview && <p role="status" className="text-small text-query">{RESOLVE_CLAIMS}</p>}
       {scan.error && <p role="alert" className="text-small text-danger">{scan.error}</p>}
 
       <Paper template={template}>

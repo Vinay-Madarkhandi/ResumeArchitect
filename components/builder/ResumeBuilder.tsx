@@ -1,5 +1,7 @@
 "use client";
 
+import type { ChangeFlag } from "@/lib/schemas/tailoring";
+
 import { useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { Sparkles } from "lucide-react";
@@ -41,7 +43,7 @@ function Assist({ field, source, onApply }: {
   onApply: (lines: string[]) => void;
 }) {
   const [busy, setBusy] = useState(false);
-  const [suggestion, setSuggestion] = useState<{ source: string; lines: string[] }>();
+  const [suggestion, setSuggestion] = useState<{ source: string; lines: { text: string; flags: ChangeFlag[] }[] }>();
   const [error, setError] = useState<string>();
 
   async function ask() {
@@ -60,6 +62,7 @@ function Assist({ field, source, onApply }: {
   }
 
   const lines = suggestion?.source === source ? suggestion.lines : undefined;
+  const usable = lines?.filter((line) => !line.flags.length && !placeholdersIn(line.text).length).map((line) => line.text) ?? [];
   return (
     <div className="grid gap-2">
       <Button className="justify-self-start" size="sm" disabled={!source.trim()} loading={busy} onClick={() => void ask()}>
@@ -70,10 +73,15 @@ function Assist({ field, source, onApply }: {
         <div className="grid gap-2 rounded-md border border-line bg-raised p-3 text-small">
           <p className="font-medium text-ink">Check the suggestion before using it.</p>
           <ul className="grid gap-1">
-            {lines.map((line, index) => <li key={index} className="text-ink-2">{line}</li>)}
+            {lines.map((line, index) => (
+              <li key={index} className="text-ink-2">
+                {line.text}
+                {line.flags.map((flag) => <p key={flag.value} className="text-query">{flag.message}</p>)}
+              </li>
+            ))}
           </ul>
-          {lines.some((line) => placeholdersIn(line).length) && <p className="text-brass">Replace bracketed placeholders with real figures, or remove them.</p>}
-          <Button className="justify-self-start" size="sm" onClick={() => { onApply(lines); setSuggestion(undefined); }}>Use suggestion</Button>
+          {lines.length > usable.length && <p className="text-query">Add verified details to your notes before using those lines.</p>}
+          <Button className="justify-self-start" size="sm" disabled={!usable.length} onClick={() => { onApply(usable); setSuggestion(undefined); }}>Use suggestion</Button>
         </div>
       )}
     </div>

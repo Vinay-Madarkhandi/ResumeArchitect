@@ -1,3 +1,4 @@
+import { checkGrounding } from "@/lib/grounding";
 import mammoth from "mammoth";
 import { extractText, getDocumentProxy } from "unpdf";
 import { geminiModel } from "@/lib/gemini/model";
@@ -95,7 +96,12 @@ export async function importResume(
     try {
       const parsed = await parseResume(geminiModel(apiKey, userId), text);
       const content = markdownToDocument(parsed.markdown);
-      if (content.content.length >= 3) return { title: parsed.title.trim() || "Master resume", content, usedAi: true, keepsDesign: false };
+      const units = toUnits(content);
+      const grounded = units.every((unit) => !checkGrounding([text], unit.markdown).flags.length);
+      if (content.content.length >= 3 && grounded) {
+        const name = units[0]?.kind === "heading" ? units[0].text : "";
+        return { title: name || "Master resume", content, usedAi: true, keepsDesign: false };
+      }
     } catch {
       // Fall through to the non-AI path; the user can still review and fix it.
     }
