@@ -74,8 +74,12 @@ checks are the app's job). Put those queries in small per-entity modules
   inbox can, and an unproven password never becomes usable.
   Banned users cannot sign in; their sessions are revoked.
 
-`proxy.ts` (Next 16 middleware) only checks that the cookie exists for protected
-paths. The real check is `requireUser()` in each page, action and handler.
+`proxy.ts` (Next 16 middleware) only checks that the cookie exists for the paths in
+`lib/auth/protected-paths.ts`, redirecting to `/sign-in?redirect=<destination>`. It
+passes the destination on, so `requireUser()` keeps it too when a cookie is stale.
+The real check is `requireUser()` in each page, action and handler;
+`protected-paths.test.ts` walks every page under `app/` and fails if a page that
+requires a user is missing from the list.
 
 ## Data model (Postgres, Drizzle)
 

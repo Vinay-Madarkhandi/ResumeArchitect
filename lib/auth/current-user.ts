@@ -2,6 +2,7 @@ import { cache } from "react";
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { isIP } from "node:net";
+import { DESTINATION_HEADER, signInPath } from "./protected-paths";
 import { validateSession } from "./sessions";
 
 export const SESSION_COOKIE = "ra_session";
@@ -15,7 +16,7 @@ export const currentUser = cache(async () => {
 
 export async function requireUser() {
   const user = await currentUser();
-  if (!user) redirect("/sign-in");
+  if (!user) redirect(signInPath((await headers()).get(DESTINATION_HEADER)));
   return user;
 }
 
