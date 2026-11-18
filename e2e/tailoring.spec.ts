@@ -1,48 +1,10 @@
-import { expect, test, type Page } from "@playwright/test";
-
-const RESUME = `Ada Lovelace
-ada@example.com · +44 20 7946 0958 · London
-Summary
-Backend engineer who builds dependable systems and enjoys teaching.
-Experience
-Senior Engineer — Analytical Engines Ltd
-2020 – Present
-- Worked on services in Go backed by PostgreSQL
-- Built a Kafka pipeline that cut invoice latency by 38%
-- Ran the on-call rotation and incident reviews
-Education
-BSc Mathematics, University of London
-Skills
-Go, PostgreSQL, Kafka, Docker`;
+import { expect, test } from "@playwright/test";
+import { onboard } from "./onboard";
+import { signUp } from "./auth-helpers";
 
 const JOB = `Senior Backend Engineer at Northwind Payments.
 You'll own the payments platform end to end. Requirements: Go, PostgreSQL, Kafka, and experience with incident response.
 Nice to have: Kubernetes and mentoring experience. We care about reliability and latency.`;
-
-async function signUp(page: Page) {
-  const email = `e2e-${Date.now()}-${Math.floor(Math.random() * 1e6)}@example.com`;
-  await page.goto("/sign-up");
-  await page.getByLabel("Email").fill(email);
-  await page.getByLabel("Password").fill("correct-horse-battery");
-  await page.getByRole("button", { name: "Create account" }).click();
-  await expect(page).toHaveURL(/\/onboarding$/);
-  return email;
-}
-
-async function onboard(page: Page) {
-  await page.getByLabel("API key").fill("AIzaTESTKEY0000wxyz");
-  await page.getByRole("button", { name: "Connect key" }).click();
-  await expect(page).toHaveURL(/\/onboarding\/resume/);
-
-  await page.getByRole("tab", { name: "Paste text" }).click();
-  await page.getByLabel("Resume text").fill(RESUME);
-  await page.getByRole("button", { name: "Import text" }).click();
-  await expect(page).toHaveURL(/\/onboarding\/review\?resumeId=/);
-  await expect(page.getByRole("textbox", { name: "Resume document" })).toContainText("Ada Lovelace");
-  await expect(page.getByRole("toolbar", { name: "Formatting" }).getByRole("button", { name: "Bold" })).toBeVisible();
-  await page.getByRole("button", { name: "Save as my master resume" }).click();
-  await expect(page).toHaveURL(/\/dashboard/);
-}
 
 test("sign up, tailor a resume, review every change, edit, and download", async ({ page }) => {
   await signUp(page);
