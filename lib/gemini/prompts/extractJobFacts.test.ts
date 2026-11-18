@@ -82,8 +82,15 @@ describe("extractJobFacts", () => {
     expect(facts).toMatchObject({ softSkills: [], predictedSkills: [], yearsRequired: null });
   });
 
-  it("rejects a reply with no hard skills or an unknown level", async () => {
-    const bad = fakeModel([{ ...REPLY, hardSkills: [] }, { ...REPLY, level: "guru" }]);
+  it("accepts an Office Assistant posting with no listed or predicted skills", async () => {
+    const model = fakeModel([{ title: "Office Assistant", level: "entry", hardSkills: [], predictedSkills: [] }]);
+    const facts = await extractJobFacts(model, "Office Assistant. Full-time. Apply by Friday.");
+    expect(facts).toMatchObject({ hardSkills: [], softSkills: [], predictedSkills: [] });
+    expect(model.calls[0].system).toContain("0 to 25");
+  });
+
+  it("rejects a reply with an unknown level", async () => {
+    const bad = fakeModel([{ ...REPLY, level: "guru" }, { ...REPLY, level: "guru" }]);
     await expect(extractJobFacts(bad, POSTING)).rejects.toMatchObject({ code: "schema_validation_failed" });
     expect(bad.calls).toHaveLength(2);
   });

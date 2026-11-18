@@ -13,7 +13,7 @@ Return:
 - level: "entry" (intern, junior, associate, new grad, 0–2 years),
   "mid" (2–5 years, no seniority word), "senior" (senior, lead, staff,
   principal, 5+ years), or "executive" (director, head of, VP, C-level).
-- hardSkills: 5 to 25 technical or job-specific skills: tools, technologies,
+- hardSkills: 0 to 25 technical or job-specific skills: tools, technologies,
   methods, certifications, and domain knowledge ("Python", "GAAP",
   "financial modeling", "PMP"). Write each term exactly as the posting does,
   keeping its spelling and acronyms, in 1–4 words. One entry per skill: do
@@ -32,9 +32,11 @@ Return:
   experience instead. null when the posting names no degree.
 - yearsRequired: the minimum years of experience the posting asks for
   ("3+ years" is 3, "3–5 years" is 3), or null when it gives none.
-- predictedSkills: 3 to 8 skills that people in this exact role usually need
+- predictedSkills: 0 to 8 skills that people in this exact role usually need
   but this posting never mentions, each with a one-sentence reason. Never
   repeat a skill the posting names, in any spelling.
+
+Use empty arrays when there are no skills of that type. Never invent listed skills.
 
 Skip benefits, salary, equal-opportunity statements, and company history.`;
 

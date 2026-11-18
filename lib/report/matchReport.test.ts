@@ -97,6 +97,17 @@ describe("buildMatchReport", () => {
     expect(r.breakdown.find((c) => c.id === "hardSkills")!.weight).toBeCloseTo(0.45 / 0.8, 10);
   });
 
+  it("redistributes every unmeasurable skill component for a sparse posting", () => {
+    const r = report("## Experience\n\n### Office Assistant", {
+      ...JOB, title: "Office Assistant", hardSkills: [], softSkills: [], predictedSkills: [],
+    }, "Office Assistant. Full-time. Apply by Friday.");
+    expect(r.breakdown.map((c) => c.id)).toEqual(["jobTitle", "searchability", "formatting", "recruiterTips"]);
+    expect(r.breakdown.reduce((sum, c) => sum + c.weight, 0)).toBeCloseTo(1);
+    expect(Number.isInteger(r.matchRate)).toBe(true);
+    expect(r.matchRate).toBeGreaterThanOrEqual(0);
+    expect(r.matchRate).toBeLessThanOrEqual(100);
+  });
+
   it("ranks exact over synonym over missing, and a missing must-have over a missing nice-to-have", () => {
     const hard = (body: string) => report(body).breakdown.find((c) => c.id === "hardSkills")!.ratio;
     const exact = hard("Go, PostgreSQL, Kubernetes, Terraform");

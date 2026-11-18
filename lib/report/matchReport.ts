@@ -76,7 +76,8 @@ function termCredit(match: TermMatch, jdCount = 1): number {
   }
 }
 
-function skillsRatio(skills: SkillMatch[]): number {
+function skillsRatio(skills: SkillMatch[]): number | null {
+  if (skills.length === 0) return null;
   const weights = skills.map((s) => IMPORTANCE_WEIGHT[s.importance] * frequencyWeight(s.jdCount));
   const earned = skills.reduce((sum, s, i) => sum + weights[i] * termCredit(s, s.jdCount), 0);
   return earned / weights.reduce((a, b) => a + b, 0);
@@ -122,7 +123,7 @@ export function buildMatchReport({ job, jobText, resume: doc, file, asOf }: Repo
   const ratios: Record<ComponentId, number | null> = {
     hardSkills: skillsRatio(hardSkills),
     jobTitle: checksRatio(title),
-    softSkills: softSkills.length > 0 ? skillsRatio(softSkills) : null,
+    softSkills: skillsRatio(softSkills),
     education: education.length > 0 ? checksRatio(education) : null,
     searchability: checksRatio(parsing),
     formatting: checksRatio(formatting),

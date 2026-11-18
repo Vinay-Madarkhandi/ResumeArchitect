@@ -43,7 +43,7 @@ export type EducationRequirement = z.infer<typeof EducationRequirementSchema>;
 export const JobFactsSchema = z.object({
   title: z.string().trim().min(1),
   level: JobLevelSchema,
-  hardSkills: z.array(JobSkillSchema).min(1),
+  hardSkills: z.array(JobSkillSchema),
   softSkills: z.array(JobSkillSchema).default([]),
   education: EducationRequirementSchema.nullable().default(null),
   /** Minimum years of experience the posting asks for. */
