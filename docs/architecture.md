@@ -82,6 +82,10 @@ checks are the app's job). Put those queries in small per-entity modules
 `proxy.ts` (Next 16 middleware) only checks that the cookie exists for the paths in
 `lib/auth/protected-paths.ts`, redirecting to `/sign-in?redirect=<destination>`. It
 passes the destination on, so `requireUser()` keeps it too when a cookie is stale.
+The proxy runs on every path outside `api/` and `_next/` and replaces any
+`x-ra-destination` header a client sent; no route handler calls `requireUser()`.
+`safeRedirect()` checks the path it returns, raw and decoded, so no destination can
+leave the site.
 The real check is `requireUser()` in each page, action and handler;
 `protected-paths.test.ts` walks every page under `app/` and fails if a page that
 requires a user is missing from the list.

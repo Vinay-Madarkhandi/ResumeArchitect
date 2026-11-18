@@ -70,10 +70,18 @@ describe("protected routes", () => {
     expect(response.headers.get(`x-middleware-request-${DESTINATION_HEADER}`)).toBeNull();
   });
 
-  it("leaves API routes and static files alone", () => {
-    expect(matches("/api/session")).toBe(false);
+  it("runs on every page, dotted paths included, so no client can supply the destination", () => {
+    for (const path of ["/resumes/sample-id.pdf", "/linkedin/v1.2", "/favicon.ico", "/r/sample.id"]) expect(matches(path)).toBe(true);
+    const signedIn = proxy(request("/resumes/sample-id.pdf", "ra_session=token"));
+    expect(signedIn.headers.get(`x-middleware-request-${DESTINATION_HEADER}`)).toBe("/resumes/sample-id.pdf");
     expect(matches("/_next/static/chunk.js")).toBe(false);
-    expect(matches("/favicon.ico")).toBe(false);
+    expect(matches("/api/session")).toBe(false);
+  });
+
+  it("leaves requireUser() out of API routes, which the proxy skips", () => {
+    const handlers = (dir: string): string[] => readdirSync(dir, { withFileTypes: true }).flatMap((entry) =>
+      entry.isDirectory() ? handlers(join(dir, entry.name)) : [join(dir, entry.name)]);
+    expect(handlers("app/api").filter((file) => guard.test(readFileSync(file, "utf8")))).toEqual([]);
   });
 
   it("keeps the destination when a stale cookie reaches a protected page", async () => {
@@ -81,5 +89,14 @@ describe("protected routes", () => {
     await expect(requireUser()).rejects.toMatchObject({ url: "/sign-in?redirect=%2Flinkedin%3Ftab%3Dnotes" });
     fixture.destination = null;
     await expect(requireUser()).rejects.toMatchObject({ url: "/sign-in" });
+  });
+
+  it.each(["//evil.com", "/.//evil.com", "/%2F/evil.com", "https://evil.com"])("drops an off-site destination %j", async (destination) => {
+    fixture.destination = destination;
+    try {
+      await expect(requireUser()).rejects.toMatchObject({ url: "/sign-in" });
+    } finally {
+      fixture.destination = null;
+    }
   });
 });

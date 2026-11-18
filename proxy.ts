@@ -13,7 +13,9 @@ export function proxy(request: NextRequest) {
   return NextResponse.next({ request: { headers } });
 }
 
-// Matchers must be literals, so the proxy runs on every page and checks the shared list.
+// Matchers must be literals, so the proxy runs on every page and checks the shared
+// list. It must run on any path that can render a page, dotted ones included, so
+// a client's own destination header never reaches requireUser().
 export const config = {
-  matcher: ["/((?!api/|_next/|.*\\.[^/]+$).*)"],
+  matcher: ["/((?!api/|_next/).*)"],
 };
