@@ -76,6 +76,9 @@ function parse(prompt) {
 }
 
 function answer(system, prompt) {
+  if (system.includes("one field of a resume builder")) {
+    return { lines: ["Built a Kafka pipeline that cut invoice latency by 38%"] };
+  }
   if (system.includes("senior technical recruiter")) return JOB;
   if (system.includes("numbered lines")) return tailor(prompt);
   if (system.includes("convert text extracted")) return parse(prompt);

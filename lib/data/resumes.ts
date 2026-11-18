@@ -76,20 +76,18 @@ export async function promoteMaster(userId: string, resumeId: string, content: D
 /** Build a master in the same transaction that makes it the onboarding default. */
 export async function createBuiltMaster(userId: string, values: Pick<Insert, "title" | "content" | "template">) {
   return db.transaction(async (tx) => {
-    const [profile] = await tx.select({ defaultId: profiles.default_resume_id }).from(profiles)
+    const [profile] = await tx.select({ id: profiles.id }).from(profiles)
       .where(eq(profiles.id, userId)).for("update");
     if (!profile) return undefined;
 
-    // Returning users can build another master without displacing the default.
-    const isDefault = !profile.defaultId;
+    await tx.update(resumes).set({ is_default: false, status: "archived" }).where(and(
+      eq(resumes.user_id, userId), eq(resumes.kind, "master"), eq(resumes.is_default, true),
+    ));
     const [resume] = await tx.insert(resumes).values({
-      ...values, user_id: userId, kind: "master", is_default: isDefault,
+      ...values, user_id: userId, kind: "master", is_default: true,
     }).returning({ id: resumes.id });
-
-    if (isDefault) {
-      await tx.update(profiles).set({ default_resume_id: resume.id, onboarding_completed_at: new Date().toISOString() })
-        .where(eq(profiles.id, userId));
-    }
+    await tx.update(profiles).set({ default_resume_id: resume.id, onboarding_completed_at: new Date().toISOString() })
+      .where(eq(profiles.id, userId));
     return resume.id;
   });
 }
