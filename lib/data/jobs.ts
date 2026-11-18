@@ -8,7 +8,7 @@ import type { ApplicationStatus } from "@/lib/tracker/stages";
 const owned = (userId: string, id: string) => and(eq(jobs.user_id, userId), eq(jobs.id, id));
 const tracked = (userId: string, id: string) => and(owned(userId, id), isNotNull(jobs.tracker_stage));
 
-export type TrackerJob = JobRecord & { id: string; resumeId: string | null; reportId: string | null };
+export type TrackerJob = JobRecord & { id: string; resumeId: string | null; reportId: string | null; matchRate: number | null };
 
 function toRecord(row: typeof jobs.$inferSelect): JobRecord {
   return {
@@ -50,11 +50,11 @@ export async function listJobs(userId: string): Promise<TrackerJob[]> {
   const latestResume = db.select({ id: resumes.id }).from(resumes).where(and(
     eq(resumes.user_id, userId), eq(resumes.job_description_id, jobs.id), eq(resumes.kind, "tailored"),
   )).orderBy(desc(resumes.created_at), desc(resumes.id)).limit(1).as("latest_resume");
-  const latestReport = db.select({ id: scans.id }).from(scans).where(and(
+  const latestReport = db.select({ id: scans.id, matchRate: scans.match_rate }).from(scans).where(and(
     eq(scans.user_id, userId), eq(scans.job_description_id, jobs.id),
   )).orderBy(desc(scans.created_at), desc(scans.id)).limit(1).as("latest_report");
 
-  const rows = await db.select({ job: jobs, resumeId: latestResume.id, reportId: latestReport.id }).from(jobs)
+  const rows = await db.select({ job: jobs, resumeId: latestResume.id, reportId: latestReport.id, matchRate: latestReport.matchRate }).from(jobs)
     .leftJoinLateral(latestResume, sql`true`)
     .leftJoinLateral(latestReport, sql`true`)
     .where(and(eq(jobs.user_id, userId), isNotNull(jobs.tracker_stage)))
@@ -66,16 +66,6 @@ export async function getTrackedJob(userId: string, id: string) {
   if (!z.uuid().safeParse(id).success) return;
   const [row] = await db.select().from(jobs).where(tracked(userId, id));
   return row ? { ...toRecord(row), id: row.id } : undefined;
-}
-
-export async function getJobReport(userId: string, id: string) {
-  if (!z.uuid().safeParse(id).success) return;
-  const [row] = await db.select({
-    report: scans.report, matchRate: scans.match_rate, resumeId: scans.resume_id,
-    title: jobs.job_title, jobId: jobs.id, createdAt: scans.created_at,
-  }).from(scans).innerJoin(jobs, and(eq(jobs.id, scans.job_description_id), eq(jobs.user_id, userId)))
-    .where(and(eq(scans.id, id), eq(scans.user_id, userId)));
-  return row;
 }
 
 export async function addJobs(userId: string, input: Array<JobInput & { history?: StageChange[]; archived?: boolean }>) {

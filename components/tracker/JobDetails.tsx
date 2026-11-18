@@ -55,7 +55,8 @@ export function JobDetails({ job, submit, pending, error, restoreFocus }: {
       {job && (
         <nav aria-label="Job links" className="mb-5 flex flex-wrap gap-x-4 gap-y-2 text-small text-brass [&_a]:hover:underline">
           {/^https?:\/\//i.test(job.url) && <a href={job.url} target="_blank" rel="noreferrer">View posting</a>}
-          {job.reportId && <Link href={`/tracker/reports/${job.reportId}`}>Match report</Link>}
+          {job.reportId && <Link href={`/scan/${job.reportId}`}>Match report{job.matchRate !== null && <> · <span className="font-mono tabular">{job.matchRate}%</span></>}</Link>}
+          {job.description && <Link href={`/scan?job=${job.id}`}>Scan</Link>}
           {job.resumeId && <Link href={`/resumes/${job.resumeId}?view=review`}>Tailored resume</Link>}
           {job.description && <Link href={`/new?job=${job.id}`}>Tailor a resume</Link>}
         </nav>
