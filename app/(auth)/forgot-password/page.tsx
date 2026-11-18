@@ -3,7 +3,7 @@
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
 import { MailCheck } from "lucide-react";
-import { createClient } from "@/utils/supabase/client";
+import { forgotPassword } from "@/app/actions/auth";
 import { Button } from "@/components/ui/Button";
 import { Field, Input } from "@/components/ui/Field";
 import { AuthHeading, FormError } from "@/components/auth/AuthHeading";
@@ -18,13 +18,14 @@ export default function ForgotPasswordPage() {
     e.preventDefault();
     setError(null);
     setPending(true);
-    const { error: resetError } = await createClient().auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reset-password`,
-    });
-    setPending(false);
-    // Same confirmation whether or not the account exists, so emails can't be enumerated.
-    if (resetError && resetError.status !== 400) return setError(resetError.message);
-    setSent(true);
+    try {
+      await forgotPassword(email);
+      setSent(true);
+    } catch {
+      setError("Couldn't process the request. Try again.");
+    } finally {
+      setPending(false);
+    }
   }
 
   if (sent) {

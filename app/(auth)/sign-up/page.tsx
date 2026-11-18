@@ -2,15 +2,13 @@
 
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { MailCheck } from "lucide-react";
-import { createClient } from "@/utils/supabase/client";
+import { signUp } from "@/app/actions/auth";
 import { Button } from "@/components/ui/Button";
 import { Field, Input } from "@/components/ui/Field";
 import { AuthHeading, FormError } from "@/components/auth/AuthHeading";
 
 export default function SignUpPage() {
-  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -20,25 +18,18 @@ export default function SignUpPage() {
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
-    if (password.length < 8) return setError("Use at least 8 characters for your password.");
+    if (password.length < 10) return setError("Use at least 10 characters for your password.");
 
     setPending(true);
-    const { data, error: signUpError } = await createClient().auth.signUp({
-      email,
-      password,
-      options: { emailRedirectTo: `${window.location.origin}/auth-confirm` },
-    });
-    setPending(false);
-
-    if (signUpError) return setError(signUpError.message);
-    if (data.session) {
-      router.push("/onboarding");
-      router.refresh();
-      return;
+    try {
+      const result = await signUp(email, password);
+      if (result.error) return setError(result.error);
+      setCheckEmail(true);
+    } catch {
+      setError("Couldn't create your account. Try again.");
+    } finally {
+      setPending(false);
     }
-    // Supabase returns a user with no identities for an existing email instead of an error.
-    if (data.user?.identities?.length === 0) return setError("An account with this email already exists. Sign in instead.");
-    setCheckEmail(true);
   }
 
   if (checkEmail) {
@@ -46,7 +37,7 @@ export default function SignUpPage() {
       <>
         <MailCheck className="mb-5 size-7 text-brass" aria-hidden />
         <AuthHeading title="Check your email">
-          We sent a confirmation link to <span className="text-ink">{email}</span>. Open it to activate your account.
+          If you can register with <span className="text-ink">{email}</span>, a confirmation link is on its way.
         </AuthHeading>
         <Link href="/sign-in" className="text-small text-brass hover:underline">
           Back to sign in
@@ -64,7 +55,7 @@ export default function SignUpPage() {
         <Field label="Email">
           {(p) => <Input {...p} type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} />}
         </Field>
-        <Field label="Password" hint="At least 8 characters.">
+        <Field label="Password" hint="At least 10 characters.">
           {(p) => (
             <Input {...p} type="password" autoComplete="new-password" required value={password} onChange={(e) => setPassword(e.target.value)} />
           )}

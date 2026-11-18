@@ -3,7 +3,7 @@
 import { Suspense, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { createClient } from "@/utils/supabase/client";
+import { signIn } from "@/app/actions/auth";
 import { Button } from "@/components/ui/Button";
 import { Field, Input } from "@/components/ui/Field";
 import { AuthHeading, FormError } from "@/components/auth/AuthHeading";
@@ -22,6 +22,8 @@ function SignInForm() {
   const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [needsCode, setNeedsCode] = useState(false);
+  const [code, setCode] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
@@ -29,23 +31,30 @@ function SignInForm() {
     e.preventDefault();
     setError(null);
     setPending(true);
-    const { error: signInError } = await createClient().auth.signInWithPassword({ email, password });
-    if (signInError) {
+    try {
+      const result = await signIn(email, password, code);
+      if (result.needsCode || result.error) {
+        setNeedsCode(Boolean(result.needsCode));
+        setError(result.error ?? null);
+        return;
+      }
+      router.push(safeRedirect(searchParams.get("redirect")));
+      router.refresh();
+    } catch {
+      setError("Couldn't sign in. Try again.");
+    } finally {
       setPending(false);
-      setError(
-        signInError.message === "Invalid login credentials"
-          ? "That email and password don't match an account."
-          : signInError.message,
-      );
-      return;
     }
-    router.push(safeRedirect(searchParams.get("redirect")));
-    router.refresh();
   }
 
   return (
     <>
       <AuthHeading title="Sign in">Pick up where you left off.</AuthHeading>
+      {searchParams.get("reset") === "1" && (
+        <p role="status" className="mb-4 rounded-md border border-line bg-panel px-3 py-2 text-small">
+          Password updated. Sign in using your new password.
+        </p>
+      )}
       <form onSubmit={onSubmit} className="flex flex-col gap-4" noValidate>
         <Field label="Email">
           {(p) => <Input {...p} type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} />}
@@ -55,6 +64,11 @@ function SignInForm() {
             <Input {...p} type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} />
           )}
         </Field>
+        {needsCode && (
+          <Field label="Authenticator or recovery code">
+            {(p) => <Input {...p} autoComplete="one-time-code" value={code} onChange={(e) => setCode(e.target.value)} />}
+          </Field>
+        )}
         <FormError>{error}</FormError>
         <Button type="submit" variant="primary" size="lg" loading={pending} className="mt-1 w-full">
           Sign in
