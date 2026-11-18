@@ -103,16 +103,16 @@ export async function verifyEmail(token: string, change: boolean, password: stri
       const user = await lockAccount(tx, link.userId);
       if (!user || (!change && user.email_verified_at)) return;
       if (!change && !await verifyPassword(password, user.password_hash)) return fail("Enter the password you used to sign up.");
-      if (change && user.role === "admin" && !await countOtherActiveAdmins(tx, user.id)) {
+      const email = change ? link.nextEmail : user.email;
+      if (!email) return;
+      const role = change ? (adminEmails().includes(email) ? "admin" : "user") : user.role;
+      if (user.role === "admin" && role === "user" && !await countOtherActiveAdmins(tx, user.id)) {
         return fail("Assign another active administrator before changing your email.");
       }
-      const used = await consumeToken(tx, token, purpose, user.id);
-      if (!used) return;
-      const email = change ? used.payload?.email : user.email;
-      if (!email) return;
+      if (!await consumeToken(tx, token, purpose, user.id)) return;
       await tx.update(users).set({
         email, email_verified_at: sql`now()`,
-        role: adminEmails().includes(email) ? "admin" : change ? "user" : user.role,
+        role,
         last_sign_in_at: change ? user.last_sign_in_at : sql`now()`,
       }).where(eq(users.id, user.id));
       if (change) {

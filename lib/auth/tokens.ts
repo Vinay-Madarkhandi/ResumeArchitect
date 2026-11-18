@@ -24,7 +24,10 @@ function usable(token: string, purpose: Purpose) {
 
 export async function findToken(token: string, purpose: Purpose) {
   if (!isToken(token)) return undefined;
-  const [row] = await db.select({ userId: authTokens.user_id }).from(authTokens).where(usable(token, purpose));
+  const [row] = await db.select({
+    userId: authTokens.user_id,
+    ...(purpose === "change_email" ? { nextEmail: sql<string | null>`${authTokens.payload}->>'email'` } : {}),
+  }).from(authTokens).where(usable(token, purpose));
   return row;
 }
 
