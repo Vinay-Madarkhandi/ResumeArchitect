@@ -20,9 +20,9 @@ export default defineConfig({
   webServer: [
     { command: "node e2e/fake-gemini.mjs", port: fakePort },
     {
-      command: "npm run build:worker && npm run db:migrate && node e2e/run-stack.mjs",
+      command: "npm run build:worker && npm run db:migrate && npm run build && node e2e/run-stack.mjs",
       url: `${baseURL}/api/health`,
-      timeout: 180_000,
+      timeout: 300_000,
       env: {
         APP_URL: baseURL,
         E2E_PORT: String(port),

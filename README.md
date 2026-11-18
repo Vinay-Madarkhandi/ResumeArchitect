@@ -65,7 +65,7 @@ npx playwright install chromium
 npm run test:e2e
 ```
 
-The unit suite uses embedded Postgres and an in-memory Redis test adapter. Playwright uses the running Compose Postgres, Redis and S3 services. It starts its own local web app, email worker and fake Gemini server, signs up in the browser and retrieves verification and reset links from Redis. Use a development database and mailbox for this suite.
+The unit suite uses embedded Postgres and an in-memory Redis test adapter. Playwright uses the running Compose Postgres, Redis and S3 services. It builds the standalone web app and starts it alongside a local email worker and fake Gemini server, signs up in the browser and retrieves verification and reset links from Redis. Use a development database and mailbox for this suite.
 
 ## Deploy in production
 

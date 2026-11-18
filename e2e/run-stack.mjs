@@ -1,7 +1,13 @@
 import { spawn } from "node:child_process";
+import { cpSync } from "node:fs";
 
 const worker = spawn(process.execPath, ["dist/worker.js"], { stdio: "inherit" });
-const web = spawn(process.execPath, ["node_modules/next/dist/bin/next", "dev", "-p", process.env.E2E_PORT], { stdio: "inherit" });
+cpSync("public", ".next/standalone/public", { recursive: true });
+cpSync(".next/static", ".next/standalone/.next/static", { recursive: true });
+const web = spawn(process.execPath, [".next/standalone/server.js"], {
+  stdio: "inherit",
+  env: { ...process.env, HOSTNAME: "127.0.0.1", PORT: process.env.E2E_PORT },
+});
 
 let stopping = false;
 function stop(code) {
