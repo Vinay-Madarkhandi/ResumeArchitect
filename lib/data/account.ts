@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { aiCalls, jobDescriptions, profiles, resumes, scans, tailoringSessions, users } from "@/lib/db/schema";
+import { aiCalls, jobDescriptions, personalTokens, profiles, resumes, scans, tailoringSessions, users } from "@/lib/db/schema";
 
 export async function clearAccountData(userId: string) {
   await db.transaction(async (tx) => {
@@ -9,12 +9,13 @@ export async function clearAccountData(userId: string) {
     await tx.delete(resumes).where(eq(resumes.user_id, userId));
     await tx.delete(tailoringSessions).where(eq(tailoringSessions.user_id, userId));
     await tx.delete(jobDescriptions).where(eq(jobDescriptions.user_id, userId));
+    await tx.delete(personalTokens).where(eq(personalTokens.user_id, userId));
     await tx.delete(aiCalls).where(eq(aiCalls.user_id, userId));
     await tx.update(profiles).set({
       full_name: null, headline: null, avatar_url: null, phone: null, location: null, links: [],
       default_resume_id: null, onboarding_completed_at: null,
       gemini_key_ciphertext: null, gemini_key_last4: null, gemini_key_status: "not_configured",
-      gemini_key_updated_at: null, gemini_key_validated_at: null, preferences: {},
+      gemini_key_updated_at: null, gemini_key_validated_at: null, tracker_reminders: false, preferences: {},
     }).where(eq(profiles.id, userId));
   });
 }
@@ -29,11 +30,14 @@ export async function exportAccountData(userId: string) {
       id: profiles.id, full_name: profiles.full_name, headline: profiles.headline, avatar_url: profiles.avatar_url,
       phone: profiles.phone, location: profiles.location, links: profiles.links, default_resume_id: profiles.default_resume_id,
       onboarding_completed_at: profiles.onboarding_completed_at, gemini_key_status: profiles.gemini_key_status,
-      preferences: profiles.preferences, created_at: profiles.created_at, updated_at: profiles.updated_at,
+      tracker_reminders: profiles.tracker_reminders, preferences: profiles.preferences, created_at: profiles.created_at, updated_at: profiles.updated_at,
     }).from(profiles).where(eq(profiles.id, userId));
     return {
       account, profile,
       resumes: await tx.select().from(resumes).where(eq(resumes.user_id, userId)),
+      personalTokens: await tx.select({
+        id: personalTokens.id, name: personalTokens.name, createdAt: personalTokens.created_at, lastUsedAt: personalTokens.last_used_at,
+      }).from(personalTokens).where(eq(personalTokens.user_id, userId)),
       jobDescriptions: await tx.select().from(jobDescriptions).where(eq(jobDescriptions.user_id, userId)),
       tailoringSessions: await tx.select().from(tailoringSessions).where(eq(tailoringSessions.user_id, userId)),
       scans: await tx.select().from(scans).where(eq(scans.user_id, userId)),

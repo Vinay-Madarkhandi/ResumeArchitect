@@ -19,10 +19,14 @@ interface Source {
 const initialStages = () =>
   Object.fromEntries(STAGES.map((s) => [s, { status: "waiting" } as StageState])) as Record<PipelineStage, StageState>;
 
-export function NewApplication({ sources, hasKey, retryId }: { sources: Source[]; hasKey: boolean; retryId: string | null }) {
+type TrackedPosting = { id: string; title: string; company: string; description: string };
+
+export function NewApplication({ sources, hasKey, retryId, tracked }: {
+  sources: Source[]; hasKey: boolean; retryId: string | null; tracked: TrackedPosting | null;
+}) {
   const router = useRouter();
   const [sourceId, setSourceId] = useState(sources[0]?.id ?? "");
-  const [jd, setJd] = useState("");
+  const [jd, setJd] = useState(tracked?.description ?? "");
   const [title, setTitle] = useState("");
   const [company, setCompany] = useState("");
   const [showDetails, setShowDetails] = useState(false);
@@ -125,7 +129,8 @@ export function NewApplication({ sources, hasKey, retryId }: { sources: Source[]
     if (!sourceId) return setFormError("Add a master resume first.");
     if (jd.trim().length < MIN_JOB_DESCRIPTION_LENGTH) return setFormError("Paste the full job post, including the requirements.");
     setFormError(null);
-    void run({ sourceResumeId: sourceId, jobDescriptionText: jd, jobTitle: title, company });
+    void run(tracked ? { sourceResumeId: sourceId, trackedJobId: tracked.id }
+      : { sourceResumeId: sourceId, jobDescriptionText: jd, jobTitle: title, company, sourceUrl: jobUrl });
   }
 
   if (running) {
@@ -156,7 +161,7 @@ export function NewApplication({ sources, hasKey, retryId }: { sources: Source[]
                 )}
                 {error.sessionId && (
                   <Button variant="ghost" onClick={() => setRunning(false)}>
-                    Edit the job post
+                    {tracked ? "Back to posting" : "Edit the job post"}
                   </Button>
                 )}
               </div>
@@ -180,9 +185,12 @@ export function NewApplication({ sources, hasKey, retryId }: { sources: Source[]
       <div className="flex min-w-0 flex-col gap-6">
         <div>
           <h1 className="text-page font-semibold tracking-[-0.015em]">New application</h1>
-          <p className="mt-2 text-body text-ink-2">Paste the job post. You&rsquo;ll review every change before you download.</p>
+          {tracked ? <p className="mt-2 text-body text-ink-2">
+            <Link href={`/tracker?job=${tracked.id}`} className="text-brass hover:underline">{tracked.title}</Link>
+            {tracked.company && ` · ${tracked.company}`}
+          </p> : <p className="mt-2 text-body text-ink-2">Paste the job post. You&rsquo;ll review every change before you download.</p>}
         </div>
-        <div className="flex flex-col gap-1.5">
+        {!tracked && <div className="flex flex-col gap-1.5">
           <label htmlFor="job-url" className="text-small font-medium text-ink-2">
             Import from a link <span className="text-label font-normal text-ink-3">Optional</span>
           </label>
@@ -210,7 +218,7 @@ export function NewApplication({ sources, hasKey, retryId }: { sources: Source[]
               {importNote.text}
             </p>
           )}
-        </div>
+        </div>}
         <Field
           label="Job post"
           error={formError}
@@ -224,6 +232,7 @@ export function NewApplication({ sources, hasKey, retryId }: { sources: Source[]
             <Textarea
               {...p}
               value={jd}
+              readOnly={Boolean(tracked)}
               maxLength={MAX_JOB_DESCRIPTION_LENGTH}
               onChange={(e) => setJd(e.target.value)}
               placeholder="Paste the full posting: responsibilities, requirements, nice-to-haves…"
@@ -247,7 +256,7 @@ export function NewApplication({ sources, hasKey, retryId }: { sources: Source[]
           )}
         </Field>
 
-        <div>
+        {!tracked && <div>
           <button
             type="button"
             onClick={() => setShowDetails((v) => !v)}
@@ -270,7 +279,7 @@ export function NewApplication({ sources, hasKey, retryId }: { sources: Source[]
               </Field>
             </div>
           )}
-        </div>
+        </div>}
 
         {hasKey ? (
           <Button type="submit" variant="primary" size="lg" disabled={!sourceId}>

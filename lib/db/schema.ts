@@ -1,12 +1,17 @@
 import { sql } from "drizzle-orm";
 import {
-  type AnyPgColumn, boolean, check, customType, index, inet, integer, jsonb,
+  type AnyPgColumn, boolean, check, customType, date as pgDate, index, inet, integer, jsonb, pgEnum,
   pgTable, primaryKey, smallint, text, timestamp, uniqueIndex, uuid,
 } from "drizzle-orm/pg-core";
 import type { Link, ResumeContent } from "@/lib/schemas/resume";
 import type { DocumentContent } from "@/lib/schemas/document";
 import type { JobAnalysis } from "@/lib/schemas/jobAnalysis";
 import type { PipelineStage, TailoredChange } from "@/lib/schemas/tailoring";
+
+import { stages, type ApplicationStatus } from "@/lib/tracker/stages";
+import type { Contact, StageChange } from "@/lib/tracker/schema";
+
+export const applicationStage = pgEnum("application_stage", stages);
 
 const date = (name: string) => timestamp(name, { withTimezone: true, mode: "string" });
 const created = () => date("created_at").notNull().defaultNow();
@@ -45,6 +50,7 @@ export const profiles = pgTable("profiles", {
   gemini_key_status: text("gemini_key_status", { enum: ["not_configured", "valid", "invalid"] }).notNull().default("not_configured"),
   gemini_key_updated_at: date("gemini_key_updated_at"),
   gemini_key_validated_at: date("gemini_key_validated_at"),
+  tracker_reminders: boolean("tracker_reminders").notNull().default(false),
   preferences: jsonb("preferences").notNull().default({}),
   created_at: created(),
   updated_at: date("updated_at").notNull().defaultNow(),
@@ -61,8 +67,23 @@ export const jobDescriptions = pgTable("job_descriptions", {
   job_title: text("job_title"),
   location: text("location"),
   source_url: text("source_url"),
+  tracker_stage: applicationStage("tracker_stage"),
+  tracker_history: jsonb("tracker_history").$type<StageChange[]>().notNull().default([]),
+  tracker_updated_at: date("tracker_updated_at"),
+  archived_at: date("archived_at"),
+  salary: text("salary"),
+  notes: text("notes").notNull().default(""),
+  contacts: jsonb("contacts").$type<Contact[]>().notNull().default([]),
+  interview_dates: pgDate("interview_dates").array().notNull().default(sql`'{}'`),
+  follow_up_date: pgDate("follow_up_date"),
+  excitement: smallint("excitement"),
   created_at: created(),
-}, (t) => [index("job_descriptions_user_id_idx").on(t.user_id)]);
+}, (t) => [
+  index("job_descriptions_user_id_idx").on(t.user_id),
+  index("jobs_follow_up_idx").on(t.follow_up_date).where(sql`${t.archived_at} is null and ${t.tracker_stage} is not null`),
+  index("jobs_interview_dates_idx").using("gin", t.interview_dates).where(sql`${t.archived_at} is null and ${t.tracker_stage} is not null`),
+  check("jobs_excitement_check", sql`${t.excitement} between 1 and 5`),
+]);
 
 export const resumes = pgTable("resumes", {
   id: id(),
@@ -87,7 +108,7 @@ export const resumes = pgTable("resumes", {
   low_confidence_fields: text("low_confidence_fields").array().notNull().default(sql`'{}'`),
   template: text("template", { enum: ["classic", "modern", "standard"] }).notNull().default("classic"),
   reviewed_change_ids: text("reviewed_change_ids").array().notNull().default(sql`'{}'`),
-  application_status: text("application_status", { enum: ["saved", "applied", "interviewing", "offer", "rejected"] }).notNull().default("saved"),
+  application_status: text("application_status", { enum: stages }).notNull().default("saved"),
   application_status_updated_at: date("application_status_updated_at"),
   cover_letter: text("cover_letter"),
   created_at: created(),
@@ -96,7 +117,7 @@ export const resumes = pgTable("resumes", {
   check("resumes_kind_check", sql`${t.kind} in ('master', 'tailored')`),
   check("resumes_status_check", sql`${t.status} in ('draft', 'archived')`),
   check("resumes_template_check", sql`${t.template} in ('classic', 'modern', 'standard')`),
-  check("resumes_application_status_check", sql`${t.application_status} in ('saved', 'applied', 'interviewing', 'offer', 'rejected')`),
+  check("resumes_application_status_check", sql`${t.application_status} in ('saved', 'applied', 'interviewing', 'offer', 'rejected', 'withdrawn')`),
   index("resumes_user_id_idx").on(t.user_id),
   index("resumes_user_id_kind_idx").on(t.user_id, t.kind),
   uniqueIndex("resumes_one_default_master_per_user").on(t.user_id).where(sql`${t.kind} = 'master' and ${t.is_default} = true`),
@@ -165,6 +186,15 @@ export const authTokens = pgTable("auth_tokens", {
   index("auth_tokens_expires_idx").on(t.expires_at),
 ]);
 
+export const personalTokens = pgTable("personal_api_tokens", {
+  id: id(),
+  user_id: owner(),
+  name: text("name").notNull(),
+  token_hash: text("token_hash").notNull().unique(),
+  created_at: created(),
+  last_used_at: date("last_used_at"),
+}, (t) => [index("personal_api_tokens_user_idx").on(t.user_id)]);
+
 export const recoveryCodes = pgTable("recovery_codes", {
   user_id: owner(),
   code_hash: text("code_hash").notNull(),
@@ -223,4 +253,4 @@ export const featureFlags = pgTable("feature_flags", {
   note: text("note"),
 });
 
-export type ApplicationStatus = typeof resumes.$inferSelect.application_status;
+export type { ApplicationStatus };

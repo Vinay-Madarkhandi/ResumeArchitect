@@ -4,9 +4,10 @@ import { cache, redisUrl } from "@/lib/cache";
 import { sqlClient } from "@/lib/db";
 import { sendEmailJob } from "@/lib/email";
 import { logger } from "@/lib/logger";
-import { maintenanceQueue, type EmailJob, type MaintenanceJob, type MaintenancePayload } from "@/lib/queue";
+import { emailQueue, maintenanceQueue, type EmailJob, type MaintenanceJob, type MaintenancePayload } from "@/lib/queue";
 import { purgeExpiredAuth } from "@/lib/auth/purge";
 import { deleteObjects, deleteUserObjects, listObjects, resumeBuckets } from "@/lib/storage";
+import { listReminderRecipients } from "@/lib/data/tracker-reminders";
 import { referencedObjects } from "@/lib/data/resumes";
 
 async function cleanOrphans() {
@@ -34,6 +35,11 @@ async function main() {
   await queue.upsertJobScheduler("purge-auth", { every: 3_600_000 }, { name: "purge-auth" });
   await queue.upsertJobScheduler("orphaned-objects", { every: 86_400_000 }, { name: "orphaned-objects" });
 
+  await queue.upsertJobScheduler("tracker-reminders", { pattern: "0 8 * * *", tz: "UTC" }, {
+    name: "tracker-reminders",
+    opts: { attempts: 5, backoff: { type: "exponential", delay: 5000 } },
+  });
+
   const connection = { url: redisUrl(), maxRetriesPerRequest: null };
   const email = new Worker<EmailJob>("email", sendEmailJob, { connection, concurrency: 4 });
   const maintenance = new Worker<MaintenancePayload, void, MaintenanceJob>("maintenance", async (job) => {
@@ -42,6 +48,17 @@ async function main() {
       return deleteUserObjects(job.data.userId);
     }
     if (job.name === "orphaned-objects") return cleanOrphans();
+    if (job.name === "tracker-reminders") {
+      const day = new Date(job.opts.prevMillis ?? Date.now()).toISOString().slice(0, 10);
+      if (day !== new Date().toISOString().slice(0, 10)) return;
+      const recipients = await listReminderRecipients(day);
+      if (recipients.length) await emailQueue().addBulk(recipients.map(({ id }) => ({
+        name: "trackerDigest",
+        data: { template: "trackerDigest", data: { userId: id, day } },
+        opts: { jobId: `tracker-digest-${id}-${day}`, removeOnComplete: { age: 259_200 }, removeOnFail: { age: 259_200 } },
+      })));
+      return;
+    }
     if (job.name === "purge-auth") return purgeExpiredAuth();
   }, { connection });
   for (const worker of [email, maintenance]) {
@@ -59,7 +76,7 @@ async function main() {
   const shutdown = async () => {
     clearInterval(heartbeat);
     await Promise.all([email.close(), maintenance.close()]);
-    await Promise.all([queue.close(), sqlClient.end(), cache().quit()]);
+    await Promise.all([queue.close(), emailQueue().close(), sqlClient.end(), cache().quit()]);
   };
   for (const signal of ["SIGINT", "SIGTERM"] as const) process.once(signal, () => {
     void shutdown().catch(() => process.exit(1));

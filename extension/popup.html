@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ResumeArchitect Job Clipper</title>
+  <link rel="stylesheet" href="style.css">
+  <script type="module" src="popup.js"></script>
+</head>
+<body class="popup">
+  <main>
+    <header>
+      <h1>Save a job</h1>
+      <button type="button" class="secondary" id="settings">Settings</button>
+    </header>
+    <p id="status" role="status">Reading this page…</p>
+    <form hidden>
+      <label for="title">Job title</label>
+      <input id="title" name="title" required maxlength="250">
+      <label for="company">Company</label>
+      <input id="company" name="company" maxlength="250">
+      <label for="location">Location</label>
+      <input id="location" name="location" maxlength="250">
+      <label for="salary">Salary range</label>
+      <input id="salary" name="salary" maxlength="250">
+      <label for="url">Posting URL</label>
+      <input id="url" name="url" type="url" maxlength="2048">
+      <label for="description">Job description</label>
+      <textarea id="description" name="description" rows="6" maxlength="50000"></textarea>
+      <button type="submit">Save to tracker</button>
+    </form>
+    <a id="open" href="#" target="_blank" rel="noopener noreferrer" hidden>Open job in ResumeArchitect</a>
+  </main>
+</body>
+</html>
