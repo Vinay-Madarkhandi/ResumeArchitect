@@ -142,3 +142,36 @@ describe("an unverified address squatted by someone else", () => {
     expect(fixture.mail).toEqual([]);
   });
 });
+
+describe("sign-in throttling", () => {
+  const tooMany = { error: "Too many sign-in attempts. Try again in a few minutes." };
+
+  async function failFromManyAddresses(email: string) {
+    for (let attempt = 1; attempt <= 20; attempt++) {
+      from(`198.51.100.${attempt}`);
+      await expect(signIn(email, "wrong-password-guess", "")).resolves.not.toEqual(tooMany);
+    }
+    from("192.0.2.200");
+  }
+
+  it("backs off an account after twenty failures from any address, then lets the owner in", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    try {
+      const email = victim();
+      await signUp(email, OWNER);
+      await verifyEmail(lastLink(email, "verify"), false, OWNER);
+      await failFromManyAddresses(email);
+      await expect(signIn(email, OWNER, "")).resolves.toEqual(tooMany);
+      vi.setSystemTime(Date.now() + 3_600_000);
+      await expect(signIn(email, OWNER, "")).resolves.toEqual({});
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("throttles an unknown address the same way", async () => {
+    const email = victim();
+    await failFromManyAddresses(email);
+    await expect(signIn(email, OWNER, "")).resolves.toEqual(tooMany);
+  });
+});

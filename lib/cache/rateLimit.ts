@@ -11,12 +11,22 @@ if redis.call('ZCARD', KEYS[1]) >= tonumber(ARGV[2]) then
   local oldest = redis.call('ZRANGE', KEYS[1], 0, 0, 'WITHSCORES')
   return math.max(1, math.ceil((oldest[2] + window - now) / 1000))
 end
-redis.call('ZADD', KEYS[1], now, ARGV[3])
-redis.call('PEXPIRE', KEYS[1], window)
+if ARGV[3] ~= '' then
+  redis.call('ZADD', KEYS[1], now, ARGV[3])
+  redis.call('PEXPIRE', KEYS[1], window)
+end
 return 0
 `;
 
-export async function rateLimit(scope: string, subject: string, limit: number, windowMs: number): Promise<number> {
+async function run(scope: string, subject: string, limit: number, windowMs: number, member: string) {
   const key = createHash("sha256").update(subject).digest("hex");
-  return Number(await cache().eval(script, 1, `rate:${scope}:${key}`, windowMs, limit, randomUUID()));
+  return Number(await cache().eval(script, 1, `rate:${scope}:${key}`, windowMs, limit, member));
 }
+
+/** Counts an attempt and returns the seconds to wait once the limit is reached, otherwise 0. */
+export const rateLimit = (scope: string, subject: string, limit: number, windowMs: number) =>
+  run(scope, subject, limit, windowMs, randomUUID());
+
+/** Returns the seconds to wait without counting an attempt. */
+export const rateLimitWait = (scope: string, subject: string, limit: number, windowMs: number) =>
+  run(scope, subject, limit, windowMs, "");

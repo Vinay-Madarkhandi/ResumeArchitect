@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
-import { rateLimit } from "@/lib/cache/rateLimit";
+import { rateLimit, rateLimitWait } from "@/lib/cache/rateLimit";
 import { hashPassword, passwordError, verifyPassword } from "@/lib/auth/password";
 import { normalizeEmail } from "@/lib/auth/config";
 import { accountByEmail, confirmCredentials, disableTotp, invalidateLinks, lockAccount, register, roleFor, sendAccountLink } from "@/lib/auth/accounts";
@@ -22,6 +22,11 @@ const invalidLink = "This link has expired or has already been used.";
 const fail = (error: string) => ({ error });
 const validEmail = (email: string) => z.email().max(254).safeParse(email).success;
 const credentialLimit = (userId: string) => rateLimit("credentials", userId, 5, HOUR / 4);
+const tooManySignIns = "Too many sign-in attempts. Try again in a few minutes.";
+// Failed guesses per address across all clients. The window slides, so the
+// backoff ends an hour after guessing stops.
+const signInBackoff = (email: string) => rateLimitWait("sign-in-failures", email, 20, HOUR);
+const recordSignInFailure = (email: string) => rateLimit("sign-in-failures", email, 20, HOUR);
 
 export async function signUp(rawEmail: string, password: string): Promise<{ error?: string }> {
   const email = normalizeEmail(rawEmail);
@@ -40,16 +45,19 @@ export async function signIn(rawEmail: string, password: string, code: string): 
   const email = normalizeEmail(rawEmail);
   const { ip, userAgent } = await requestDetails();
   if (!validEmail(email) || password.length > 1024) return fail(invalidCredentials);
-  if (await rateLimit("sign-in", JSON.stringify([email, ip]), 5, HOUR / 4)) {
-    return fail("Too many sign-in attempts. Try again in a few minutes.");
-  }
+  if (await rateLimit("sign-in", JSON.stringify([email, ip]), 5, HOUR / 4)) return fail(tooManySignIns);
+  if (await signInBackoff(email)) return fail(tooManySignIns);
+  const rejected = async () => {
+    await recordSignInFailure(email);
+    return fail(invalidCredentials);
+  };
   const candidate = await accountByEmail(email);
   // A missing account also pays the password hashing cost.
   if (!candidate) {
     await hashPassword(password);
-    return fail(invalidCredentials);
+    return rejected();
   }
-  if (!await verifyPassword(password, candidate.password_hash)) return fail(invalidCredentials);
+  if (!await verifyPassword(password, candidate.password_hash)) return rejected();
   if (candidate.banned_at) return fail("This account is suspended.");
   if (!candidate.email_verified_at) return fail("Verify your email before signing in. Sign up again to get a fresh link.");
 
@@ -61,7 +69,10 @@ export async function signIn(rawEmail: string, password: string, code: string): 
     return createSession(tx, user.id, ip, userAgent);
   });
   if (!result) return fail(invalidCredentials);
-  if ("needsCode" in result) return { needsCode: true, error: code ? "That code couldn't be verified." : undefined };
+  if ("needsCode" in result) {
+    if (code) await recordSignInFailure(email);
+    return { needsCode: true, error: code ? "That code couldn't be verified." : undefined };
+  }
   const previous = await sessionToken();
   if (previous) await revokeSession(previous);
   await writeSession(result);

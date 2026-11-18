@@ -55,7 +55,7 @@ checks are the app's job). Put those queries in small per-entity modules
   provisional: signing up again replaces it and sends a fresh link, the verify page
   sets the password the inbox owner types there, and a reset link also verifies.
   Unverified accounts are deleted 7 days after their last link expired.
-- Rate limits (Redis): sign-in 5/15 min per email+IP, sign-up 5/h per IP, reset 3/h per
+- Rate limits (Redis): sign-in 5/15 min per email+IP and 20 failures/h per email (sliding, so it lapses), sign-up 5/h per IP, reset 3/h per
   email, AI endpoints per user.
 - Optional TOTP 2FA (`otpauth`), with 10 hashed recovery codes.
 - "Sign out everywhere", change email (re-verify), change password, delete account
