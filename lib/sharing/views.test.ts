@@ -17,7 +17,9 @@ it("claims one concurrent view per visitor per share and UTC day", async () => {
   const day = Date.UTC(2026, 6, 1);
   const attempts = await Promise.all(Array.from({ length: 8 }, () => claimShareView(slug, visitor, day)));
   expect(attempts.filter(Boolean)).toHaveLength(1);
-  expect(await claimShareView(slug, { ...visitor, userAgent: "Desktop 2" }, day)).toBe(true);
+  expect(await claimShareView(slug, { ...visitor, userAgent: "Desktop 2" }, day)).toBe(false);
+  expect(await claimShareView(slug, { ip: null, userAgent: "Desktop 1" }, day)).toBe(true);
+  expect(await claimShareView(slug, { ip: null, userAgent: "Desktop 2" }, day)).toBe(true);
   expect(await claimShareView(randomUUID(), visitor, day)).toBe(true);
   expect(await claimShareView(slug, visitor, day + 86_400_000)).toBe(true);
   expect((await cache().keys("share-view:*")).join(" ")).not.toMatch(/192\.0\.2\.1|Desktop/);
