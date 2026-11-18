@@ -114,7 +114,7 @@ export function buildMatchReport({ job: facts, jobText, resume: doc, file, asOf 
   const softSkills = matchSkills(job.softSkills, match);
   const predictedSkills = matchPredictedSkills(job.predictedSkills, match);
   const searchability = searchabilityChecks({ resume, job, file, match });
-  const formatting = formattingChecks(file, resume.text);
+  const formatting = formattingChecks(file, resume);
   const tips = recruiterTips({ resume, job, jobText, asOf });
 
   const title = searchability.filter((c) => c.id === "job-title-match");

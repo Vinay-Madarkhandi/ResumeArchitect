@@ -175,6 +175,7 @@ Nice to have
       "text-boxes": "pass",
       fonts: "pass",
       "special-characters": "pass",
+      "section-heading-names": "pass",
     });
   });
 
@@ -341,8 +342,8 @@ HubSpot, Google Analytics, Canva, Salesforce, copywriting, Excel`;
     );
   });
 
-  it("checks only characters for a pasted resume, and flags the star", () => {
-    expect(statuses(report().formatting)).toEqual({ "special-characters": "warn" });
+  it("checks characters and heading names for a pasted resume, flagging the star and \"My Journey\"", () => {
+    expect(statuses(report().formatting)).toEqual({ "special-characters": "warn", "section-heading-names": "warn" });
   });
 
   it("gives recruiter tips", () => {

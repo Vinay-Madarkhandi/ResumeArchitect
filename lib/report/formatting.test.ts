@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
+import { markdownToDocument } from "@/lib/documentMarkdown";
 import { formattingChecks } from "./formatting";
 import type { FormattingCheckId, LayoutFacts, ResumeFileFacts } from "./report";
+import { readResume } from "./resume";
+
+const resume = (markdown: string) => readResume(markdownToDocument(markdown));
+const WORK = resume("## Experience\n\n- Built Go services");
 
 const CLEAN: LayoutFacts = {
   tables: 0,
@@ -13,14 +18,14 @@ const CLEAN: LayoutFacts = {
   bulletChars: ["•"],
 };
 
-function check(id: FormattingCheckId, facts: Partial<LayoutFacts>, text = "Built Go services") {
+function check(id: FormattingCheckId, facts: Partial<LayoutFacts>, text = "## Experience\n\n- Built Go services") {
   const file: ResumeFileFacts = { format: "docx", ...CLEAN, ...facts };
-  return formattingChecks(file, text).find((c) => c.id === id) ?? null;
+  return formattingChecks(file, resume(text)).find((c) => c.id === id) ?? null;
 }
 
 describe("formattingChecks", () => {
   it("passes a clean single-column Word file on every check", () => {
-    const checks = formattingChecks({ format: "docx", ...CLEAN }, "Built Go services");
+    const checks = formattingChecks({ format: "docx", ...CLEAN }, WORK);
     expect(checks.map((c) => [c.id, c.status])).toEqual([
       ["tables", "pass"],
       ["header-footer", "pass"],
@@ -29,17 +34,23 @@ describe("formattingChecks", () => {
       ["text-boxes", "pass"],
       ["fonts", "pass"],
       ["special-characters", "pass"],
+      ["section-heading-names", "pass"],
     ]);
   });
 
   it("leaves out what a PDF can't report", () => {
     const pdf: ResumeFileFacts = { format: "pdf", hasTextLayer: true, ...CLEAN, tables: null, textBoxes: null, headerText: null, footerText: null };
-    expect(formattingChecks(pdf, "").map((c) => c.id)).toEqual(["images", "columns", "fonts", "special-characters"]);
+    expect(formattingChecks(pdf, WORK).map((c) => c.id)).toEqual(["images", "columns", "fonts", "special-characters", "section-heading-names"]);
   });
 
-  it("still checks characters for a pasted resume", () => {
-    const checks = formattingChecks(null, "★ Led the team");
-    expect(checks.map((c) => [c.id, c.status])).toEqual([["special-characters", "warn"]]);
+  it("still checks characters and headings for a pasted resume", () => {
+    const checks = formattingChecks(null, resume("★ Led the team"));
+    expect(checks.map((c) => [c.id, c.status])).toEqual([["special-characters", "warn"], ["section-heading-names", "warn"]]);
+  });
+
+  it("suggests a standard name for each creative heading", () => {
+    const c = check("section-heading-names", {}, "# Ada\n\n## Where I've Been\n\n- Built Go services\n\n## My Toolbox\n\nGo");
+    expect(c).toMatchObject({ status: "warn", fix: 'Rename "Where I\'ve Been" → "Work Experience", "My Toolbox" → "Skills".' });
   });
 
   it("fails tables, images, columns, and text boxes, with a fix for each", () => {

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { markdownToDocument } from "@/lib/documentMarkdown";
 import {
   AlignmentType,
   Document,
@@ -17,7 +18,10 @@ import {
 } from "docx";
 import { tinyPng } from "./__fixtures__/png";
 import { formattingChecks } from "./formatting";
+import { readResume } from "./resume";
 import { inspectDocx } from "./inspectDocx";
+
+const WORK = readResume(markdownToDocument("## Experience\n\n- Built Go services"));
 
 const bulletLevel = (text: string, font?: string) => ({
   level: 0,
@@ -116,7 +120,7 @@ describe("inspectDocx", () => {
 
   it("feeds the formatting checks: a clean file passes, a risky one fails each layout check", async () => {
     const status = (facts: Awaited<ReturnType<typeof inspectDocx>>) =>
-      Object.fromEntries(formattingChecks(facts, "").map((c) => [c.id, c.status]));
+      Object.fromEntries(formattingChecks(facts, WORK).map((c) => [c.id, c.status]));
     expect(status(await inspectDocx(await cleanResume()))).toEqual({
       tables: "pass",
       "header-footer": "pass",
@@ -125,6 +129,7 @@ describe("inspectDocx", () => {
       "text-boxes": "pass",
       fonts: "pass",
       "special-characters": "pass",
+      "section-heading-names": "pass",
     });
     expect(status(await inspectDocx(await riskyResume()))).toEqual({
       tables: "fail",
@@ -134,6 +139,7 @@ describe("inspectDocx", () => {
       "text-boxes": "fail",
       fonts: "warn",
       "special-characters": "warn",
+      "section-heading-names": "pass",
     });
   });
 

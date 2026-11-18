@@ -8,6 +8,7 @@ import {
   findName,
   findPhone,
   sectionText,
+  sectionHeadingRenames,
   type ResumeModel,
   type SectionKind,
   wordCount,
@@ -112,20 +113,12 @@ const REQUIRED_SECTIONS: ReadonlyArray<[SectionKind, string]> = [
   ["skills", "Skills"],
 ];
 
-const RENAMES: ReadonlyArray<[RegExp, string]> = [
-  [/journey|career|been|path|roles|work|employ|history/i, "Work Experience"],
-  [/know|toolbox|stack|tools|tech|abilit|strength/i, "Skills"],
-  [/school|stud|learn|academ|train/i, "Education"],
-  [/about|who|me\b|intro|profile/i, "Summary"],
-  [/built|made|portfolio|samples|creat/i, "Projects"],
-];
-
 function sectionHeadings({ resume }: SearchabilityInput): SearchabilityCheck {
   const label = "Section headings";
   const kinds = new Set(resume.sections.map((s) => s.kind));
   const missing = REQUIRED_SECTIONS.filter(([kind]) => !kinds.has(kind)).map(([, name]) => name);
   const creative = resume.sections.filter((s) => s.kind === null);
-  const renames = creative.map((s) => `"${s.heading}" → "${RENAMES.find(([re]) => re.test(s.heading))?.[1] ?? "a standard name"}"`);
+  const renames = sectionHeadingRenames(resume);
 
   if (!kinds.has("experience")) {
     const detail =

@@ -1,9 +1,13 @@
 import { describe, expect, it } from "vitest";
+import { markdownToDocument } from "@/lib/documentMarkdown";
 import { createElement as h, type ReactElement } from "react";
 import { Document, Image, Page, renderToBuffer, Text, View } from "@react-pdf/renderer";
 import { tinyPng } from "./__fixtures__/png";
 import { formattingChecks } from "./formatting";
+import { readResume } from "./resume";
 import { countColumns, fontFamily, inspectPdf, type Segment } from "./inspectPdf";
+
+const WORK = readResume(markdownToDocument("## Experience\n\n- Built Go services"));
 
 const BULLET_TEXT =
   "Built and ran payment services in Go and PostgreSQL that handled two million requests a day across three regions";
@@ -94,12 +98,13 @@ describe("inspectPdf", () => {
   });
 
   it("feeds the formatting checks: only what a PDF can show is checked", async () => {
-    const checks = formattingChecks(await inspectPdf(await twoColumn()), "");
+    const checks = formattingChecks(await inspectPdf(await twoColumn()), WORK);
     expect(checks.map((c) => [c.id, c.status])).toEqual([
       ["images", "pass"],
       ["columns", "fail"],
       ["fonts", "pass"],
       ["special-characters", "pass"],
+      ["section-heading-names", "pass"],
     ]);
   });
 });

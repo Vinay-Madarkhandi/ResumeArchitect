@@ -124,6 +124,19 @@ export function sectionText(resume: ResumeModel, kind: SectionKind): string | nu
   return matching.length > 0 ? matching.flatMap((s) => s.units.map((u) => u.text)).join("\n") : null;
 }
 
+const RENAMES: ReadonlyArray<[RegExp, string]> = [
+  [/journey|career|been|path|roles|work|employ|history/i, "Work Experience"],
+  [/know|toolbox|stack|tools|tech|abilit|strength/i, "Skills"],
+  [/school|stud|learn|academ|train/i, "Education"],
+  [/about|who|me\b|intro|profile/i, "Summary"],
+  [/built|made|portfolio|samples|creat/i, "Projects"],
+];
+
+export function sectionHeadingRenames(resume: ResumeModel): string[] {
+  return resume.sections.filter((s) => s.kind === null)
+    .map((s) => `"${s.heading}" → "${RENAMES.find(([re]) => re.test(s.heading))?.[1] ?? "a standard name"}"`);
+}
+
 const EMAIL = /[\w.+-]+@[\w-]+(\.[\w-]+)*\.[a-z]{2,}/i;
 const PHONE_CANDIDATE = /\+?\(?\d[\d\s().-]{7,}\d/g;
 const LINKEDIN_URL = /linkedin\.com\/(in|pub)\/[\w%-]+/i;

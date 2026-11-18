@@ -70,7 +70,8 @@ export type FormattingCheckId =
   | "columns"
   | "text-boxes"
   | "fonts"
-  | "special-characters";
+  | "special-characters"
+  | "section-heading-names";
 
 export type RecruiterTipId =
   | "measurable-results"

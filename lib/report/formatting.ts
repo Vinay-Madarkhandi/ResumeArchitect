@@ -1,5 +1,5 @@
 import { fail, pass, warn, type Check, type FormattingCheckId, type LayoutFacts, type ResumeFileFacts } from "./report";
-import { findEmail, findLinkedIn, findPhone } from "./resume";
+import { findEmail, findLinkedIn, findPhone, sectionHeadingRenames, type ResumeModel } from "./resume";
 
 /**
  * Layout an ATS may misread (docs/research/jobscan.md §3.4). The facts come
@@ -134,10 +134,22 @@ function specialCharacters(facts: LayoutFacts | null, text: string): FormattingC
   );
 }
 
-export function formattingChecks(file: ResumeFileFacts | null, resumeText: string): FormattingCheck[] {
+/** §3.4 lists heading names under Formatting too, overlapping the Searchability check. */
+function headingNames(resume: ResumeModel): FormattingCheck {
+  const id = "section-heading-names";
+  const label = "Section heading names";
+  const renames = sectionHeadingRenames(resume);
+  if (renames.length > 0) return warn(id, label, "Some headings may be misread by an ATS.", `Rename ${renames.join(", ")}.`);
+  if (resume.sections.length === 0) {
+    return warn(id, label, "No section headings were found.", 'Use headings such as "Work Experience", "Education", and "Skills".');
+  }
+  return pass(id, label, "Your headings use standard names that ATS recognize.");
+}
+
+export function formattingChecks(file: ResumeFileFacts | null, resume: ResumeModel): FormattingCheck[] {
   const facts = file?.format === "docx" || file?.format === "pdf" ? file : null;
   const layout = facts
     ? [tables(facts), headerFooter(facts), images(facts), columns(facts), textBoxes(facts), fonts(facts)]
     : [];
-  return [...layout, specialCharacters(facts, resumeText)].filter((c) => c !== null);
+  return [...layout, specialCharacters(facts, resume.text), headingNames(resume)].filter((c) => c !== null);
 }

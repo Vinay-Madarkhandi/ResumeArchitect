@@ -144,6 +144,12 @@ describe("buildMatchReport", () => {
     expect(duplicate).toEqual(expected);
   });
 
+  it("checks formatting section heading names separately from searchability", () => {
+    const heading = report(STRONG.replace("## Experience", "## Where I've Been")).formatting
+      .find((c) => c.id === "section-heading-names");
+    expect(heading).toMatchObject({ status: "warn", fix: expect.stringContaining("Work Experience") });
+  });
+
   it("is reproducible: the same input always gives the same report", () => {
     expect(report(STRONG)).toEqual(report(STRONG));
   });
