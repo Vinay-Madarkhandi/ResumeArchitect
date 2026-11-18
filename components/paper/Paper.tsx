@@ -1,9 +1,9 @@
 import type { ReactNode } from "react";
 import type { BlockNode, DocumentContent, InlineNode } from "@/lib/schemas/document";
-import type { TemplateId } from "@/lib/resume/templates";
+import { TEMPLATES, templateStyle, type TemplateId } from "@/lib/resume/templates";
 import { cn } from "@/lib/cn";
 
-/** The proof sheet: a fixed-measure page in the chosen template. */
+/** The proof sheet: an A4 page at 96 dpi, set in the chosen template's measurements. */
 export function Paper({
   template,
   children,
@@ -18,9 +18,10 @@ export function Paper({
   return (
     <div
       data-template={template}
+      style={templateStyle(TEMPLATES[template])}
       className={cn(
         "paper mx-auto w-full",
-        compact ? "max-w-[640px] px-8 py-8" : "max-w-[794px] px-[46px] py-[52px] sm:px-[58px] sm:py-[60px]",
+        compact ? "max-w-[640px] px-8 py-8" : "max-w-[794px] px-6 py-8 sm:px-(--paper-pad-x) sm:py-(--paper-pad-y)",
         className,
       )}
     >

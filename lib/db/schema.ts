@@ -1,12 +1,13 @@
 import { sql } from "drizzle-orm";
 import {
-  type AnyPgColumn, boolean, check, customType, date as pgDate, index, inet, integer, jsonb, pgEnum,
+  type AnyPgColumn, bigint, boolean, check, customType, date as pgDate, index, inet, integer, jsonb, pgEnum,
   pgTable, primaryKey, smallint, text, timestamp, uniqueIndex, uuid,
 } from "drizzle-orm/pg-core";
 import type { Link, ResumeContent } from "@/lib/schemas/resume";
 import type { DocumentContent } from "@/lib/schemas/document";
 import type { JobAnalysis } from "@/lib/schemas/jobAnalysis";
 import type { PipelineStage, TailoredChange } from "@/lib/schemas/tailoring";
+import { TEMPLATE_IDS } from "@/lib/resume/templates";
 
 import { stages, type ApplicationStatus } from "@/lib/tracker/stages";
 import type { Contact, StageChange } from "@/lib/tracker/schema";
@@ -106,7 +107,7 @@ export const resumes = pgTable("resumes", {
   design_source_path: text("design_source_path"),
   pdf_generated_at: date("pdf_generated_at"),
   low_confidence_fields: text("low_confidence_fields").array().notNull().default(sql`'{}'`),
-  template: text("template", { enum: ["classic", "modern", "standard"] }).notNull().default("classic"),
+  template: text("template", { enum: TEMPLATE_IDS }).notNull().default("classic"),
   reviewed_change_ids: text("reviewed_change_ids").array().notNull().default(sql`'{}'`),
   application_status: text("application_status", { enum: stages }).notNull().default("saved"),
   application_status_updated_at: date("application_status_updated_at"),
@@ -116,7 +117,7 @@ export const resumes = pgTable("resumes", {
 }, (t) => [
   check("resumes_kind_check", sql`${t.kind} in ('master', 'tailored')`),
   check("resumes_status_check", sql`${t.status} in ('draft', 'archived')`),
-  check("resumes_template_check", sql`${t.template} in ('classic', 'modern', 'standard')`),
+  check("resumes_template_check", sql`${t.template} in (${sql.raw(TEMPLATE_IDS.map((id) => `'${id}'`).join(", "))})`),
   check("resumes_application_status_check", sql`${t.application_status} in ('saved', 'applied', 'interviewing', 'offer', 'rejected', 'withdrawn')`),
   index("resumes_user_id_idx").on(t.user_id),
   index("resumes_user_id_kind_idx").on(t.user_id, t.kind),
@@ -124,6 +125,18 @@ export const resumes = pgTable("resumes", {
   index("resumes_job_description_id_idx").on(t.job_description_id),
   index("resumes_source_resume_id_idx").on(t.source_resume_id),
   index("resumes_tailoring_session_id_idx").on(t.tailoring_session_id),
+]);
+
+export const resumeShares = pgTable("resume_shares", {
+  resume_id: uuid("resume_id").primaryKey().references(() => resumes.id, { onDelete: "cascade" }),
+  slug: text("slug").notNull().unique(),
+  password_hash: text("password_hash"),
+  content: jsonb("content").$type<DocumentContent>().notNull(),
+  template: text("template", { enum: TEMPLATE_IDS }).notNull(),
+  views: bigint("views", { mode: "number" }).notNull().default(0),
+  created_at: created(),
+}, (t) => [
+  check("resume_shares_slug_check", sql`${t.slug} ~ '^[A-Za-z0-9_-]{43}$'`),
 ]);
 
 export const tailoringSessions = pgTable("tailoring_sessions", {
@@ -162,6 +175,21 @@ export const tailoringSessions = pgTable("tailoring_sessions", {
   index("tailoring_sessions_source_resume_id_idx").on(t.source_resume_id),
   index("tailoring_sessions_job_description_id_idx").on(t.job_description_id),
   index("tailoring_sessions_user_created_idx").on(t.user_id, t.created_at.desc()),
+]);
+
+/** Career history: every bullet the user has written, kept even when no resume uses it (lib/resume/bulletBank.ts). */
+export const careerBullets = pgTable("career_bullets", {
+  id: id(),
+  user_id: owner(),
+  key: text("key").notNull(),
+  markdown: text("markdown").notNull(),
+  section: text("section"),
+  role: text("role"),
+  source_resume_id: uuid("source_resume_id").references(() => resumes.id, { onDelete: "set null" }),
+  created_at: created(),
+}, (t) => [
+  uniqueIndex("career_bullets_user_key_idx").on(t.user_id, t.key),
+  index("career_bullets_source_resume_idx").on(t.source_resume_id),
 ]);
 
 export const sessions = pgTable("sessions", {

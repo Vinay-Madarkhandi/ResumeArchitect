@@ -1,0 +1,2 @@
+ALTER TABLE "resumes" DROP CONSTRAINT "resumes_template_check";--> statement-breakpoint
+ALTER TABLE "resumes" ADD CONSTRAINT "resumes_template_check" CHECK ("resumes"."template" in ('classic', 'modern', 'standard', 'executive', 'compact'));

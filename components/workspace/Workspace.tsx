@@ -3,22 +3,25 @@
 import { useCallback, useDeferredValue, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import type { Editor } from "@tiptap/react";
-import { ArrowLeft, Check, CircleAlert, Columns2, FileCheck2, LoaderCircle, Mail, PenLine, RotateCcw } from "lucide-react";
+import { ArrowLeft, Check, CircleAlert, Columns2, FileCheck2, LayoutTemplate, LoaderCircle, Mail, PenLine, RotateCcw } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/Tabs";
 import { Button } from "@/components/ui/Button";
-import { Select } from "@/components/ui/Field";
+import { Dialog, DialogContent } from "@/components/ui/Dialog";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { useToast } from "@/components/ui/Toast";
 import { DocumentView, Paper } from "@/components/paper/Paper";
 import { PaperEditor } from "@/components/paper/PaperEditor";
 import { FormatBar } from "@/components/paper/FormatBar";
 import { AskAi } from "@/components/paper/AskAi";
+import { TemplateGallery } from "@/components/paper/TemplateGallery";
 import { Redline } from "@/components/workspace/Redline";
 import { ChangeList, type ChangeEntry } from "@/components/workspace/ChangeList";
 import { AtsList, ScoreLockup, ScorePanel } from "@/components/workspace/ScorePanel";
+import { ShareDialog } from "@/components/workspace/ShareDialog";
 import { ExportMenu } from "@/components/workspace/ExportMenu";
 import { CoverLetter } from "@/components/workspace/CoverLetter";
 import { JobPostPanel } from "@/components/workspace/JobPostPanel";
+import { BulletBank } from "@/components/workspace/BulletBank";
 import { StatusSelect } from "@/components/tracker/StatusSelect";
 import { changeImpact } from "@/lib/resume/impact";
 import type { ApplicationStatus } from "@/lib/db/schema";
@@ -36,7 +39,7 @@ import type { SessionArtifacts } from "@/lib/schemas/tailoring";
 import { cn } from "@/lib/cn";
 
 type View = "review" | "edit" | "compare" | "letter";
-type Rail = "changes" | "score" | "job";
+type Rail = "changes" | "score" | "job" | "history";
 
 export interface WorkspaceProps {
   resume: {
@@ -103,6 +106,8 @@ export function Workspace({ resume, session, jobText, initialView }: WorkspacePr
   const [focusedId, setFocusedId] = useState<string | null>(null);
   const [editor, setEditor] = useState<Editor | null>(null);
   const [rail, setRail] = useState<Rail>("changes");
+  const [choosingTemplate, setChoosingTemplate] = useState(false);
+  const [masterRail, setMasterRail] = useState<"checks" | "history">("checks");
 
   const { status, flush } = useAutosave(doc, (content) => patch(resume.id, { content }));
   const deferredDoc = useDeferredValue(doc);
@@ -199,6 +204,7 @@ export function Workspace({ resume, session, jobText, initialView }: WorkspacePr
 
   function changeTemplate(next: TemplateId) {
     setTemplate(next);
+    setChoosingTemplate(false);
     patch(resume.id, { template: next }).catch(() => toast("Couldn't save the template choice.", "error"));
   }
 
@@ -255,17 +261,20 @@ export function Workspace({ resume, session, jobText, initialView }: WorkspacePr
                 {pages.pageCount} {pages.pageCount === 1 ? "page" : "pages"}
               </span>
             )}
-            <label className="hidden items-center gap-2 text-small text-ink-3 md:flex">
-              <span className="sr-only">Template</span>
-              <Select value={template} onChange={(e) => changeTemplate(e.target.value as TemplateId)} className="h-8 w-32 text-small">
-                {Object.values(TEMPLATES).map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.label}
-                  </option>
-                ))}
-              </Select>
-            </label>
+            <Button size="sm" variant="ghost" onClick={() => setChoosingTemplate(true)} aria-label={`Template: ${TEMPLATES[template].label}`}>
+              <LayoutTemplate aria-hidden /> <span className="hidden md:inline">{TEMPLATES[template].label}</span>
+            </Button>
+            <Dialog open={choosingTemplate} onOpenChange={setChoosingTemplate}>
+              <DialogContent
+                title="Templates"
+                description="Every template is a single column of real text with standard headings, so it reads cleanly in any applicant tracking system. Switching never changes your wording."
+                className="max-h-[calc(100dvh-2rem)] max-w-5xl overflow-y-auto"
+              >
+                <TemplateGallery doc={deferredDoc} value={template} onChange={changeTemplate} />
+              </DialogContent>
+            </Dialog>
             <ThemeToggle />
+            <ShareDialog resumeId={resume.id} doc={doc} template={template} />
             <ExportMenu
               resumeId={resume.id}
               doc={doc}
@@ -372,6 +381,7 @@ export function Workspace({ resume, session, jobText, initialView }: WorkspacePr
                     </TabsTrigger>
                     <TabsTrigger value="score">Score</TabsTrigger>
                     <TabsTrigger value="job">Job post</TabsTrigger>
+                    <TabsTrigger value="history">History</TabsTrigger>
                   </TabsList>
                 </Tabs>
               </div>
@@ -414,9 +424,13 @@ export function Workspace({ resume, session, jobText, initialView }: WorkspacePr
                 <div className="p-4">
                   <ScorePanel before={scoreBefore} now={scoreNow} onAddSkill={onAddSkill} />
                 </div>
-              ) : (
+              ) : rail === "job" ? (
                 <div className="p-4">
                   <JobPostPanel text={jobText} job={job} report={scoreNow} />
+                </div>
+              ) : (
+                <div className="p-4">
+                  <BulletBank doc={doc} resumeId={resume.id} onChange={replaceDoc} />
                 </div>
               )}
             </div>
@@ -431,7 +445,17 @@ export function Workspace({ resume, session, jobText, initialView }: WorkspacePr
                   Tailor it for a job →
                 </Link>
               </div>
-              <AtsList report={{ ats }} />
+              <Tabs value={masterRail} onValueChange={(v) => setMasterRail(v as "checks" | "history")}>
+                <TabsList>
+                  <TabsTrigger value="checks">ATS checks</TabsTrigger>
+                  <TabsTrigger value="history">Career history</TabsTrigger>
+                </TabsList>
+              </Tabs>
+              {masterRail === "checks" ? (
+                <AtsList report={{ ats }} />
+              ) : (
+                <BulletBank doc={doc} resumeId={resume.id} onChange={replaceDoc} />
+              )}
             </div>
           )}
         </aside>

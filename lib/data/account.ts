@@ -5,7 +5,7 @@ import { deleteUserObjects } from "@/lib/storage";
 import { logger } from "@/lib/logger";
 import { maintenanceQueue } from "@/lib/queue";
 import {
-  aiCalls, coverLetterScans, interviewAnswers, interviewSessions, jobDescriptions, linkedinReviews, personalTokens, profiles,
+  aiCalls, careerBullets, coverLetterScans, interviewAnswers, interviewSessions, jobDescriptions, linkedinReviews, personalTokens, profiles,
   resumes, scans, tailoringSessions, users,
 } from "@/lib/db/schema";
 
@@ -21,6 +21,7 @@ export async function clearAccountData(userId: string) {
     await tx.delete(jobDescriptions).where(eq(jobDescriptions.user_id, userId));
     await tx.delete(personalTokens).where(eq(personalTokens.user_id, userId));
     await tx.delete(aiCalls).where(eq(aiCalls.user_id, userId));
+    await tx.delete(careerBullets).where(eq(careerBullets.user_id, userId));
     await tx.update(profiles).set({
       full_name: null, headline: null, avatar_url: null, phone: null, location: null, links: [],
       default_resume_id: null, onboarding_completed_at: null,
@@ -56,6 +57,7 @@ export async function exportAccountData(userId: string) {
       interviewSessions: await tx.select().from(interviewSessions).where(eq(interviewSessions.user_id, userId)),
       interviewAnswers: await tx.select().from(interviewAnswers).where(eq(interviewAnswers.user_id, userId)),
       aiCalls: await tx.select().from(aiCalls).where(eq(aiCalls.user_id, userId)),
+      careerBullets: await tx.select().from(careerBullets).where(eq(careerBullets.user_id, userId)),
     };
   }, { isolationLevel: "repeatable read", accessMode: "read only" });
 }
