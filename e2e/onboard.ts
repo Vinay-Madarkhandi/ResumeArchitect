@@ -15,13 +15,13 @@ BSc Mathematics, University of London
 Skills
 Go, PostgreSQL, Kafka, Docker`;
 
-export async function onboard(page: Page) {
+export async function onboard(page: Page, resumeText = RESUME) {
   await page.getByLabel("API key").fill("AIzaTESTKEY0000wxyz");
   await page.getByRole("button", { name: "Connect key" }).click();
   await expect(page).toHaveURL(/\/onboarding\/resume/);
 
   await page.getByRole("tab", { name: "Paste text" }).click();
-  await page.getByLabel("Resume text").fill(RESUME);
+  await page.getByLabel("Resume text").fill(resumeText);
   await page.getByRole("button", { name: "Import text" }).click();
   await expect(page).toHaveURL(/\/onboarding\/review\?resumeId=/);
   await expect(page.getByRole("textbox", { name: "Resume document" })).toContainText("Ada Lovelace");

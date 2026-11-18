@@ -36,7 +36,7 @@ function tailor(prompt) {
     edits.push({
       op: "rewrite",
       line: bullets[0].n,
-      text: bullets[0].text.replace(/^(Worked on|Helped with|Responsible for)\s*/i, "Led ").replace(/services/i, "payment services"),
+      text: bullets[0].text.replace(/^Worked on services/i, "Worked on the services"),
       reason: "The posting centers on payments; this bullet now says so up front.",
       requirementIds: ["go"],
     });
@@ -98,8 +98,8 @@ function answer(system, prompt) {
         "Backend Engineer | Go services and incident response",
         "Backend Engineer | Kafka pipelines and PostgreSQL",
       ],
-      about: "I build dependable backend services in Go on PostgreSQL. At Analytical Engines I built a Kafka pipeline that cut invoice latency by 38%. I also ran the on-call rotation and incident reviews.",
-      notes: ["List Kafka in your Skills section so recruiters can find it."],
+      about: "I built a Kafka pipeline that cut invoice latency by 38%. I also led an Apache Pulsar migration at Globex Corp.",
+      notes: ["List Kafka in your Skills section so recruiters can find it.", "Add Apache Pulsar to your Skills section."],
     };
   }
   if (system.includes("prepare a candidate for interviews")) return { questions: QUESTIONS };
@@ -110,6 +110,7 @@ function answer(system, prompt) {
       relevance: 5,
       strengths: ["The 38% reduction makes the result measurable."],
       improvements: ["Explain how you measured invoice latency."],
+      starEvidence: { action: "I sorted product samples.", result: "I cut invoice latency by 38%." },
     };
   }
   if (system.includes("one field of a resume builder")) {
@@ -121,12 +122,11 @@ function answer(system, prompt) {
   if (system.includes("write cover letters")) {
     const name = prompt.split("# Candidate's resume")[1]?.match(/^# (.+)$/m)?.[1] ?? "Candidate";
     return {
-      letter: `Dear Hiring Manager,\n\nI'm applying for the Senior Backend Engineer role. I build payment services in Go on PostgreSQL.\n\nAt Analytical Engines I built a Kafka pipeline that cut invoice latency by 38%, and I ran the on-call rotation.\n\nI'd welcome a conversation.\n\n${name}`,
+      letter: `Dear Hiring Manager,\n\nI'm applying for this role. I built a Kafka pipeline that cut invoice latency by 38%.\n\nI led an Apache Pulsar migration that cut costs by 38%.\n\nI'd welcome a conversation.\n\n${name}`,
     };
   }
   if (system.includes("one specific piece of text")) {
-    const selected = prompt.split("# Selected text to rewrite")[1]?.split("#")[0]?.trim() ?? "";
-    return { replacementText: `${selected} (sharpened)`, flagged: false, flagReason: null };
+    return { replacementText: "Led Apache Pulsar at Globex Corp", flagged: false, flagReason: null };
   }
   return {};
 }

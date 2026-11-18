@@ -4,7 +4,11 @@ import { onboard } from "./onboard";
 
 test("publish a private-by-default link, hide contact, count views, require a password, and unpublish", async ({ page, browser, baseURL }) => {
   await signUp(page);
-  await onboard(page);
+  await onboard(page, `Ada Lovelace
+ada@example.com | +44 20 7946 0958 | London
+Call at my home studio
+Sorted product samples at 12 Baker Street and organized deliveries.
+Wrote public docs; contact via linkedin.com/in/ada.`);
   await page.getByRole("link", { name: /Ada Lovelace/ }).first().click();
   await expect(page).toHaveURL(/\/resumes\//);
   await page.getByRole("button", { name: "Template: Classic" }).click();
@@ -13,7 +17,11 @@ test("publish a private-by-default link, hide contact, count views, require a pa
   await page.getByRole("button", { name: "Share resume" }).click();
   const dialog = page.getByRole("dialog", { name: "Share resume" });
   await dialog.getByRole("checkbox", { name: "Hide contact details" }).check();
-  await expect(dialog.getByRole("region", { name: "Public preview" })).not.toContainText("ada@example.com");
+  await dialog.getByRole("checkbox", { name: "Call at my home studio" }).check();
+  const preview = dialog.getByRole("region", { name: "Public preview" });
+  const previewBody = await preview.locator("[data-template]").innerText();
+  await expect(preview).toContainText("organized deliveries");
+  await expect(preview).not.toContainText(/ada@example.com|home studio|Baker Street|linkedin.com/);
   await dialog.getByRole("button", { name: "Publish resume" }).click();
   const link = dialog.getByRole("link", { name: "Open shared resume" });
   await expect(link).toHaveAttribute("href", /^\/r\/[\w-]{43}$/);
@@ -29,7 +37,9 @@ test("publish a private-by-default link, hide contact, count views, require a pa
     await expect(paper.getByRole("heading", { name: "Ada Lovelace" })).toBeVisible();
     await expect(paper.locator("[data-template]")).toHaveAttribute("data-template", "executive");
     await expect(paper).not.toContainText("ada@example.com");
-    await expect(paper).not.toContainText("7946");
+    await expect(paper).not.toContainText(/7946|Baker Street|linkedin.com|home studio/);
+    expect(await paper.locator("[data-template]").innerText()).toBe(previewBody);
+    await guest.reload();
     expect((await guest.context().cookies()).some((cookie) => cookie.name === "ra_session")).toBe(false);
 
     await dialog.getByRole("button", { name: "Close" }).click();
@@ -56,6 +66,9 @@ test("publish a private-by-default link, hide contact, count views, require a pa
     await expect(paper.getByText(/ada@example.com/)).toBeVisible();
     await guest.reload();
     await expect(paper.getByRole("heading", { name: "Ada Lovelace" })).toBeVisible();
+    await dialog.getByRole("button", { name: "Close" }).click();
+    await page.getByRole("button", { name: "Share resume" }).click();
+    await expect(dialog.getByText("1 view · Password protected")).toBeVisible();
 
     await dialog.getByRole("button", { name: "Unpublish", exact: true }).click();
     await expect(dialog.getByRole("button", { name: "Publish resume" })).toBeVisible();
