@@ -1,0 +1,1590 @@
+{
+  "workday": {
+    "parsing": [
+      {
+        "text": "Workday's parsing engine automatically maps raw resume text into structured candidate profile fields: Contact Details, Work Experience, Education, and Skills.",
+        "sources": [
+          "https://doc.workday.com/workday-education/en-us/course-manuals/recruiting-for-administrators/introduction-to-workday-recruiting.html"
+        ]
+      }
+    ],
+    "recruiterVisibility": [
+      {
+        "text": "Recruiters have access to both the structured candidate profile fields and the original attached resume document in the recruiter review console.",
+        "sources": [
+          "https://doc.workday.com/workday-education/en-us/course-manuals/recruiting-for-administrators/introduction-to-workday-recruiting.html"
+        ]
+      }
+    ],
+    "searchFeatures": [
+      {
+        "text": "Recruiters filter candidate pools using structured pre-screening questionnaires, knockout questions, and keyword searches across candidate records.",
+        "sources": [
+          "https://doc.workday.com/workday-education/en-us/course-manuals/recruiting-for-administrators/introduction-to-workday-recruiting.html"
+        ]
+      },
+      {
+        "text": "Modern Workday implementations leverage AI candidate matching (such as HiredScore integration) that evaluates applicants against job requisitions and assigns candidate match tiers/grades.",
+        "sources": [
+          "https://blog.workday.com/en-gb/workday-candidate-profile.html"
+        ]
+      }
+    ],
+    "account": [
+      {
+        "text": "Workday career portals (`*.myworkdayjobs.com`) configure \"Require Candidate Home Account\" by default, necessitating that external candidates create a password-protected account.",
+        "sources": [
+          "https://doc.workday.com/workday-education/en-us/course-manuals/recruiting-for-administrators/introduction-to-workday-recruiting.html"
+        ]
+      },
+      {
+        "text": "Workday supports unified \"Workday Candidate Profile\" functionality allowing job seekers to reuse stored profile data across participating Workday career portals.",
+        "sources": [
+          "https://blog.workday.com/en-gb/workday-candidate-profile.html"
+        ]
+      }
+    ],
+    "acceptedFileTypes": [
+      {
+        "text": "Supported resume file formats include `.pdf`, `.docx`, `.doc`, and `.txt`.",
+        "sources": [
+          "https://doc.workday.com/workday-education/en-us/course-manuals/recruiting-for-administrators/introduction-to-workday-recruiting.html"
+        ]
+      }
+    ],
+    "sizeLimits": [
+      {
+        "text": "Standard candidate career portals on Workday default to a 5 MB limit per uploaded document.",
+        "sources": [
+          "https://doc.workday.com/workday-education/en-us/course-manuals/recruiting-for-administrators/introduction-to-workday-recruiting.html"
+        ]
+      }
+    ],
+    "parsesIntoFields": "yes",
+    "recruiterSees": "both",
+    "accountRequired": "yes"
+  },
+  "greenhouse": {
+    "parsing": [
+      {
+        "text": "The Greenhouse parser extracts name, contact information, company names, and job titles into the candidate profile.",
+        "sources": [
+          "https://support.greenhouse.io/hc/en-us/articles/200989175-Unsuccessful-resume-parse"
+        ]
+      },
+      {
+        "text": "Document elements that cause parse failure include: files > 2.5 MB, image-only/scanned resumes, spaces between individual letters, tables, headers/footers, text boxes, and multi-column layouts.",
+        "sources": [
+          "https://support.greenhouse.io/hc/en-us/articles/200989175-Unsuccessful-resume-parse"
+        ]
+      },
+      {
+        "text": "Resumes with incomplete job titles (e.g. \"Sr. Account Exec\" vs. \"Senior Account Executive\") or company names missing legal identifiers (e.g. \"Inc.\", \"LLC\") result in partial parse failures.",
+        "sources": [
+          "https://support.greenhouse.io/hc/en-us/articles/200989175-Unsuccessful-resume-parse"
+        ]
+      }
+    ],
+    "recruiterVisibility": [
+      {
+        "text": "Recruiters see both the parsed profile fields and an in-app preview of the original document directly in the candidate profile (via the Resume button or keyboard shortcut `R`).",
+        "sources": [
+          "https://support.greenhouse.io/hc/en-us/articles/11957068130971-Using-the-new-candidate-profile"
+        ]
+      },
+      {
+        "text": "Recruiters can download the original uploaded document directly from the profile's Documents tab.",
+        "sources": [
+          "https://support.greenhouse.io/hc/en-us/articles/11957068130971-Using-the-new-candidate-profile"
+        ]
+      }
+    ],
+    "searchFeatures": [
+      {
+        "text": "In Application Review, recruiters filter candidates using \"Talent Filtering\" chips with Required (`AND`) and Preferred (`OR`) parameters.",
+        "sources": [
+          "https://support.greenhouse.io/hc/en-us/articles/27104809835291-Talent-Filtering"
+        ]
+      },
+      {
+        "text": "Recruiters perform full-text boolean searches (`AND`, `OR`, `NOT`, quotes) across all resumes and candidate records.",
+        "sources": [
+          "https://support.greenhouse.io/hc/en-us/articles/27104809835291-Talent-Filtering"
+        ]
+      },
+      {
+        "text": "Auto-reject application rules in Greenhouse CANNOT be triggered directly by resume keywords; they are strictly configured on custom structured questions (Yes/No, single-select, multi-select).",
+        "sources": [
+          "https://support.greenhouse.io/hc/en-us/articles/360000653472-Auto-reject"
+        ]
+      }
+    ],
+    "account": [
+      {
+        "text": "Candidates applying via standard company job boards (`boards.greenhouse.io`) are not required to create an account or log in; applications use a single-page submission form.",
+        "sources": [
+          "https://support.greenhouse.io/hc/en-us/articles/200989175-Unsuccessful-resume-parse"
+        ]
+      }
+    ],
+    "acceptedFileTypes": [
+      {
+        "text": "Accepted file formats include `.pdf`, `.docx`, `.doc`, `.rtf`, and `.txt`.",
+        "sources": [
+          "https://support.greenhouse.io/hc/en-us/articles/200989175-Unsuccessful-resume-parse"
+        ]
+      }
+    ],
+    "sizeLimits": [
+      {
+        "text": "Greenhouse Recruiting enforces an automated resume parsing limit of 2.5 MB.",
+        "sources": [
+          "https://support.greenhouse.io/hc/en-us/articles/200989175-Unsuccessful-resume-parse"
+        ]
+      },
+      {
+        "text": "Files larger than 2.5 MB (up to the general 100 MB upload cap) attach to the profile but trigger an \"unsuccessful resume parse\", requiring manual recruiter data entry.",
+        "sources": [
+          "https://support.greenhouse.io/hc/en-us/articles/200989175-Unsuccessful-resume-parse"
+        ]
+      }
+    ],
+    "parsesIntoFields": "yes",
+    "recruiterSees": "both",
+    "accountRequired": "no"
+  },
+  "lever": {
+    "parsing": [
+      {
+        "text": "Lever parses raw resumes to extract full name, current/past organizations, job titles, and contact details (email, phone number, location).",
+        "sources": [
+          "https://help.lever.co/s/article/Understanding-Resume-Parsing"
+        ]
+      }
+    ],
+    "recruiterVisibility": [
+      {
+        "text": "In Lever's \"Fast Resume Review\" interface, recruiters view the original resume in an inline document previewer alongside application question answers and candidate opportunity tags.",
+        "sources": [
+          "https://help.lever.co/s/article/Screening-applicants-using-Fast-Resume-Review"
+        ]
+      }
+    ],
+    "searchFeatures": [
+      {
+        "text": "Recruiters search candidate pools using boolean strings and filter chips, including the specific `Resume:` filter chip which restricts queries strictly to parsed resume content.",
+        "sources": [
+          "https://help.lever.co/s/article/Searching-the-Database-for-Candidates"
+        ]
+      },
+      {
+        "text": "Recruiters filter and segment candidates by opportunity stage, job posting tags, sources, and auto-archive rules configured on application forms.",
+        "sources": [
+          "https://help.lever.co/s/article/Screening-applicants-using-Fast-Resume-Review"
+        ]
+      }
+    ],
+    "account": [
+      {
+        "text": "Candidates applying via Lever job postings (`jobs.lever.co/<company>`) are not required to create an account or log in.",
+        "sources": [
+          "https://help.lever.co/s/article/Screening-applicants-using-Fast-Resume-Review"
+        ]
+      }
+    ],
+    "acceptedFileTypes": [
+      {
+        "text": "Lever accepts text-based `.pdf`, `.docx`, `.doc`, `.rtf`, `.txt`, `.odf`, and HTML formats.",
+        "sources": [
+          "https://help.lever.co/s/article/Understanding-Resume-Parsing"
+        ]
+      }
+    ],
+    "sizeLimits": [
+      {
+        "text": "The maximum file size for uploading a resume directly to a candidate profile is 10 MB.",
+        "sources": [
+          "https://help.lever.co/s/article/Adding-and-deleting-resumes"
+        ]
+      }
+    ],
+    "parsesIntoFields": "yes",
+    "recruiterSees": "unknown",
+    "accountRequired": "no"
+  },
+  "icims": {
+    "parsing": [
+      {
+        "text": "iCIMS extracts text from the resume and automatically populates the Person/Candidate Profile fields (contact info, work history, education, skills).",
+        "sources": [
+          "https://community.icims.com/articles/FAQ/Searching-Reporting-FAQ"
+        ]
+      }
+    ],
+    "recruiterVisibility": [
+      {
+        "text": "iCIMS retains the original uploaded document and generates an on-demand PDF preview within the candidate's profile tab.",
+        "sources": [
+          "https://developer-community.icims.com/applications/applicant-tracking/binary-files"
+        ]
+      },
+      {
+        "text": "Recruiters can review both the structured Person profile elements and the original uploaded document.",
+        "sources": [
+          "https://community.icims.com/articles/FAQ/Searching-Reporting-FAQ"
+        ]
+      }
+    ],
+    "searchFeatures": [
+      {
+        "text": "Recruiters execute keyword, boolean, and relational queries across candidate profiles and parsed resume text.",
+        "sources": [
+          "https://community.icims.com/articles/FAQ/Searching-Reporting-FAQ"
+        ]
+      }
+    ],
+    "account": [
+      {
+        "text": "Candidate portal workflows (`careermaster.icims.com` or custom client domains) standardly require applicants to create a password-protected candidate account or log in.",
+        "sources": [
+          "https://community.icims.com/articles/FAQ/Searching-Reporting-FAQ"
+        ]
+      }
+    ],
+    "acceptedFileTypes": [
+      {
+        "text": "iCIMS supports `.doc`, `.docx`, `.pdf`, `.rtf`, and `.txt` file formats for candidate document ingestion.",
+        "sources": [
+          "https://developer-community.icims.com/applications/applicant-tracking/binary-files"
+        ]
+      }
+    ],
+    "sizeLimits": [
+      {
+        "text": "Default file size limits on iCIMS candidate portals standardly range from 2 MB to 5 MB per document.",
+        "sources": [
+          "https://developer-community.icims.com/applications/applicant-tracking/binary-files"
+        ]
+      }
+    ],
+    "parsesIntoFields": "yes",
+    "recruiterSees": "both",
+    "accountRequired": "yes"
+  },
+  "taleo": {
+    "parsing": [
+      {
+        "text": "Oracle Recruiting uses resume parsing partner integrations to automatically extract profile info, contact details, education, past experience, and skills into candidate profile fields.",
+        "sources": [
+          "https://docs.oracle.com/en/cloud/saas/readiness/hcm/25c/recr-25c/25C-recruiting-wn-f38002.htm"
+        ]
+      }
+    ],
+    "recruiterVisibility": [
+      {
+        "text": "Recruiters view structured candidate profile records alongside the original uploaded resume attachment.",
+        "sources": [
+          "https://docs.oracle.com/en/cloud/saas/readiness/hcm/25c/recr-25c/25C-recruiting-wn-f38002.htm"
+        ]
+      }
+    ],
+    "searchFeatures": [
+      {
+        "text": "Taleo evaluates candidates using ACE prescreening criteria: Disqualification Questions (immediate rejection), Required Criteria (mandatory minimums), and Asset Criteria (preferred nice-to-haves).",
+        "sources": [
+          "https://docs.oracle.com/en/cloud/saas/taleo-enterprise/otrcg/c-acecandidatealert.html"
+        ]
+      },
+      {
+        "text": "Candidates meeting all Required criteria and satisfying the Asset threshold are flagged with the \"ACE Star icon\" in the recruiter console and trigger automated candidate alerts.",
+        "sources": [
+          "https://docs.oracle.com/en/cloud/saas/taleo-enterprise/otrcg/c-acecandidatealert.html"
+        ]
+      },
+      {
+        "text": "Oracle Recruiting Cloud Redwood incorporates AI matching and rating based on parsed education, skills, and experience scores.",
+        "sources": [
+          "https://docs.oracle.com/en/cloud/saas/readiness/hcm/25c/recr-25c/25C-recruiting-wn-f38002.htm"
+        ]
+      }
+    ],
+    "account": [
+      {
+        "text": "Taleo Career Sections require external applicants to register an account and log in.",
+        "sources": [
+          "https://docs.oracle.com/en/cloud/saas/taleo-enterprise/otrcg/c-attachmentpermissionsandsettings.html"
+        ]
+      },
+      {
+        "text": "Modern Oracle Candidate Experience provides candidate portal authentication to review status and manage submissions.",
+        "sources": [
+          "https://docs.oracle.com/en/cloud/saas/readiness/hcm/25c/recr-25c/25C-recruiting-wn-f38002.htm"
+        ]
+      }
+    ],
+    "acceptedFileTypes": [
+      {
+        "text": "Supported file formats include `.doc`, `.docx`, `.pdf`, `.rtf`, `.txt`, `.htm`, `.html`, and `.odt`.",
+        "sources": [
+          "https://docs.oracle.com/en/cloud/saas/taleo-enterprise/otrcg/c-attachmentpermissionsandsettings.html"
+        ]
+      }
+    ],
+    "sizeLimits": [
+      {
+        "text": "In Oracle Taleo Enterprise Edition, the default file size limit is 1 MB (`1,048,576 bytes`), controlled by the `Attached File Maximum Size` setting.",
+        "sources": [
+          "https://docs.oracle.com/en/cloud/saas/taleo-enterprise/otrcg/c-attachmentpermissionsandsettings.html"
+        ]
+      },
+      {
+        "text": "In modern Oracle Recruiting Cloud (Redwood Experience), bulk candidate resume creation supports up to 10 resume files or single ZIP files up to 25 MB.",
+        "sources": [
+          "https://docs.oracle.com/en/cloud/saas/readiness/hcm/25c/recr-25c/25C-recruiting-wn-f38002.htm"
+        ]
+      }
+    ],
+    "parsesIntoFields": "yes",
+    "recruiterSees": "both",
+    "accountRequired": "yes"
+  },
+  "successfactors": {
+    "parsing": [
+      {
+        "text": "Resume parsing automatically extracts unstructured data from candidate resumes and maps it into structured background elements on the Candidate Profile.",
+        "sources": [
+          "https://help.sap.com/docs/successfactors-recruiting/setting-up-and-maintaining-sap-successfactors-recruiting/recruiting-settings-in-admin-center"
+        ]
+      },
+      {
+        "text": "Successful parsing requires alignment with Standardization Mapping to ensure parsed data maps correctly to standardized background elements.",
+        "sources": [
+          "https://help.sap.com/docs/successfactors-recruiting/setting-up-and-maintaining-sap-successfactors-recruiting/recruiting-settings-in-admin-center"
+        ]
+      }
+    ],
+    "recruiterVisibility": [
+      {
+        "text": "Recruiters view candidate profiles containing structured background elements alongside downloadable and viewable resume attachments.",
+        "sources": [
+          "https://help.sap.com/doc/eb8c64b57d5c449e8c7284216a1b6094/2311/en-US/Recruiting_in_SAP_SuccessFactors_Test_Script_FC1.pdf"
+        ]
+      }
+    ],
+    "searchFeatures": [
+      {
+        "text": "Recruiters search candidate pools by querying Candidate Profile background elements, standard fields, and keywords.",
+        "sources": [
+          "https://help.sap.com/docs/successfactors-recruiting/setting-up-and-maintaining-sap-successfactors-recruiting/recruiting-settings-in-admin-center"
+        ]
+      }
+    ],
+    "account": [
+      {
+        "text": "External candidates must create an account and authenticate on the SuccessFactors Career Site Builder (CSB) or Candidate Portal to submit an application.",
+        "sources": [
+          "https://help.sap.com/docs/successfactors-recruiting/setting-up-and-maintaining-sap-successfactors-recruiting/recruiting-settings-in-admin-center"
+        ]
+      }
+    ],
+    "acceptedFileTypes": [
+      {
+        "text": "Allowable file extensions for resume and cover letter fields are configured in the Candidate Profile Template (CPT), supporting `.pdf`, `.docx`, `.doc`, `.rtf`, and `.txt`.",
+        "sources": [
+          "https://help.sap.com/docs/successfactors-recruiting/setting-up-and-maintaining-sap-successfactors-recruiting/recruiting-settings-in-admin-center"
+        ]
+      }
+    ],
+    "sizeLimits": [
+      {
+        "text": "File attachment size limits across SuccessFactors Recruiting are governed in Admin Center (Company System and Logo Settings), standardly defaulting to 5 MB to 10 MB.",
+        "sources": [
+          "https://help.sap.com/docs/successfactors-recruiting/setting-up-and-maintaining-sap-successfactors-recruiting/recruiting-settings-in-admin-center"
+        ]
+      }
+    ],
+    "parsesIntoFields": "yes",
+    "recruiterSees": "both",
+    "accountRequired": "yes"
+  },
+  "smartrecruiters": {
+    "parsing": [
+      {
+        "text": "Dropping a resume onto the application form parses contact details, work experience, and education directly into structured form fields for candidate review.",
+        "sources": [
+          "https://careers.smartrecruiters.com/CustomProfile?oga=true"
+        ]
+      }
+    ],
+    "recruiterVisibility": [
+      {
+        "text": "Recruiters view the candidate's SmartProfile containing extracted details, screening answers, and an integrated document preview of the original resume.",
+        "sources": [
+          "https://ta.smartrecruiters.com/rs/664-NIC-529/images/SmartRecruiters-AI-Whitepaper.pdf?version=1"
+        ]
+      }
+    ],
+    "searchFeatures": [
+      {
+        "text": "SmartRecruiters uses SmartAssistant (and Winston AI) to rank and match incoming applicants against job requisitions, generating a candidate Match Score based on NLP skills taxonomy mapping, work history, seniority level, and education.",
+        "sources": [
+          "https://ta.smartrecruiters.com/rs/664-NIC-529/images/SmartRecruiters-AI-Whitepaper.pdf?version=1"
+        ]
+      },
+      {
+        "text": "Recruiters filter candidate pipelines by SmartAssistant Match Score tiers (Very High, High, Medium, Low) and response criteria on custom screening questions.",
+        "sources": [
+          "https://ta.smartrecruiters.com/rs/664-NIC-529/images/SmartRecruiters-AI-Whitepaper.pdf?version=1"
+        ]
+      }
+    ],
+    "account": [
+      {
+        "text": "Account creation is optional; candidates can submit applications directly via a single-page form or opt to apply using a saved SmartProfile account.",
+        "sources": [
+          "https://careers.smartrecruiters.com/CustomProfile?oga=true"
+        ]
+      }
+    ],
+    "acceptedFileTypes": [
+      {
+        "text": "Supported file formats include PDF, DOC, DOCX, RTF, and plain text.",
+        "sources": [
+          "https://ta.smartrecruiters.com/rs/664-NIC-529/images/SmartRecruiters-AI-Whitepaper.pdf?version=1"
+        ]
+      }
+    ],
+    "sizeLimits": [
+      {
+        "text": "Candidate uploads via the career portal UI accept files up to 10 MB.",
+        "sources": [
+          "https://careers.smartrecruiters.com/CustomProfile?oga=true"
+        ]
+      }
+    ],
+    "parsesIntoFields": "yes",
+    "recruiterSees": "both",
+    "accountRequired": "unknown"
+  },
+  "ashby": {
+    "parsing": [
+      {
+        "text": "Uploading a resume during application parses candidate name, email, phone number, work history, and education into application fields.",
+        "sources": [
+          "https://docs.ashbyhq.com/application-forms"
+        ]
+      }
+    ],
+    "recruiterVisibility": [
+      {
+        "text": "The Application Review interface displays candidate application answers, custom fields, and evaluation scorecards side-by-side with an inline document preview of the original resume.",
+        "sources": [
+          "https://docs.ashbyhq.com/application-review"
+        ]
+      }
+    ],
+    "searchFeatures": [
+      {
+        "text": "Ashby Candidate Search provides full-text search across all candidate resumes, custom field filtering, stage filtering, and tag filtering.",
+        "sources": [
+          "https://docs.ashbyhq.com/candidate-search"
+        ]
+      },
+      {
+        "text": "Recruiters use application review rules and pipeline stages to archive or advance applicants based on question responses and scorecard ratings.",
+        "sources": [
+          "https://docs.ashbyhq.com/application-review"
+        ]
+      }
+    ],
+    "account": [
+      {
+        "text": "Candidates applying on Ashby job boards (`jobs.ashbyhq.com/<company>`) are not required to create an account or log in; applications use a single-page form.",
+        "sources": [
+          "https://docs.ashbyhq.com/application-forms"
+        ]
+      }
+    ],
+    "acceptedFileTypes": [
+      {
+        "text": "Supported resume formats are `.pdf`, `.doc`, and `.docx`.",
+        "sources": [
+          "https://docs.ashbyhq.com/candidate-files-and-file-categories"
+        ]
+      }
+    ],
+    "sizeLimits": [
+      {
+        "text": "Ashby supports document uploads up to 50 MB per file.",
+        "sources": [
+          "https://docs.ashbyhq.com/candidate-files-and-file-categories"
+        ]
+      },
+      {
+        "text": "Resumes must be 16 MB or smaller to be parsed for full-text search indexing and form autofill.",
+        "sources": [
+          "https://docs.ashbyhq.com/application-forms"
+        ]
+      }
+    ],
+    "parsesIntoFields": "yes",
+    "recruiterSees": "unknown",
+    "accountRequired": "no"
+  },
+  "bamboohr": {
+    "parsing": [
+      {
+        "text": "BambooHR ATS parses basic contact details, employment history, and education from uploaded resumes to populate the candidate profile.",
+        "sources": [
+          "https://grow.bamboohr.com/rs/195-LOZ-515/images/ATS-Packet.pdf"
+        ]
+      }
+    ],
+    "recruiterVisibility": [
+      {
+        "text": "Recruiters see the candidate profile containing parsed details, application questionnaire responses, and an embedded preview/download link for the original resume file.",
+        "sources": [
+          "https://grow.bamboohr.com/rs/195-LOZ-515/images/ATS-Packet.pdf"
+        ]
+      }
+    ],
+    "searchFeatures": [
+      {
+        "text": "BambooHR indexes uploaded resumes, cover letters, and application responses, allowing recruiters to search candidates using keyword queries.",
+        "sources": [
+          "https://grow.bamboohr.com/rs/195-LOZ-515/images/ATS-Packet.pdf"
+        ]
+      }
+    ],
+    "account": [
+      {
+        "text": "Candidates applying via BambooHR career pages (`*.bamboohr.com/careers`) do not need to create an account or log in.",
+        "sources": [
+          "https://grow.bamboohr.com/rs/195-LOZ-515/images/ATS-Packet.pdf"
+        ]
+      }
+    ],
+    "acceptedFileTypes": [
+      {
+        "text": "BambooHR supports resume uploads in `.pdf`, `.doc`, `.docx`, `.rtf`, and `.txt` formats.",
+        "sources": [
+          "https://help.bamboohr.com/s/article/2005136"
+        ]
+      }
+    ],
+    "sizeLimits": [
+      {
+        "text": "The system enforces an upload limit of 20 MB per file.",
+        "sources": [
+          "https://help.bamboohr.com/s/article/2005136"
+        ]
+      },
+      {
+        "text": "Best practice for public career sites recommends keeping resume files under 5 MB to prevent upload latency.",
+        "sources": [
+          "https://grow.bamboohr.com/rs/195-LOZ-515/images/ATS-Packet.pdf"
+        ]
+      }
+    ],
+    "parsesIntoFields": "yes",
+    "recruiterSees": "both",
+    "accountRequired": "no"
+  },
+  "jobvite": {
+    "parsing": [
+      {
+        "text": "Uploading a resume parses contact details, employment history, and education into candidate profile fields.",
+        "sources": [
+          "https://help.jobvite.com/s/article/Candidates-Tab"
+        ]
+      },
+      {
+        "text": "PDF files must be text-based; flat image scans fail to extract into candidate profile fields.",
+        "sources": [
+          "https://help.jobvite.com/s/article/Import-Candidates-Talent"
+        ]
+      },
+      {
+        "text": "Each resume file must correspond to only one candidate profile.",
+        "sources": [
+          "https://help.jobvite.com/s/article/Import-Candidates-Talent"
+        ]
+      }
+    ],
+    "recruiterVisibility": [
+      {
+        "text": "In the Candidates Tab, recruiters view parsed candidate profile information and can open or preview the original resume attachment.",
+        "sources": [
+          "https://help.jobvite.com/s/article/Candidates-Tab"
+        ]
+      }
+    ],
+    "searchFeatures": [
+      {
+        "text": "Recruiters search candidate pools using keyword queries, evaluation scorecards, workflow stage filters, and pre-screening questionnaire rules.",
+        "sources": [
+          "https://help.jobvite.com/s/article/Candidates-Tab"
+        ]
+      }
+    ],
+    "account": [
+      {
+        "text": "Candidates applying via Jobvite career portals can apply as a guest or create/sign in to a candidate portal account to track application status.",
+        "sources": [
+          "https://help.jobvite.com/s/article/Candidates-Tab"
+        ]
+      }
+    ],
+    "acceptedFileTypes": [
+      {
+        "text": "Jobvite supports `.doc`, `.docx`, `.pdf`, `.txt`, `.rtf`, and `.html` resume formats.",
+        "sources": [
+          "https://help.jobvite.com/s/article/Import-Candidates-Talent"
+        ]
+      },
+      {
+        "text": "Password-protected, encrypted, or image-only files fail to parse.",
+        "sources": [
+          "https://help.jobvite.com/s/article/Import-Candidates-Talent"
+        ]
+      }
+    ],
+    "sizeLimits": [
+      {
+        "text": "In the application workflow, the maximum upload file size limit is 25 MB per attachment.",
+        "sources": [
+          "https://help.jobvite.com/s/article/Additional-Attachments-Apply-Workflow"
+        ]
+      }
+    ],
+    "parsesIntoFields": "yes",
+    "recruiterSees": "both",
+    "accountRequired": "unknown"
+  },
+  "workable": {
+    "parsing": [
+      {
+        "text": "Workable parses resumes to extract candidate name, email, phone number, social media links, work experience, and education directly into the Candidate Profile.",
+        "sources": [
+          "https://help.workable.com/hc/en-us/articles/115012661408-Uploading-candidate-resumes-CVs-Individual-and-bulk-options"
+        ]
+      },
+      {
+        "text": "Duplicate detection checks email addresses against existing records.",
+        "sources": [
+          "https://help.workable.com/hc/en-us/articles/115012661408-Uploading-candidate-resumes-CVs-Individual-and-bulk-options"
+        ]
+      }
+    ],
+    "recruiterVisibility": [
+      {
+        "text": "In the pipeline view, the candidate profile displays parsed experience, education, skills, and application answers alongside an integrated preview of the uploaded resume document.",
+        "sources": [
+          "https://help.workable.com/hc/en-us/articles/115012857047-Candidate-profile-in-pipeline-view-overview"
+        ]
+      }
+    ],
+    "searchFeatures": [
+      {
+        "text": "Recruiters filter and search candidates using keyword search, candidate tags, pipeline stages, and custom screening questions with auto-disqualification settings.",
+        "sources": [
+          "https://help.workable.com/hc/en-us/articles/115012857047-Candidate-profile-in-pipeline-view-overview"
+        ]
+      }
+    ],
+    "account": [
+      {
+        "text": "Candidates applying through Workable-hosted job pages are not required to create an account or log in.",
+        "sources": [
+          "https://help.workable.com/hc/en-us/articles/115012238108-What-types-of-files-can-be-uploaded-on-the-application-form"
+        ]
+      }
+    ],
+    "acceptedFileTypes": [
+      {
+        "text": "Supported resume formats are `.pdf`, `.doc`, `.docx`, `.rtf`, `.html`, and `.odt`.",
+        "sources": [
+          "https://help.workable.com/hc/en-us/articles/115012238108-What-types-of-files-can-be-uploaded-on-the-application-form"
+        ]
+      }
+    ],
+    "sizeLimits": [
+      {
+        "text": "On the application form, the resume file size limit is 5 MB.",
+        "sources": [
+          "https://help.workable.com/hc/en-us/articles/115012238108-What-types-of-files-can-be-uploaded-on-the-application-form"
+        ]
+      },
+      {
+        "text": "General and custom field uploads allow up to 20 MB per file.",
+        "sources": [
+          "https://help.workable.com/hc/en-us/articles/115012238108-What-types-of-files-can-be-uploaded-on-the-application-form"
+        ]
+      }
+    ],
+    "parsesIntoFields": "yes",
+    "recruiterSees": "both",
+    "accountRequired": "no"
+  },
+  "jazzhr": {
+    "parsing": [
+      {
+        "text": "JazzHR parses uploaded resume text to extract candidate name, contact info, and work history into the Candidate Profile.",
+        "sources": [
+          "https://help.jazzhr.com/s/article/Data-Import-Process-Overview"
+        ]
+      },
+      {
+        "text": "JazzHR does NOT perform OCR on scanned or image-only documents; resumes without embedded digital text fail to parse into candidate profile fields.",
+        "sources": [
+          "https://help.jazzhr.com/s/article/Managing-Files-and-Documents-In-JazzHR"
+        ]
+      }
+    ],
+    "recruiterVisibility": [
+      {
+        "text": "Recruiters view candidate profiles with parsed history and can open, preview, or download the original uploaded document.",
+        "sources": [
+          "https://help.jazzhr.com/s/article/Managing-Files-and-Documents-In-JazzHR"
+        ]
+      }
+    ],
+    "searchFeatures": [
+      {
+        "text": "Recruiters search candidate pools using keyword queries and filter by workflow stages, tags, and job openings.",
+        "sources": [
+          "https://help.jazzhr.com/s/article/Data-Import-Process-Overview"
+        ]
+      }
+    ],
+    "account": [
+      {
+        "text": "Candidates applying on JazzHR-hosted job boards or embedded widgets do not need to create an account or log in.",
+        "sources": [
+          "https://help.jazzhr.com/s/article/Managing-Files-and-Documents-In-JazzHR"
+        ]
+      }
+    ],
+    "acceptedFileTypes": [
+      {
+        "text": "Supported resume file formats are `.pdf`, `.doc`, `.docx`, `.rtf`, `.txt`, and `.odt`.",
+        "sources": [
+          "https://help.jazzhr.com/s/article/Managing-Files-and-Documents-In-JazzHR"
+        ]
+      }
+    ],
+    "sizeLimits": [
+      {
+        "text": "The resume upload limit is up to 5 MB per file.",
+        "sources": [
+          "https://help.jazzhr.com/s/article/Managing-Files-and-Documents-In-JazzHR"
+        ]
+      },
+      {
+        "text": "General non-resume attachments in candidate profiles accept up to 8.5 MB.",
+        "sources": [
+          "https://help.jazzhr.com/s/article/Managing-Files-and-Documents-In-JazzHR"
+        ]
+      }
+    ],
+    "parsesIntoFields": "yes",
+    "recruiterSees": "both",
+    "accountRequired": "no"
+  },
+  "breezy": {
+    "parsing": [
+      {
+        "text": "Breezy HR parses contact information, employment history, and education from uploaded resumes into the candidate profile.",
+        "sources": [
+          "https://help.breezy.hr/en/articles/5596777-supported-file-types"
+        ]
+      }
+    ],
+    "recruiterVisibility": [
+      {
+        "text": "Recruiters view the candidate profile with parsed summary data alongside an integrated document viewer displaying the original resume.",
+        "sources": [
+          "https://help.breezy.hr/en/articles/5596777-supported-file-types"
+        ]
+      }
+    ],
+    "searchFeatures": [
+      {
+        "text": "Recruiters filter and search candidate pools using keyword search, candidate tags, stage movement, and automated questionnaire scoring.",
+        "sources": [
+          "https://help.breezy.hr/en/articles/5596777-supported-file-types"
+        ]
+      }
+    ],
+    "account": [
+      {
+        "text": "Candidates applying via Breezy career portals do not need to create an account or log in; applications use a single-page submission form.",
+        "sources": [
+          "https://help.breezy.hr/en/articles/5596777-supported-file-types"
+        ]
+      }
+    ],
+    "acceptedFileTypes": [
+      {
+        "text": "Supported resume formats include `.pdf`, `.doc`, `.docx`, `.pages`, `.rtf`, and `.txt`.",
+        "sources": [
+          "https://help.breezy.hr/en/articles/5596777-supported-file-types"
+        ]
+      }
+    ],
+    "sizeLimits": [
+      {
+        "text": "Breezy HR accepts resume uploads up to 50 MB per file.",
+        "sources": [
+          "https://help.breezy.hr/en/articles/5596777-supported-file-types"
+        ]
+      }
+    ],
+    "parsesIntoFields": "yes",
+    "recruiterSees": "both",
+    "accountRequired": "no"
+  },
+  "recruitee": {
+    "parsing": [
+      {
+        "text": "Recruitee requires an email address located within the body of the CV itself; if absent, the message is routed to the non-candidates mailbox folder and requires manual conversion.",
+        "sources": [
+          "https://support.recruitee.com/en/articles/1066315-receive-candidates-from-external-recruiters-and-agencies"
+        ]
+      },
+      {
+        "text": "The parsing engine extracts name, email, phone number, work history, education, social links, and custom candidate profile fields (e.g., certifications, languages).",
+        "sources": [
+          "https://support.recruitee.com/en/articles/1066338-csv-importer"
+        ]
+      },
+      {
+        "text": "Text must be highlightable and selectable, using standard web-safe fonts.",
+        "sources": [
+          "https://support.recruitee.com/en/articles/1066315-receive-candidates-from-external-recruiters-and-agencies"
+        ]
+      }
+    ],
+    "recruiterVisibility": [
+      {
+        "text": "Recruiters view the parsed Candidate Profile alongside an inline document viewer showing the original CV.",
+        "sources": [
+          "https://support.recruitee.com/en/articles/1066315-receive-candidates-from-external-recruiters-and-agencies"
+        ]
+      }
+    ],
+    "searchFeatures": [
+      {
+        "text": "Recruiters search candidate pools using keyword queries, candidate tags, pipeline stages, and screening questions with auto-disqualification rules.",
+        "sources": [
+          "https://support.recruitee.com/en/articles/1066315-receive-candidates-from-external-recruiters-and-agencies"
+        ]
+      }
+    ],
+    "account": [
+      {
+        "text": "Candidates applying on Recruitee career sites do not need to create an account or log in.",
+        "sources": [
+          "https://support.recruitee.com/en/articles/1066315-receive-candidates-from-external-recruiters-and-agencies"
+        ]
+      }
+    ],
+    "acceptedFileTypes": [
+      {
+        "text": "Supported file formats for CV parsing in Recruitee include `.pdf`, `.docx`, `.doc`, `.odt`, and `.rtf`.",
+        "sources": [
+          "https://support.recruitee.com/en/articles/1066338-csv-importer"
+        ]
+      },
+      {
+        "text": "Plain text (`.txt`) files, image-only files without selectable text, and password-protected documents are NOT supported for parsing.",
+        "sources": [
+          "https://support.recruitee.com/en/articles/1066315-receive-candidates-from-external-recruiters-and-agencies"
+        ]
+      }
+    ],
+    "sizeLimits": [
+      {
+        "text": "Maximum file attachment size across job mailbox interactions is 25 MB.",
+        "sources": [
+          "https://support.recruitee.com/en/articles/1066315-receive-candidates-from-external-recruiters-and-agencies"
+        ]
+      }
+    ],
+    "parsesIntoFields": "yes",
+    "recruiterSees": "both",
+    "accountRequired": "no"
+  },
+  "teamtailor": {
+    "parsing": [
+      {
+        "text": "Teamtailor Co-pilot automatically parses candidate resumes, extracting personal information (name, email, phone, location, LinkedIn link), work history, education history, and profile photo.",
+        "sources": [
+          "https://support.teamtailor.com/en/articles/16127956-co-pilot-resume-parser"
+        ]
+      },
+      {
+        "text": "Skills and competencies identified in the resume that match skills configured in the company account are mapped directly to the candidate's profile.",
+        "sources": [
+          "https://support.teamtailor.com/en/articles/16127956-co-pilot-resume-parser"
+        ]
+      },
+      {
+        "text": "Co-pilot actively detects \"hidden instructions\" in uploaded resumes (e.g. prompt injection, white text, micro-fonts, transparent styling meant to manipulate AI evaluations).",
+        "sources": [
+          "https://support.teamtailor.com/en/articles/16127956-co-pilot-resume-parser"
+        ]
+      }
+    ],
+    "recruiterVisibility": [
+      {
+        "text": "Recruiters view an interactive career and education timeline, an AI resume summary, auto-tagged skills, and an embedded preview of the original document.",
+        "sources": [
+          "https://support.teamtailor.com/en/articles/16127956-co-pilot-resume-parser"
+        ]
+      },
+      {
+        "text": "When anonymous hiring mode is active, personal identifying information is automatically redacted from the candidate card and resume preview.",
+        "sources": [
+          "https://support.teamtailor.com/en/articles/16127956-co-pilot-resume-parser"
+        ]
+      }
+    ],
+    "searchFeatures": [
+      {
+        "text": "Recruiters filter candidates by matched skills/traits, smart filters, keyword queries, and automated triggers tied to screening questions.",
+        "sources": [
+          "https://support.teamtailor.com/en/articles/16127956-co-pilot-resume-parser"
+        ]
+      }
+    ],
+    "account": [
+      {
+        "text": "Candidates do not need to create an account or password to apply on Teamtailor career sites.",
+        "sources": [
+          "https://support.teamtailor.com/en/articles/118259-add-candidates-to-your-account"
+        ]
+      }
+    ],
+    "acceptedFileTypes": [
+      {
+        "text": "Supported resume formats in Teamtailor include PDF, DOC, and DOCX.",
+        "sources": [
+          "https://support.teamtailor.com/en/articles/118259-add-candidates-to-your-account"
+        ]
+      }
+    ],
+    "sizeLimits": [
+      {
+        "text": "Standard application document uploads accept files up to 10 MB to 20 MB.",
+        "sources": [
+          "https://support.teamtailor.com/en/articles/118259-add-candidates-to-your-account"
+        ]
+      }
+    ],
+    "parsesIntoFields": "yes",
+    "recruiterSees": "unknown",
+    "accountRequired": "no"
+  },
+  "personio": {
+    "parsing": [
+      {
+        "text": "Personio integrates with Textkernel as its underlying CV parsing engine, extracting name, email, phone number, location, current employer, current job title, total years of experience, and public profile links.",
+        "sources": [
+          "https://guul.io/ats-guide/personio"
+        ]
+      },
+      {
+        "text": "Parsing errors frequently occur if: the document is an image or scanned PDF without a text layer; contact information is located within headers/footers; complex tables or multi-column layouts are used; font size is \u2264 8 pt; or skills are displayed as graphics/bar charts rather than text.",
+        "sources": [
+          "https://resumeats.net/blog/personio-ats-resume-guide-europe-2026"
+        ]
+      }
+    ],
+    "recruiterVisibility": [
+      {
+        "text": "Recruiters see parsed candidate attributes across recruiting pipeline tables and can view the original attached CV inside Personio's embedded document viewer.",
+        "sources": [
+          "https://guul.io/ats-guide/personio"
+        ]
+      }
+    ],
+    "searchFeatures": [
+      {
+        "text": "Recruiters filter candidate pools by parsed attributes (experience, job title, location), tags, application phases, and evaluation scorecards.",
+        "sources": [
+          "https://resumeats.net/blog/personio-ats-resume-guide-europe-2026"
+        ]
+      }
+    ],
+    "account": [
+      {
+        "text": "Candidates applying on Personio-hosted career pages are not required to create an account or log in.",
+        "sources": [
+          "https://guul.io/ats-guide/personio"
+        ]
+      }
+    ],
+    "acceptedFileTypes": [
+      {
+        "text": "Personio accepts `.pdf` and `.docx` as the standard supported formats for CV parsing into candidate profiles.",
+        "sources": [
+          "https://guul.io/ats-guide/personio"
+        ]
+      }
+    ],
+    "sizeLimits": [
+      {
+        "text": "The maximum file size limit for CV parsing is 10 MB per document (with API endpoints supporting up to 20 MB).",
+        "sources": [
+          "https://resumeats.net/blog/personio-ats-resume-guide-europe-2026"
+        ]
+      }
+    ],
+    "parsesIntoFields": "yes",
+    "recruiterSees": "both",
+    "accountRequired": "no"
+  },
+  "rippling": {
+    "parsing": [
+      {
+        "text": "Rippling features automatic resume parsing that extracts candidate contact details, work history, and education into candidate profiles and application records.",
+        "sources": [
+          "https://www.rippling.com/blog/april-2025-product-updates"
+        ]
+      },
+      {
+        "text": "Rippling's resume parser supports both English and non-English resumes.",
+        "sources": [
+          "https://www.rippling.com/blog/april-2025-product-updates"
+        ]
+      }
+    ],
+    "recruiterVisibility": [
+      {
+        "text": "Recruiters view the parsed candidate record, interview evaluation scorecards, and an attached preview of the original resume document.",
+        "sources": [
+          "https://www.rippling.com/blog/april-2025-product-updates"
+        ]
+      }
+    ],
+    "searchFeatures": [
+      {
+        "text": "Recruiters search candidate pools using keyword queries, custom stage filters, and structured application question responses.",
+        "sources": [
+          "https://www.rippling.com/blog/april-2025-product-updates"
+        ]
+      }
+    ],
+    "account": [
+      {
+        "text": "Candidates applying via Rippling job boards do not need to create an account or log in; applications use a single-page submission form.",
+        "sources": [
+          "https://www.rippling.com/blog/april-2025-product-updates"
+        ]
+      }
+    ],
+    "acceptedFileTypes": [
+      {
+        "text": "Rippling Recruiting supports standard resume file formats including `.pdf`, `.docx`, and `.doc`.",
+        "sources": [
+          "https://www.rippling.com/blog/april-2025-product-updates"
+        ]
+      }
+    ],
+    "sizeLimits": [],
+    "parsesIntoFields": "yes",
+    "recruiterSees": "both",
+    "accountRequired": "no"
+  },
+  "paylocity": {
+    "parsing": [
+      {
+        "text": "Paylocity utilizes Natural Language Processing (NLP) resume parsing to extract contact details, work history, education, and skills to auto-fill application fields.",
+        "sources": [
+          "https://www.paylocity.com/resources/glossary/resume-parsing/"
+        ]
+      },
+      {
+        "text": "The NLP parser recognizes standard and non-standard job titles and varying layouts rather than relying solely on exact keyword matches.",
+        "sources": [
+          "https://www.paylocity.com/resources/glossary/resume-parsing/"
+        ]
+      }
+    ],
+    "recruiterVisibility": [
+      {
+        "text": "Recruiters view structured candidate profile records and have direct access to the original uploaded resume attachment.",
+        "sources": [
+          "https://www.paylocity.com/resources/glossary/resume-parsing/"
+        ]
+      }
+    ],
+    "searchFeatures": [
+      {
+        "text": "Parsed candidate information is indexed within the recruiter dashboard, allowing hiring teams to filter candidates by skills, experience level, education, and questionnaire responses.",
+        "sources": [
+          "https://www.paylocity.com/resources/glossary/resume-parsing/"
+        ]
+      }
+    ],
+    "account": [
+      {
+        "text": "Paylocity candidate portals standardly prompt applicants to create an account or provide email authentication to complete and track applications.",
+        "sources": [
+          "https://dc1prodrecruiting.paylocity.com/Recruiting/PublicLeads/New/3fdf778b-0a6d-41da-b1d8-c47d5500eb71"
+        ]
+      }
+    ],
+    "acceptedFileTypes": [
+      {
+        "text": "Paylocity Recruiting supports `.pdf`, `.doc`, and `.docx` file formats for candidate resume submissions.",
+        "sources": [
+          "https://www.paylocity.com/resources/glossary/resume-parsing/"
+        ]
+      }
+    ],
+    "sizeLimits": [
+      {
+        "text": "Application forms cap individual document uploads at 10 MB per file.",
+        "sources": [
+          "https://dc1prodrecruiting.paylocity.com/Recruiting/PublicLeads/New/3fdf778b-0a6d-41da-b1d8-c47d5500eb71"
+        ]
+      }
+    ],
+    "parsesIntoFields": "yes",
+    "recruiterSees": "both",
+    "accountRequired": "unknown"
+  },
+  "adp": {
+    "parsing": [
+      {
+        "text": "ADP's native parser extracts contact details, work experience, education, skills, and licenses/certifications to auto-fill the Candidate Profile schema.",
+        "sources": [
+          "https://developers.adp.com/articles/guides/job-applications-v2-api-guide"
+        ]
+      }
+    ],
+    "recruiterVisibility": [
+      {
+        "text": "Recruiters have access to both the structured candidate profile fields and the original attached resume document.",
+        "sources": [
+          "https://developers.adp.com/articles/guides/job-applications-v2-api-guide"
+        ]
+      }
+    ],
+    "searchFeatures": [
+      {
+        "text": "ADP Workforce Now features screening question configuration and candidate relevancy scoring that compares applicant resumes against job requirements.",
+        "sources": [
+          "https://developers.adp.com/articles/guides/job-applications-v2-api-guide"
+        ]
+      },
+      {
+        "text": "Recruiters filter candidates by screening question responses, background screening statuses, and keyword queries.",
+        "sources": [
+          "https://developers.adp.com/articles/guides/job-applications-v2-api-guide"
+        ]
+      }
+    ],
+    "account": [
+      {
+        "text": "External candidates applying via ADP Workforce Now Career Centers standardly must create an ADP account or sign in to submit and track applications.",
+        "sources": [
+          "https://developers.adp.com/articles/guides/job-applications-v2-api-guide"
+        ]
+      }
+    ],
+    "acceptedFileTypes": [
+      {
+        "text": "Supported resume formats across ADP Workforce Now include `.pdf`, `.doc`, `.docx`, `.rtf`, and `.txt`.",
+        "sources": [
+          "https://developers.adp.com/articles/guides/job-applications-v2-api-guide"
+        ]
+      }
+    ],
+    "sizeLimits": [
+      {
+        "text": "Standard document attachment size limits in ADP Career Center portals typically cap uploads at 5 MB (configurable up to 10\u201312 MB).",
+        "sources": [
+          "https://developers.adp.com/articles/guides/job-applications-v2-api-guide"
+        ]
+      }
+    ],
+    "parsesIntoFields": "yes",
+    "recruiterSees": "both",
+    "accountRequired": "yes"
+  },
+  "ukg": {
+    "parsing": [
+      {
+        "text": "UKG Pro Recruiting parses uploaded resumes to extract name, contact details, work history, job titles, employer names, dates, education, and skills into candidate profile fields.",
+        "sources": [
+          "https://www.ukg.com/learn/resources/product-info/ukg-pro-solution-guide"
+        ]
+      }
+    ],
+    "recruiterVisibility": [
+      {
+        "text": "Recruiters view candidate profiles populated with parsed data and can access the original attached resume file.",
+        "sources": [
+          "https://www.ukg.com/learn/resources/product-info/ukg-pro-solution-guide"
+        ]
+      }
+    ],
+    "searchFeatures": [
+      {
+        "text": "Recruiters filter candidate pools using keyword searches, qualification scoring, and prescreening questionnaires with knockout criteria.",
+        "sources": [
+          "https://www.ukg.com/learn/resources/product-info/ukg-pro-solution-guide"
+        ]
+      }
+    ],
+    "account": [
+      {
+        "text": "External applicants are standardly required to create an account with email and password on the UKG Pro Recruiting portal.",
+        "sources": [
+          "https://www.ukg.com/learn/resources/product-info/ukg-pro-solution-guide"
+        ]
+      }
+    ],
+    "acceptedFileTypes": [
+      {
+        "text": "UKG Recruiting environments support `.pdf`, `.doc`, `.docx`, `.rtf`, and `.txt` file formats.",
+        "sources": [
+          "https://www.ukg.com/learn/resources/product-info/ukg-pro-solution-guide"
+        ]
+      }
+    ],
+    "sizeLimits": [
+      {
+        "text": "Document uploads are generally capped at 5 MB to 10 MB per file.",
+        "sources": [
+          "https://www.ukg.com/learn/resources/product-info/ukg-pro-solution-guide"
+        ]
+      }
+    ],
+    "parsesIntoFields": "yes",
+    "recruiterSees": "both",
+    "accountRequired": "yes"
+  },
+  "pinpoint": {
+    "parsing": [
+      {
+        "text": "Pinpoint partners with Affinda as its sub-processor for resume parsing and redaction.",
+        "sources": [
+          "https://www.pinpointhq.com/security-privacy/sub-processors"
+        ]
+      },
+      {
+        "text": "The parsing engine extracts work history, contact details, and education, and automatically applies skill tagging (*Automatic Skill Tagging*) to the candidate record.",
+        "sources": [
+          "https://www.pinpointhq.com/security-privacy/sub-processors"
+        ]
+      },
+      {
+        "text": "Bulk resume uploads allow recruiters to drag and drop multiple resumes simultaneously, with Pinpoint parsing each file to create candidate records without manual entry.",
+        "sources": [
+          "http://help.pinpoint.support/en/articles/5311202-how-can-i-add-multiple-candidates-in-bulk"
+        ]
+      }
+    ],
+    "recruiterVisibility": [
+      {
+        "text": "Recruiters view a unified candidate profile showing the original document, parsed qualifications, auto-tagged skills, and application question responses.",
+        "sources": [
+          "http://help.pinpoint.support/en/articles/2639431-can-i-upload-a-cv-to-an-existing-application"
+        ]
+      },
+      {
+        "text": "When blind hiring is enabled, Affinda's redaction engine automatically redacts personally identifiable information (PII) from the recruiter view.",
+        "sources": [
+          "https://www.pinpointhq.com/security-privacy/sub-processors"
+        ]
+      }
+    ],
+    "searchFeatures": [
+      {
+        "text": "Recruiters filter and search candidate pools using boolean queries across parsed text, auto-tagged skills, candidate scorecards, and custom question answers.",
+        "sources": [
+          "https://www.pinpointhq.com/security-privacy/sub-processors"
+        ]
+      }
+    ],
+    "account": [
+      {
+        "text": "Candidates applying via Pinpoint career portals are not required to create an account or log in; applications use a single-page submission form.",
+        "sources": [
+          "http://help.pinpoint.support/en/articles/2639431-can-i-upload-a-cv-to-an-existing-application"
+        ]
+      }
+    ],
+    "acceptedFileTypes": [
+      {
+        "text": "Pinpoint supports CV uploads in `.pdf` and `.docx` (as well as `.doc`, `.txt`, and `.rtf`).",
+        "sources": [
+          "http://help.pinpoint.support/en/articles/2639431-can-i-upload-a-cv-to-an-existing-application"
+        ]
+      }
+    ],
+    "sizeLimits": [
+      {
+        "text": "Upload file size limits support documents up to 30 MB for CVs (and 10 MB for general attachments).",
+        "sources": [
+          "http://help.pinpoint.support/en/articles/2639431-can-i-upload-a-cv-to-an-existing-application"
+        ]
+      }
+    ],
+    "parsesIntoFields": "yes",
+    "recruiterSees": "both",
+    "accountRequired": "no"
+  },
+  "dover": {
+    "parsing": [
+      {
+        "text": "Dover automatically parses uploaded resumes to extract and autofill First Name, Last Name, Email, and LinkedIn profile link.",
+        "sources": [
+          "https://help.dover.com/en/articles/10498369-migrating-data-to-dover"
+        ]
+      },
+      {
+        "text": "The parsed text feeds Dover's AI sourcing and candidate evaluation algorithms.",
+        "sources": [
+          "https://www.dover.com/blog/what-is-an-applicant-tracking-system"
+        ]
+      }
+    ],
+    "recruiterVisibility": [
+      {
+        "text": "Recruiters view the parsed candidate profile, AI assessment highlights, and an integrated preview of the original PDF resume.",
+        "sources": [
+          "https://help.dover.com/en/articles/10498369-migrating-data-to-dover"
+        ]
+      }
+    ],
+    "searchFeatures": [
+      {
+        "text": "Dover uses AI-driven candidate scoring and matching to evaluate applicants against job requisition criteria, along with keyword filters and stage tracking.",
+        "sources": [
+          "https://www.dover.com/blog/what-is-an-applicant-tracking-system"
+        ]
+      }
+    ],
+    "account": [
+      {
+        "text": "Candidates applying via Dover-hosted job application links do not need to create an account or log in.",
+        "sources": [
+          "https://help.dover.com/en/articles/10498369-migrating-data-to-dover"
+        ]
+      }
+    ],
+    "acceptedFileTypes": [
+      {
+        "text": "Dover supports PDF as the primary document format, with an upload limit of 10 MB per file.",
+        "sources": [
+          "https://help.dover.com/en/articles/10498369-migrating-data-to-dover"
+        ]
+      }
+    ],
+    "sizeLimits": [
+      {
+        "text": "Dover supports PDF as the primary document format, with an upload limit of 10 MB per file.",
+        "sources": [
+          "https://help.dover.com/en/articles/10498369-migrating-data-to-dover"
+        ]
+      }
+    ],
+    "parsesIntoFields": "yes",
+    "recruiterSees": "both",
+    "accountRequired": "no"
+  },
+  "wellfound": {
+    "parsing": [
+      {
+        "text": "High-resolution images increase file size and cause parsing difficulties.",
+        "sources": [
+          "https://help.wellfound.com/article/780-cant-upload-a-resume"
+        ]
+      },
+      {
+        "text": "Wellfound candidate search relies primarily on information transcribed directly into candidate profile fields (skills, work history, education, roles) rather than raw resume attachment text.",
+        "sources": [
+          "https://help.wellfound.com/article/770-how-do-i-upload-my-resume"
+        ]
+      }
+    ],
+    "recruiterVisibility": [
+      {
+        "text": "Recruiters view the candidate's complete Wellfound profile card, application pitch note, and downloadable/viewable attached resume document.",
+        "sources": [
+          "https://help.wellfound.com/article/770-how-do-i-upload-my-resume"
+        ]
+      }
+    ],
+    "searchFeatures": [
+      {
+        "text": "Recruiters search and filter candidates primarily by structured profile attributes: primary role, technical skills, years of experience, location/remote preference, and salary requirements.",
+        "sources": [
+          "https://help.wellfound.com/article/770-how-do-i-upload-my-resume"
+        ]
+      }
+    ],
+    "account": [
+      {
+        "text": "A Wellfound candidate account is strictly required to apply for jobs or upload a resume.",
+        "sources": [
+          "https://help.wellfound.com/article/770-how-do-i-upload-my-resume"
+        ]
+      }
+    ],
+    "acceptedFileTypes": [
+      {
+        "text": "Wellfound accepts only **PDF** (`.pdf`) and **Plain Text** (`.txt`) file formats for resume uploads.",
+        "sources": [
+          "https://help.wellfound.com/article/770-how-do-i-upload-my-resume"
+        ]
+      }
+    ],
+    "sizeLimits": [
+      {
+        "text": "The resume file size limit is strictly 10 MB.",
+        "sources": [
+          "https://help.wellfound.com/article/780-cant-upload-a-resume"
+        ]
+      },
+      {
+        "text": "Fonts must be embedded when exporting to PDF, and design tools (e.g. Adobe Illustrator) should use the \"Smallest File Size\" preset.",
+        "sources": [
+          "https://help.wellfound.com/article/780-cant-upload-a-resume"
+        ]
+      }
+    ],
+    "parsesIntoFields": "unknown",
+    "recruiterSees": "both",
+    "accountRequired": "yes"
+  },
+  "linkedin": {
+    "parsing": [
+      {
+        "text": "Easy Apply auto-fills contact information, recent experience, and education directly from the applicant's LinkedIn profile.",
+        "sources": [
+          "https://www.linkedin.com/help/linkedin/answer/a510363/uploading-your-resume-when-applying-for-jobs-on-linkedin"
+        ]
+      },
+      {
+        "text": "Once an Easy Apply application is submitted, it cannot be edited or reopened to attach a different resume.",
+        "sources": [
+          "https://www.linkedin.com/help/linkedin/answer/a510363/uploading-your-resume-when-applying-for-jobs-on-linkedin"
+        ]
+      }
+    ],
+    "recruiterVisibility": [
+      {
+        "text": "In LinkedIn Recruiter, recruiters view the applicant's full LinkedIn profile alongside their attached resume file.",
+        "sources": [
+          "https://www.linkedin.com/help/linkedin/answer/a510363/uploading-your-resume-when-applying-for-jobs-on-linkedin"
+        ]
+      }
+    ],
+    "searchFeatures": [
+      {
+        "text": "Recruiters configure screening questions on Easy Apply and can mark them as \"deal-breakers\" (must-have qualifications).",
+        "sources": [
+          "https://www.linkedin.com/help/linkedin/answer/a510363/uploading-your-resume-when-applying-for-linkedin-jobs"
+        ]
+      }
+    ],
+    "account": [
+      {
+        "text": "A LinkedIn member account is strictly required to use Easy Apply.",
+        "sources": [
+          "https://www.linkedin.com/help/linkedin/answer/a510363/uploading-your-resume-when-applying-for-jobs-on-linkedin"
+        ]
+      }
+    ],
+    "acceptedFileTypes": [
+      {
+        "text": "LinkedIn Easy Apply supports Microsoft Word (`.doc`, `.docx`) and PDF (`.pdf`) formats.",
+        "sources": [
+          "https://www.linkedin.com/help/linkedin/answer/a510363/uploading-your-resume-when-applying-for-jobs-on-linkedin"
+        ]
+      }
+    ],
+    "sizeLimits": [
+      {
+        "text": "Resume file size must be less than 5 MB (2 MB recommended for mobile applications).",
+        "sources": [
+          "https://www.linkedin.com/help/linkedin/answer/a510363/uploading-your-resume-when-applying-for-jobs-on-linkedin"
+        ]
+      }
+    ],
+    "parsesIntoFields": "unknown",
+    "recruiterSees": "both",
+    "accountRequired": "yes"
+  },
+  "indeed": {
+    "parsing": [
+      {
+        "text": "Uploading a resume parses work experience and education to generate or update the candidate's Indeed Resume profile.",
+        "sources": [
+          "https://www.indeed.com/help/job-seekers/articles/4408783727629-uploading-a-resume-file-to-your-profile?hl=en&co=AU"
+        ]
+      },
+      {
+        "text": "Applications submitted via Indeed Apply pass parsed candidate payloads and resume attachments directly into integrated employer ATS platforms.",
+        "sources": [
+          "https://ca.indeed.com/help/employers/articles/troubleshooting-issues-with-indeed-questions-platform-iqp?hl=en&co=CA"
+        ]
+      }
+    ],
+    "recruiterVisibility": [
+      {
+        "text": "Employers view candidate information via the Indeed Employer Dashboard or within their integrated ATS, displaying both the Indeed Resume profile and the original uploaded document.",
+        "sources": [
+          "https://www.indeed.com/help/job-seekers/articles/4408783727629-uploading-a-resume-file-to-your-profile?hl=en&co=AU"
+        ]
+      }
+    ],
+    "searchFeatures": [
+      {
+        "text": "Employers configure screener questions with \"deal-breaker\" (required) status.",
+        "sources": [
+          "https://ca.indeed.com/help/employers/articles/troubleshooting-issues-with-indeed-questions-platform-iqp?hl=en&co=CA"
+        ]
+      },
+      {
+        "text": "If screener questions are present in an external application flow, all screener questions must be replicated in the Indeed Apply setup.",
+        "sources": [
+          "https://www.indeed.com/help/employers/articles/policy-indeed-apply"
+        ]
+      }
+    ],
+    "account": [
+      {
+        "text": "Job seekers must have an active Indeed account to submit applications via Indeed Apply.",
+        "sources": [
+          "https://www.indeed.com/help/job-seekers/articles/4408783727629-uploading-a-resume-file-to-your-profile?hl=en&co=AU"
+        ]
+      }
+    ],
+    "acceptedFileTypes": [
+      {
+        "text": "Indeed supports `.pdf`, `.doc`, `.docx`, `.rtf`, and `.txt` file formats.",
+        "sources": [
+          "https://www.indeed.com/help/job-seekers/articles/4408783727629-uploading-a-resume-file-to-your-profile?hl=en&co=AU"
+        ]
+      }
+    ],
+    "sizeLimits": [
+      {
+        "text": "File size must be under 5 MB for standard profile uploads (and under 15 MB for full API payloads).",
+        "sources": [
+          "https://www.indeed.com/help/job-seekers/articles/4408783727629-uploading-a-resume-file-to-your-profile?hl=en&co=AU"
+        ]
+      }
+    ],
+    "parsesIntoFields": "yes",
+    "recruiterSees": "both",
+    "accountRequired": "yes"
+  }
+}

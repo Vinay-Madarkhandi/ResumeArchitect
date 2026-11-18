@@ -40,3 +40,20 @@ describe('ATS identification', () => {
   it.each(['https://careers.acme.com/jobs/123', 'https://myworkdayjobs.com.evil.example/job', 'https://acme.oraclecloud.com/other', 'https://linkedin.com/jobs/view/123', 'https://indeed.com/viewjob?jk=123', 'invalid'])('rejects %s without evidence', url => expect(identifyAts({ url })).toBeNull());
   it('provides guidance for every registered platform', () => { for (const entry of atsRegistry) expect(atsTips(entry.id)?.guidance.length).toBeGreaterThan(0); expect(atsTips('unknown')).toBeUndefined(); });
 });
+
+describe('sourced ATS guidance', () => {
+  it('provides at least two sourced tips for each platform', () => {
+    for (const entry of atsRegistry) {
+      const tips = atsTips(entry.id)!.guidance;
+      expect(tips.length).toBeGreaterThanOrEqual(2);
+      expect(tips.length).toBeLessThanOrEqual(4);
+      for (const tip of tips) if (tip.basis === 'vendor documentation') expect(tip.sources.length).toBeGreaterThan(0);
+    }
+  });
+  it('preserves the Greenhouse parsing limit and Wellfound formats', () => {
+    expect(atsRegistry.find(e => e.id === 'greenhouse')!.facts.sizeLimits.map(f => f.text).join(' ')).toContain('2.5 MB');
+    const formats = atsRegistry.find(e => e.id === 'wellfound')!.facts.acceptedFileTypes.map(f => f.text).join(' ');
+    expect(formats).toContain('PDF');
+    expect(formats).toContain('Plain Text');
+  });
+});

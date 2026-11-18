@@ -1,5 +1,11 @@
+import factsData from './facts.json';
+
+export interface SourcedFact { text: string; sources: string[]; }
+export interface AtsFacts { acceptedFileTypes: SourcedFact[]; sizeLimits: SourcedFact[]; parsesIntoFields: 'yes' | 'no' | 'unknown'; recruiterSees: 'original' | 'parsed' | 'both' | 'unknown'; accountRequired: 'yes' | 'no' | 'unknown'; parsing: SourcedFact[]; recruiterVisibility: SourcedFact[]; searchFeatures: SourcedFact[]; account: SourcedFact[]; }
+
 /** Patterns are matched against the parsed URL, never against arbitrary substrings. */
 export interface AtsEntry {
+  facts: AtsFacts;
   id: string;
   name: string;
   hosts: string[];
@@ -8,7 +14,7 @@ export interface AtsEntry {
   parsingNotes: string;
 }
 
-const entry = (id: string, name: string, hosts: string[], htmlMarkers: RegExp[], parsingNotes = 'Review every field after uploading your resume.', urlPatterns?: RegExp[]): AtsEntry => ({ id, name, hosts, htmlMarkers, parsingNotes, urlPatterns });
+const entry = (id: string, name: string, hosts: string[], htmlMarkers: RegExp[], parsingNotes = 'Review every field after uploading your resume.', urlPatterns?: RegExp[]): AtsEntry => ({ id, name, hosts, htmlMarkers, parsingNotes, urlPatterns, facts: factsData[id as keyof typeof factsData] as AtsFacts });
 
 export const atsRegistry: AtsEntry[] = [
   entry('workday', 'Workday', ['myworkdayjobs.com'], [/\bmyworkdayjobs\.com\b/i]),
