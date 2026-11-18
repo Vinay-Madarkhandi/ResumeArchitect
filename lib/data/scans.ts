@@ -56,6 +56,7 @@ export async function getScan(userId: string, id: string) {
     ...summary,
     report: sql<MatchReport>`${scans.report}`,
     resumeContent: scans.resume_content,
+    resumeText: scans.resume_text,
     // The resume may have been deleted since; its id is then cleared by the foreign key.
     resumeTitle: resumes.title,
     jobText: jobs.raw_text,
@@ -73,7 +74,14 @@ export async function deleteScan(userId: string, id: string) {
   return row;
 }
 
-/** Points a scan of pasted or uploaded text at the resume it was saved as. */
-export async function linkScanResume(userId: string, id: string, resumeId: string) {
-  await db.update(scans).set({ resume_id: resumeId }).where(owned(userId, id));
+/** Save an editable copy once, even when the same report is opened concurrently. */
+export async function saveScannedResume(userId: string, id: string, values: Omit<typeof resumes.$inferInsert, "user_id">) {
+  if (!uuid.safeParse(id).success) return undefined;
+  return db.transaction(async (tx) => {
+    const [scan] = await tx.select({ resumeId: scans.resume_id }).from(scans).where(owned(userId, id)).for("update");
+    if (!scan || scan.resumeId) return scan?.resumeId ?? undefined;
+    const [resume] = await tx.insert(resumes).values({ ...values, user_id: userId }).returning({ id: resumes.id });
+    await tx.update(scans).set({ resume_id: resume.id }).where(owned(userId, id));
+    return resume.id;
+  });
 }

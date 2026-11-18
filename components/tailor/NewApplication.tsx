@@ -21,11 +21,11 @@ const initialStages = () =>
 
 type TrackedPosting = { id: string; title: string; company: string; description: string };
 
-export function NewApplication({ sources, hasKey, retryId, tracked }: {
-  sources: Source[]; hasKey: boolean; retryId: string | null; tracked: TrackedPosting | null;
+export function NewApplication({ sources, hasKey, retryId, tracked, initialSourceId }: {
+  sources: Source[]; hasKey: boolean; retryId: string | null; tracked: TrackedPosting | null; initialSourceId?: string;
 }) {
   const router = useRouter();
-  const [sourceId, setSourceId] = useState(sources[0]?.id ?? "");
+  const [sourceId, setSourceId] = useState(initialSourceId ?? sources[0]?.id ?? "");
   const [jd, setJd] = useState(tracked?.description ?? "");
   const [title, setTitle] = useState("");
   const [company, setCompany] = useState("");
@@ -129,7 +129,7 @@ export function NewApplication({ sources, hasKey, retryId, tracked }: {
     if (!sourceId) return setFormError("Add a master resume first.");
     if (jd.trim().length < MIN_JOB_DESCRIPTION_LENGTH) return setFormError("Paste the full job post, including the requirements.");
     setFormError(null);
-    void run(tracked ? { sourceResumeId: sourceId, trackedJobId: tracked.id }
+    void run(tracked ? { sourceResumeId: sourceId, jobDescriptionId: tracked.id }
       : { sourceResumeId: sourceId, jobDescriptionText: jd, jobTitle: title, company, sourceUrl: jobUrl });
   }
 

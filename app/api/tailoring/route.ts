@@ -49,6 +49,7 @@ export async function POST(request: Request) {
 
   const sourceUrl = postingUrlSchema.safeParse(str(body?.sourceUrl));
   const trackedJobId = str(body?.trackedJobId);
+  const savedJobId = str(body?.jobDescriptionId);
   const retrySessionId = str(body?.retrySessionId);
   if (retrySessionId) {
     const previous = await getTailoringSession(user.id, retrySessionId);
@@ -62,6 +63,13 @@ export async function POST(request: Request) {
     jobDescriptionId = jd.id;
     jobTitle = jd.job_title;
     company = jd.company;
+  } else if (savedJobId) {
+    const job = await getJobDescription(user.id, savedJobId);
+    if (!job) return fail(404, "invalid_jd", "That job could not be found.");
+    jobDescriptionId = job.id;
+    jobDescriptionText = job.raw_text.trim();
+    jobTitle = job.job_title;
+    company = job.company;
   } else if (trackedJobId) {
     const job = await getTrackedJob(user.id, trackedJobId);
     if (!job) return fail(404, "invalid_jd", "That tracked job could not be found.");

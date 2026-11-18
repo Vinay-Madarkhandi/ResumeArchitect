@@ -110,6 +110,16 @@ export async function moveJob(userId: string, id: string, stage: ApplicationStat
   return row;
 }
 
+/** Puts a scanned or pasted posting on the tracker board, once. */
+export async function trackJobDescription(userId: string, id: string) {
+  const [row] = await db.update(jobs).set({
+    tracker_stage: "saved",
+    tracker_updated_at: sql`now()`,
+    tracker_history: sql`jsonb_build_array(jsonb_build_object('stage', 'saved', 'at', now()))`,
+  }).where(and(owned(userId, id), isNull(jobs.tracker_stage))).returning({ id: jobs.id });
+  return row;
+}
+
 export async function registerTailoredJob(userId: string, id: string, resumeId: string, tx: Pick<typeof db, "update">) {
   await tx.update(jobs).set({
     tracker_stage: "saved",

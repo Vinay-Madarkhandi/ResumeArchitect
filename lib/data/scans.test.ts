@@ -7,7 +7,7 @@ import { buildMatchReport } from "@/lib/report/matchReport";
 import type { JobFacts } from "@/lib/schemas/jobFacts";
 import { addJobs, deleteJob, listJobs } from "./jobs";
 import { createJobDescription, findJobDescriptionByText, getJobDescription, listScanTargets, saveJobFacts } from "./job-descriptions";
-import { createScan, deleteScan, getScan, linkScanResume, listScans } from "./scans";
+import { createScan, deleteScan, getScan, saveScannedResume, listScans } from "./scans";
 
 const fixture = vi.hoisted(() => ({ close: async () => {} }));
 vi.mock("@/lib/db", async () => {
@@ -73,8 +73,13 @@ describe("scans", () => {
   it("can't be linked to someone else's scan", async () => {
     const jobId = await createJobDescription(owner, { raw_text: JOB_TEXT });
     const id = await scanFor(owner, jobId);
-    await linkScanResume(stranger, id, randomUUID());
+    const values = { kind: "tailored" as const, title: "Scanned resume", content: resume };
+    expect(await saveScannedResume(stranger, id, values)).toBeUndefined();
     expect((await getScan(owner, id))?.resumeId).toBeNull();
+    const saved = await saveScannedResume(owner, id, values);
+    expect(saved).toBeTruthy();
+    expect(await saveScannedResume(owner, id, values)).toBe(saved);
+    expect((await getScan(owner, id))?.resumeId).toBe(saved);
   });
 });
 
