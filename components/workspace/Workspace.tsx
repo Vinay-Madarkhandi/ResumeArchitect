@@ -204,6 +204,7 @@ export function Workspace({ resume, session, jobText, initialView }: WorkspacePr
 
   function changeTemplate(next: TemplateId) {
     setTemplate(next);
+    setChoosingTemplate(false);
     patch(resume.id, { template: next }).catch(() => toast("Couldn't save the template choice.", "error"));
   }
 
