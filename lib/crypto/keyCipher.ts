@@ -14,16 +14,16 @@ const AUTH_TAG_LENGTH = 16;
 const ALGORITHM = "aes-256-gcm";
 
 function getEncryptionKey(): Buffer {
-  const secret = process.env.GEMINI_KEY_ENCRYPTION_SECRET;
+  const secret = process.env.KEY_ENCRYPTION_SECRET;
   if (!secret) {
     throw new Error(
-      "GEMINI_KEY_ENCRYPTION_SECRET is not set. Generate one with `openssl rand -base64 32`."
+      "KEY_ENCRYPTION_SECRET is not set. Generate one with `openssl rand -base64 32`."
     );
   }
   const key = Buffer.from(secret, "base64");
   if (key.length !== 32) {
     throw new Error(
-      "GEMINI_KEY_ENCRYPTION_SECRET must decode to exactly 32 bytes (base64 of `openssl rand -base64 32`)."
+      "KEY_ENCRYPTION_SECRET must decode to exactly 32 bytes (base64 of `openssl rand -base64 32`)."
     );
   }
   return key;
