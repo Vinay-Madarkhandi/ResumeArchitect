@@ -30,6 +30,9 @@ export function registerResumeFonts() {
       { src: fontPath("HankenGrotesk-Medium.ttf"), fontWeight: 500 },
       { src: fontPath("HankenGrotesk-SemiBold.ttf"), fontWeight: 600 },
       { src: fontPath("HankenGrotesk-Bold.ttf"), fontWeight: 700 },
+      // Latin-subset italics from Fontsource (OFL); without them any italic text in a sans template fails to render.
+      { src: fontPath("HankenGrotesk-Italic.ttf"), fontWeight: 400, fontStyle: "italic" },
+      { src: fontPath("HankenGrotesk-BoldItalic.ttf"), fontWeight: 700, fontStyle: "italic" },
     ],
   });
 
