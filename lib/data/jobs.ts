@@ -47,15 +47,17 @@ function details(input: Omit<JobInput, "stage">) {
 }
 
 export async function listJobs(userId: string): Promise<TrackerJob[]> {
-  const rows = await db.select({
-    job: jobs,
-    resumeId: sql<string | null>`(select ${resumes.id} from ${resumes}
-      where ${resumes.user_id} = ${userId} and ${resumes.job_description_id} = ${jobs.id}
-      and ${resumes.kind} = 'tailored' order by ${resumes.created_at} desc, ${resumes.id} limit 1)`,
-    reportId: sql<string | null>`(select ${scans.id} from ${scans}
-      where ${scans.user_id} = ${userId} and ${scans.job_description_id} = ${jobs.id}
-      order by ${scans.created_at} desc, ${scans.id} limit 1)`,
-  }).from(jobs).where(and(eq(jobs.user_id, userId), isNotNull(jobs.tracker_stage)))
+  const latestResume = db.select({ id: resumes.id }).from(resumes).where(and(
+    eq(resumes.user_id, userId), eq(resumes.job_description_id, jobs.id), eq(resumes.kind, "tailored"),
+  )).orderBy(desc(resumes.created_at), desc(resumes.id)).limit(1).as("latest_resume");
+  const latestReport = db.select({ id: scans.id }).from(scans).where(and(
+    eq(scans.user_id, userId), eq(scans.job_description_id, jobs.id),
+  )).orderBy(desc(scans.created_at), desc(scans.id)).limit(1).as("latest_report");
+
+  const rows = await db.select({ job: jobs, resumeId: latestResume.id, reportId: latestReport.id }).from(jobs)
+    .leftJoinLateral(latestResume, sql`true`)
+    .leftJoinLateral(latestReport, sql`true`)
+    .where(and(eq(jobs.user_id, userId), isNotNull(jobs.tracker_stage)))
     .orderBy(desc(jobs.tracker_updated_at), desc(jobs.id));
   return rows.map(({ job, ...links }) => ({ ...toRecord(job), id: job.id, ...links }));
 }
