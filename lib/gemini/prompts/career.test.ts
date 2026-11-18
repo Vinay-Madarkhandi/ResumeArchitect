@@ -52,11 +52,16 @@ describe("suggestLinkedIn", () => {
 });
 
 describe("interview prompts", () => {
-  it("keeps question ids unique", async () => {
+  it("retries question sets with missing categories and keeps ids unique", async () => {
     const q = { id: "outage", category: "behavioral", question: "Tell me about an outage.", assessing: "Ownership.", requirement: null };
-    const questions = await writeInterviewQuestions(fakeModel([{ questions: [q, q, { ...q, id: "" }] }]), {
+    const model = fakeModel([
+      { questions: [q, q, q] },
+      { questions: [q, { ...q, category: "technical" }, { ...q, category: "role", id: "" }] },
+    ]);
+    const questions = await writeInterviewQuestions(model, {
       job: NORTHWIND, jobText: null, resumeMarkdown: RESUME,
     });
+    expect(model.calls).toHaveLength(2);
     expect(questions.map((x) => x.id)).toEqual(["outage", "outage-1", "q-2"]);
   });
 

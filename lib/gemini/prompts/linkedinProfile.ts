@@ -44,6 +44,7 @@ export async function suggestLinkedIn(model: JsonModel, input: LinkedInSuggestio
       : "# Target role\nNone given. Aim at the role their resume most clearly supports.",
     `# Current LinkedIn headline\n${profile.headline || "(empty)"}`,
     `# Current About section\n${profile.about || "(empty)"}`,
+    `# Current experience\n${profile.experience || "(empty)"}`,
     `# Current skills\n${profile.skills || "(empty)"}`,
     `# Candidate's resume\n${resumeMarkdown}`,
   ].join("\n\n");

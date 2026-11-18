@@ -1,7 +1,12 @@
 import { generateStructured, type JsonModel } from "@/lib/gemini/model";
-import { InterviewQuestionSetSchema, type InterviewQuestion } from "@/lib/schemas/career";
+import { QUESTION_CATEGORIES, InterviewQuestionSetSchema, type InterviewQuestion } from "@/lib/schemas/career";
 import type { JobAnalysis } from "@/lib/schemas/jobAnalysis";
 import { uniqueIds } from "./uniqueIds";
+
+const GeneratedQuestionsSchema = InterviewQuestionSetSchema.refine(
+  ({ questions }) => QUESTION_CATEGORIES.every((category) => questions.some((q) => q.category === category)),
+  "Include behavioral, technical, and role-specific questions.",
+);
 
 const SYSTEM = `You prepare a candidate for interviews for one specific job. You get the
 job's analysis, the job post when there is one, and the candidate's resume
@@ -42,7 +47,7 @@ export async function writeInterviewQuestions(
     label: "interviewQuestions",
     system: SYSTEM,
     prompt,
-    schema: InterviewQuestionSetSchema,
+    schema: GeneratedQuestionsSchema,
     temperature: 0.5,
   });
   return uniqueIds(questions, "q");
