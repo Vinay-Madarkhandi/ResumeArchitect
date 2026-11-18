@@ -1,0 +1,167 @@
+name: resumearchitect
+
+x-platform: &platform
+  image: resumearchitect-platform:local
+  build:
+    context: .
+    target: platform
+
+x-app-env: &app-env
+  APP_URL: ${APP_URL:-http://localhost:3100}
+  DATABASE_URL: postgres://${POSTGRES_USER:-resume}:${POSTGRES_PASSWORD:-resume}@postgres:5432/${POSTGRES_DB:-resume}
+  REDIS_URL: redis://redis:6379
+  S3_ENDPOINT: http://localstack:4566
+  S3_PUBLIC_ENDPOINT: ${S3_PUBLIC_ENDPOINT:-http://localhost:14566}
+  AWS_REGION: ${AWS_REGION:-us-east-1}
+  AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-test}
+  AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-test}
+  KEY_ENCRYPTION_SECRET: ${KEY_ENCRYPTION_SECRET:-}
+  ADMIN_EMAILS: ${ADMIN_EMAILS:-}
+  RESEND_API_KEY: ${RESEND_API_KEY:-}
+  EMAIL_FROM: ${EMAIL_FROM:-}
+  GEMINI_API_BASE_URL: ${GEMINI_API_BASE_URL:-}
+  GEMINI_MODEL: ${GEMINI_MODEL:-}
+  LOG_LEVEL: ${LOG_LEVEL:-info}
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-resume}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-resume}
+      POSTGRES_DB: ${POSTGRES_DB:-resume}
+    ports: ["127.0.0.1:${POSTGRES_PORT:-55432}:5432"]
+    volumes: [postgres:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory-policy", "noeviction"]
+    ports: ["127.0.0.1:${REDIS_PORT:-16379}:6379"]
+    volumes: [redis:/data]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  localstack:
+    # LocalStack Community 4.14.0 plus an open-source S3 persistence extension.
+    image: gresau/localstack-persist:4.14.0@sha256:02045e045f1f3868c3cadef78de2a7c048840f48ffd506babf4a36f42a4845ba
+    restart: unless-stopped
+    environment:
+      SERVICES: s3
+      PERSIST_DEFAULT: "0"
+      PERSIST_S3: "1"
+      PERSIST_FREQUENCY: "1"
+      AWS_DEFAULT_REGION: ${AWS_REGION:-us-east-1}
+    ports: ["127.0.0.1:${S3_PORT:-14566}:4566"]
+    volumes:
+      - localstack:/persisted-data
+      - ./docker/init-s3.sh:/etc/localstack/init/ready.d/init-s3.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "awslocal s3api head-bucket --bucket resume-uploads && awslocal s3api head-bucket --bucket resume-exports && awslocal s3api head-bucket --bucket backups"]
+      interval: 10s
+      timeout: 18s
+      retries: 20
+
+  migrate:
+    <<: *platform
+    command: ["node", "dist/migrate.js"]
+    environment: *app-env
+    depends_on:
+      postgres: { condition: service_healthy }
+
+  web:
+    <<: *platform
+    restart: unless-stopped
+    environment:
+      <<: *app-env
+      HOSTNAME: 0.0.0.0
+      PORT: "3000"
+    ports: ["127.0.0.1:${WEB_PORT:-3100}:3000"]
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+      redis: { condition: service_healthy }
+      localstack: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 7s
+      retries: 20
+
+  worker:
+    <<: *platform
+    restart: unless-stopped
+    command: ["node", "dist/worker.js"]
+    environment: *app-env
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+      redis: { condition: service_healthy }
+      localstack: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD", "node", "-e", "const Redis=require('ioredis');const r=new Redis(process.env.REDIS_URL);r.get('worker:heartbeat:'+require('node:os').hostname()).then(v=>process.exit(v==='1'?0:1)).catch(()=>process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+
+  caddy:
+    image: caddy:2
+    profiles: [prod]
+    restart: unless-stopped
+    environment:
+      APP_URL: ${APP_URL:-http://localhost:3100}
+    ports: ["80:80", "443:443", "443:443/udp"]
+    volumes:
+      - ./docker/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      web: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:2019/config/"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+
+  backup:
+    build:
+      context: .
+      target: backup
+    profiles: [prod]
+    restart: unless-stopped
+    environment:
+      PGHOST: postgres
+      PGUSER: ${POSTGRES_USER:-resume}
+      PGPASSWORD: ${POSTGRES_PASSWORD:-resume}
+      PGDATABASE: ${POSTGRES_DB:-resume}
+      S3_ENDPOINT: http://localstack:4566
+      AWS_REGION: ${AWS_REGION:-us-east-1}
+      AWS_DEFAULT_REGION: ${AWS_REGION:-us-east-1}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-test}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-test}
+      AWS_REQUEST_CHECKSUM_CALCULATION: when_required
+      AWS_RESPONSE_CHECKSUM_VALIDATION: when_required
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+      localstack: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD-SHELL", "test -f /tmp/last-backup && test $$(($$(date +%s) - $$(cat /tmp/last-backup))) -lt 90000"]
+      start_period: 2m
+      start_interval: 5s
+      interval: 5m
+      timeout: 5s
+      retries: 2
+
+volumes:
+  postgres:
+  redis:
+  localstack:
+  caddy-data:
+  caddy-config:
