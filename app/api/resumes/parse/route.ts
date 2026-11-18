@@ -1,6 +1,10 @@
-import { cookies } from "next/headers";
+import { limitAi } from "@/lib/server/rateLimit";
+import { deleteObjects, putObject } from "@/lib/storage";
+import { referencedObjects, replaceImportDraft } from "@/lib/data/resumes";
+import { logger } from "@/lib/logger";
+import { checkOrigin } from "@/lib/auth/guards";
+import { currentUser } from "@/lib/auth/current-user";
 import { NextResponse } from "next/server";
-import { createClient } from "@/utils/supabase/server";
 import { loadGeminiKey } from "@/lib/server/geminiKey";
 import { detectKind, ImportError, importResume } from "@/lib/server/importResume";
 import { MAX_RESUME_UPLOAD_BYTES, RESUME_UPLOADS_BUCKET, originalResumePath } from "@/lib/storage/paths";
@@ -20,10 +24,9 @@ function fail(status: number, code: string, message: string) {
  * master only after they review it (finalizeMasterResume).
  */
 export async function POST(request: Request) {
-  const supabase = createClient(await cookies());
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const originError = checkOrigin(request);
+  if (originError) return originError;
+  const user = await currentUser();
   if (!user) return fail(401, "unauthorized", "Sign in to continue.");
 
   const form = await request.formData().catch(() => null);
@@ -31,7 +34,11 @@ export async function POST(request: Request) {
   const file = form.get("file");
   const pasted = form.get("text");
 
-  const key = await loadGeminiKey(supabase, user.id);
+  const key = await loadGeminiKey(user.id);
+  if (key.ok) {
+    const limited = await limitAi(user.id, "resume-import");
+    if (limited) return fail(429, "rate_limited", "Too many imports. Try again later.");
+  }
   const apiKey = key.ok ? key.apiKey : null;
   const resumeId = crypto.randomUUID();
   let storagePath: string | null = null;
@@ -47,10 +54,12 @@ export async function POST(request: Request) {
 
       storagePath = originalResumePath(user.id, resumeId, kind === "text" ? "txt" : kind);
       fileName = file.name;
-      const { error: uploadError } = await supabase.storage
-        .from(RESUME_UPLOADS_BUCKET)
-        .upload(storagePath, buffer, { contentType: file.type || "application/octet-stream", upsert: false });
-      if (uploadError) storagePath = null; // Keeping the original is a convenience, not a requirement.
+      try {
+        await putObject(user.id, RESUME_UPLOADS_BUCKET, storagePath, Buffer.from(buffer), file.type || "application/octet-stream");
+      } catch {
+        logger.warn({ userId: user.id, resumeId }, "Could not keep original resume upload");
+        storagePath = null;
+      }
 
       result = await importResume({ kind, buffer }, apiKey);
     } else if (typeof pasted === "string" && pasted.trim()) {
@@ -60,9 +69,8 @@ export async function POST(request: Request) {
       return fail(400, "no_file", "Upload a file or paste your resume.");
     }
 
-    const { error } = await supabase.from("resumes").insert({
+    const stale = await replaceImportDraft(user.id, {
       id: resumeId,
-      user_id: user.id,
       kind: "master",
       title: result.title,
       content: result.content,
@@ -72,26 +80,13 @@ export async function POST(request: Request) {
       original_file_name: fileName,
       design_source_path: result.keepsDesign ? storagePath : null,
     });
-    if (error) throw new Error("insert failed");
-
-    // Drop earlier drafts that were never reviewed, so abandoned uploads don't pile up.
-    const { data: stale } = await supabase
-      .from("resumes")
-      .select("id, original_file_storage_path")
-      .eq("user_id", user.id)
-      .eq("kind", "master")
-      .eq("status", "draft")
-      .eq("is_default", false)
-      .neq("id", resumeId);
-    if (stale?.length) {
-      const paths = stale.map((r) => r.original_file_storage_path).filter((p): p is string => !!p);
-      if (paths.length) await supabase.storage.from(RESUME_UPLOADS_BUCKET).remove(paths);
-      await supabase.from("resumes").delete().in("id", stale.map((r) => r.id));
-    }
+    const referenced = await referencedObjects(user.id, RESUME_UPLOADS_BUCKET, stale).catch(() => new Set(stale));
+    await deleteObjects(user.id, RESUME_UPLOADS_BUCKET, stale.filter((path) => !referenced.has(path)))
+      .catch(() => logger.warn({ userId: user.id }, "Could not remove stale uploads"));
 
     return NextResponse.json({ resumeId, usedAi: result.usedAi, keepsDesign: result.keepsDesign && !!storagePath });
   } catch (error) {
-    if (storagePath) await supabase.storage.from(RESUME_UPLOADS_BUCKET).remove([storagePath]);
+    if (storagePath) await deleteObjects(user.id, RESUME_UPLOADS_BUCKET, [storagePath]).catch(() => {});
     if (error instanceof ImportError) return fail(422, "parse_failed", error.message);
     return fail(500, "save_failed", "Couldn't save your resume. Try again.");
   }
