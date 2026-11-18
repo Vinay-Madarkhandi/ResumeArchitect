@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { currentUser } from "@/lib/auth/current-user";
 import { checkOrigin } from "@/lib/auth/guards";
+import { rateLimit } from "@/lib/cache/rateLimit";
 import { addJobs, archiveJob, deleteJob, editJob, listJobs, moveJob } from "@/lib/data/jobs";
 import { exportJobsCsv, importJobsCsv, maxCsvBytes } from "@/lib/tracker/csv";
 import { jobSchema } from "@/lib/tracker/schema";
@@ -15,6 +16,7 @@ const mutation = z.discriminatedUnion("action", [
   z.object({ action: z.literal("delete"), id: z.uuid() }),
 ]);
 
+const IMPORTS_PER_HOUR = 10;
 
 const fail = (error: string, status: number) => Response.json({ error }, { status });
 
@@ -35,6 +37,12 @@ export async function POST(request: Request) {
   if (!user) return fail("Sign in to edit your jobs.", 401);
 
   const csv = request.headers.get("content-type")?.split(";")[0] === "text/csv";
+  if (csv) {
+    const retrySeconds = await rateLimit("tracker-import", user.id, IMPORTS_PER_HOUR, 3_600_000);
+    if (retrySeconds) {
+      return Response.json({ error: "Too many imports. Try again later." }, { status: 429, headers: { "Retry-After": String(retrySeconds) } });
+    }
+  }
   let text: string;
   try {
     text = await readText(request, csv ? maxCsvBytes : 512_000);
