@@ -33,7 +33,10 @@ export default async function NewApplicationPage({ searchParams }: PageProps<"/n
       key={`${posting?.id ?? "new"}:${typeof resume === "string" ? resume : ""}`}
       sources={sources}
       initialSourceId={sources.find((s) => s.id === resume)?.id}
-      tracked={posting ? { id: posting.id, title: posting.job_title || "Untitled job", company: posting.company || "", description: posting.raw_text } : null}
+      posting={posting ? {
+        id: posting.id, title: posting.job_title || "Untitled job", company: posting.company || "",
+        description: posting.raw_text, inTracker: posting.tracker_stage !== null,
+      } : null}
       hasKey={profile?.gemini_key_status === "valid"}
       retryId={typeof retry === "string" ? retry : null}
     />
