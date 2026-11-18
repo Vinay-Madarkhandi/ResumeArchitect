@@ -68,23 +68,23 @@ export async function overview() {
   const scanDay = utcDay(scans.created_at);
   const tailoringDay = utcDay(tailoringSessions.created_at);
   const aiDay = utcDay(aiCalls.at);
-  const [[usersSummary], signups, scanCounts, tailoringCounts, calls, failures] = await Promise.all([
-    db.select({
+  const [[usersSummary], signups, scanCounts, tailoringCounts, calls, failures] = await db.transaction((tx) => Promise.all([
+    tx.select({
       total: count(),
       verified: sql<number>`count(${users.email_verified_at})`.mapWith(Number),
     }).from(users),
-    db.select({ day: userDay, count: count() }).from(users)
+    tx.select({ day: userDay, count: count() }).from(users)
       .where(inWindow(users.created_at)).groupBy(userDay),
-    db.select({ day: scanDay, count: count() }).from(scans)
+    tx.select({ day: scanDay, count: count() }).from(scans)
       .where(inWindow(scans.created_at)).groupBy(scanDay),
-    db.select({ day: tailoringDay, count: count() }).from(tailoringSessions)
+    tx.select({ day: tailoringDay, count: count() }).from(tailoringSessions)
       .where(inWindow(tailoringSessions.created_at)).groupBy(tailoringDay),
-    db.select({ day: aiDay, count: count() }).from(aiCalls)
+    tx.select({ day: aiDay, count: count() }).from(aiCalls)
       .where(inWindow(aiCalls.at)).groupBy(aiDay),
-    db.select({ code: aiCalls.error_code, count: count() }).from(aiCalls)
+    tx.select({ code: aiCalls.error_code, count: count() }).from(aiCalls)
       .where(and(inWindow(aiCalls.at), eq(aiCalls.ok, false)))
       .groupBy(aiCalls.error_code).orderBy(desc(count()), aiCalls.error_code),
-  ]);
+  ]), { isolationLevel: "repeatable read", accessMode: "read only" });
   return {
     users: usersSummary, signups: fillDays(days, signups), scans: fillDays(days, scanCounts),
     tailorings: fillDays(days, tailoringCounts), calls: fillDays(days, calls), failures,

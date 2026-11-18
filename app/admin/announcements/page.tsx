@@ -32,17 +32,17 @@ export default async function AnnouncementsPage({ searchParams }: PageProps<"/ad
       <DataTable title="Announcements" headers={["Message", "Level", "Status", "Start (UTC)", "End (UTC)", "Actions"]}>
         {rows.length === 0 && <EmptyRow columns={6}>No announcements.</EmptyRow>}
         {rows.slice(0, PAGE_SIZE).map(({ status, ...row }) => (
-            <tr key={row.id}>
-              <td className="min-w-48 max-w-lg whitespace-pre-wrap wrap-anywhere">{row.body}</td>
-              <td className="capitalize">{row.level}</td>
-              <td><Badge tone={status === "Active" ? "add" : status === "Scheduled" ? "query" : "neutral"}>{status}</Badge></td>
-              <td className="whitespace-nowrap">{dateTime(row.starts_at)}</td>
-              <td className="whitespace-nowrap">{dateTime(row.ends_at)}</td>
-              <td>{status !== "Ended" && (
-                <ActionForm action={endAnnouncement} fields={{ id: row.id }} label={status === "Scheduled" ? "Cancel schedule" : "End announcement"}
-                  variant="danger" confirmation={status === "Scheduled" ? "Cancel this scheduled announcement." : "Remove this announcement from the signed-in banner."} />
-              )}</td>
-            </tr>
+          <tr key={row.id}>
+            <td className="min-w-48 max-w-lg whitespace-pre-wrap wrap-anywhere">{row.body}</td>
+            <td className="capitalize">{row.level}</td>
+            <td><Badge tone={status === "Active" ? "add" : status === "Scheduled" ? "query" : "neutral"}>{status}</Badge></td>
+            <td className="whitespace-nowrap">{dateTime(row.starts_at)}</td>
+            <td className="whitespace-nowrap">{dateTime(row.ends_at)}</td>
+            <td>{status !== "Ended" && (
+              <ActionForm action={endAnnouncement} fields={{ id: row.id }} label={status === "Scheduled" ? "Cancel schedule" : "End announcement"}
+                variant="danger" confirmation={status === "Scheduled" ? "Cancel this scheduled announcement." : "Remove this announcement from the signed-in banner."} />
+            )}</td>
+          </tr>
         ))}
       </DataTable>
       <Pager path="/admin/announcements" page={page} hasNext={rows.length > PAGE_SIZE} />
