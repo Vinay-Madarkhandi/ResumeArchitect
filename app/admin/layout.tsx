@@ -1,3 +1,4 @@
+import { AnnouncementBanner } from "@/components/layout/AnnouncementBanner";
 import type { Metadata } from "next";
 import { AdminNav } from "@/components/admin/AdminNav";
 import { RefreshSession } from "@/components/auth/RefreshSession";
@@ -12,6 +13,7 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
     <>
       <RefreshSession />
       <AppHeader email={user.email} admin />
+      <AnnouncementBanner />
       <div className="mx-auto max-w-6xl px-4 pt-5 sm:px-6">
         <AdminNav />
         <main className="pt-6 pb-16">{children}</main>

@@ -1,3 +1,4 @@
+import { AnnouncementBanner } from "@/components/layout/AnnouncementBanner";
 import { RefreshSession } from "@/components/auth/RefreshSession";
 import type { ReactNode } from "react";
 import { Logo } from "@/components/ui/Logo";
@@ -17,6 +18,7 @@ export default function OnboardingLayout({ children }: { children: ReactNode }) 
           <ThemeToggle />
         </div>
       </header>
+      <AnnouncementBanner />
       <main className="mx-auto max-w-6xl px-4 pb-24 pt-10 sm:px-6 sm:pt-14">{children}</main>
     </div>
   );

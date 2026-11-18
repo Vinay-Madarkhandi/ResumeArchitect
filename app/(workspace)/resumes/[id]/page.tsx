@@ -1,3 +1,4 @@
+import { AnnouncementBanner } from "@/components/layout/AnnouncementBanner";
 import { getResume } from "@/lib/data/resumes";
 import { currentUser } from "@/lib/auth/current-user";
 import { RefreshSession } from "@/components/auth/RefreshSession";
@@ -53,6 +54,7 @@ export default async function ResumePage({ params, searchParams }: PageProps<"/r
   return (
     <>
       <RefreshSession />
+      <AnnouncementBanner />
       <Workspace
       resume={{
         id: resume.id,
