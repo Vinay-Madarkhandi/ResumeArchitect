@@ -99,6 +99,42 @@ describe("sessions", () => {
     await db.update(users).set({ banned_at: null, ban_reason: null }).where(eq(users.id, userId));
   });
 
+  it("ignores a cache write that was in flight when the account was banned", async () => {
+    const session = await create();
+    const key = cacheKey(session.token);
+    const redis = cache() as unknown as Record<"set" | "eval", (...args: unknown[]) => Promise<unknown>>;
+    const original = { set: redis.set, eval: redis.eval };
+    let markWritePending!: () => void;
+    let resumeCacheWrite!: () => void;
+    const writePending = new Promise<void>((done) => { markWritePending = done; });
+    const writeMayProceed = new Promise<void>((done) => { resumeCacheWrite = done; });
+    for (const command of ["set", "eval"] as const) {
+      redis[command] = async (...args: unknown[]) => {
+        if (args.includes(key)) {
+          markWritePending();
+          await writeMayProceed;
+        }
+        return Reflect.apply(original[command], redis, args);
+      };
+    }
+    const read = validateSession(session.token);
+    try {
+      await Promise.race([writePending, read.then(() => { throw new Error("the lookup did not reach the cache write"); })]);
+      const ids = await db.transaction((tx) => banUser(tx, userId, "abuse"));
+      expect(ids).toEqual([hashToken(session.token)]);
+      await clearSessionCache(ids);
+      resumeCacheWrite();
+      await read;
+      await expect(validateSession(session.token)).resolves.toBeNull();
+      await expect(cache().exists(key)).resolves.toBe(0);
+    } finally {
+      resumeCacheWrite();
+      await read;
+      Object.assign(redis, original);
+      await db.update(users).set({ banned_at: null, ban_reason: null }).where(eq(users.id, userId));
+    }
+  });
+
   it("revokes a banned account's cached session in Postgres", async () => {
     const session = await create();
     await validateSession(session.token);

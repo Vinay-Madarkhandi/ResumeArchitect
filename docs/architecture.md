@@ -46,7 +46,9 @@ checks are the app's job). Put those queries in small per-entity modules
 - Sessions: random 32-byte token in an `HttpOnly; Secure; SameSite=Lax; Path=/`
   cookie `ra_session`. Only `sha256(token)` is stored, in `sessions` (Postgres) with
   `expires_at` (30 days sliding, renewed when < 15 days left). Redis caches the
-  session lookup for 5 min; revocation deletes both.
+  session lookup for 5 min; revocation deletes both and leaves a 15 min
+  `session-revoked:<id>` marker, and the cache write is skipped while that marker
+  exists, so a lookup in flight during a ban cannot re-create the key.
 - CSRF: mutations are server actions (Next checks Origin) or route handlers that
   check `Origin` against `APP_URL` in one helper.
 - Email verification and password reset: random token emailed as a link, stored as

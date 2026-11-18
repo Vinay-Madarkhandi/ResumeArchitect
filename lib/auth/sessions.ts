@@ -6,6 +6,13 @@ import { hashToken, isToken, newToken } from "./secrets";
 
 const DAY = 86_400_000;
 const cacheKey = (id: string) => `session:${id}`;
+// Session ids are never reused, so a revocation marker acts as that session's
+// epoch: a lookup that read Postgres before the revocation cannot cache it after.
+const revokedKey = (id: string) => `session-revoked:${id}`;
+const REVOKED_TTL = 900;
+const cacheUnlessRevoked = `
+if redis.call('EXISTS', KEYS[2]) == 0 then redis.call('SET', KEYS[1], ARGV[1], 'EX', ARGV[2]) end
+`;
 
 export async function createSession(tx: Transaction, userId: string, ip: string | null, userAgent: string | null) {
   const token = newToken();
@@ -28,7 +35,7 @@ export async function validateSession(token: string, renew = false) {
     gt(sessions.expires_at, sql`now()`), isNull(users.banned_at), isNotNull(users.email_verified_at),
   ));
   if (!row) return null;
-  if (!owner) await cache().set(cacheKey(id), row.id, "EX", 300).catch(() => {});
+  if (!owner) await cache().eval(cacheUnlessRevoked, 2, cacheKey(id), revokedKey(id), row.id, 300).catch(() => {});
 
   if (renew && Date.parse(row.expiresAt) - Date.now() < 15 * DAY) {
     const expiresAt = new Date(Date.now() + 30 * DAY).toISOString();
@@ -54,7 +61,10 @@ export async function banUser(tx: Transaction, userId: string, reason: string) {
 }
 
 export async function clearSessionCache(ids: string[]) {
-  if (ids.length) await cache().del(...ids.map(cacheKey)).catch(() => {});
+  if (!ids.length) return;
+  const revoke = cache().multi();
+  for (const id of ids) revoke.set(revokedKey(id), "1", "EX", REVOKED_TTL).del(cacheKey(id));
+  await revoke.exec().catch(() => {});
 }
 
 export async function revokeSession(token: string) {
