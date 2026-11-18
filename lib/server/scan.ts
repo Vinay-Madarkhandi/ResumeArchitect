@@ -72,10 +72,11 @@ export async function ownedJobFacts(userId: string, jobId: string) {
   return facts.ok ? { ok: true as const, value: { job, facts: facts.value } } : facts;
 }
 
-/** Scores the resume against the job and saves the scan. Returns the scan id. */
+/** Counts a scan against the hourly limit. Call it before reading any input, so a refused scan costs nothing. */
+export const limitScans = (userId: string) => limited(userId, "scan", SCANS_PER_HOUR);
+
+/** Scores the resume against the job and saves the scan. Returns the scan id. Callers apply `limitScans` first. */
 export async function scanResume(userId: string, resume: ScannedResume, job: JobRow): Promise<ScanResult<string>> {
-  const slow = await limited(userId, "scan", SCANS_PER_HOUR);
-  if (slow) return slow;
   const facts = await jobFactsFor(userId, job);
   if (!facts.ok) return facts;
   const report = buildMatchReport({ job: facts.value, jobText: job.raw_text, resume: resume.content, file: resume.file, asOf: new Date() });

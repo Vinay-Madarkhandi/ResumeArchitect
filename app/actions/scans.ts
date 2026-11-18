@@ -9,7 +9,7 @@ import { deleteScan, getScan, saveScannedResume } from "@/lib/data/scans";
 import { resolveDocument } from "@/lib/documentConversion";
 import { markdownToDocument } from "@/lib/documentMarkdown";
 import type { ReportTarget } from "@/lib/report/target";
-import { ownedJobFacts, scanResume } from "@/lib/server/scan";
+import { limitScans, ownedJobFacts, scanResume } from "@/lib/server/scan";
 
 type Result<T = object> = ({ ok: true } & T) | { ok: false; error: string };
 
@@ -34,6 +34,8 @@ export async function rescanAction(id: string): Promise<Result<{ id: string }>> 
   const content = resolveDocument(saved?.content ?? scan.resumeContent) ?? (scan.resumeText ? markdownToDocument(scan.resumeText) : null);
   if (!content) return { ok: false, error: "The scanned resume is gone. Start a new scan." };
 
+  const slow = await limitScans(user.id);
+  if (slow) return { ok: false, error: slow.error };
   const result = await scanResume(user.id, { id: saved?.id ?? null, label: saved?.title ?? scan.resumeLabel, content, file: null }, job);
   if (!result.ok) return { ok: false, error: result.error };
   revalidatePath("/scans");
@@ -97,6 +99,8 @@ export async function saveWorkspaceScan(resumeId: string, jobId: string): Promis
   const content = resolveDocument(resume?.content);
   if (!job?.raw_text.trim() || !resume || !content) return { ok: false, error: "That resume or job wasn't found." };
 
+  const slow = await limitScans(user.id);
+  if (slow) return { ok: false, error: slow.error };
   const result = await scanResume(user.id, { id: resume.id, label: resume.title, content, file: null }, job);
   if (!result.ok) return { ok: false, error: result.error };
   revalidatePath("/scans");

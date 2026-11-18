@@ -1,17 +1,20 @@
-import mammoth from "mammoth";
-import { extractText, getDocumentProxy } from "unpdf";
 import { geminiModel } from "@/lib/gemini/model";
 import { parseResume } from "@/lib/gemini/prompts/parseResume";
 import { markdownToDocument } from "@/lib/documentMarkdown";
-import { resumeContentToDoc } from "@/lib/documentConversion";
-import { parseResumeFile } from "@/lib/resume-parser";
-import { docxToDocument } from "@/lib/docx/inPlace";
-import { toUnits } from "@/lib/resume/units";
+import { readWithinBudget } from "@/lib/report/inspectBudget";
+import { MAX_UPLOAD_BYTES } from "@/lib/report/inspectLimits";
+import type { ResumeFileFacts } from "@/lib/report/report";
+import type { ExtractedResume } from "@/lib/resume/extract";
 import type { DocumentContent } from "@/lib/schemas/document";
 
 export class ImportError extends Error {}
 
 export type SourceKind = "pdf" | "docx" | "text";
+
+/** A resume as long as anyone writes, in characters; pasted or uploaded text past it isn't a resume. */
+export const MAX_RESUME_CHARS = 40_000;
+/** A multipart upload: the file plus the other form fields. */
+export const MAX_UPLOAD_FORM_BYTES = MAX_UPLOAD_BYTES + 1024 * 1024;
 
 export function detectKind(file: File): SourceKind | null {
   const name = file.name.toLowerCase();
@@ -26,25 +29,34 @@ export function detectKind(file: File): SourceKind | null {
   return null;
 }
 
-export async function extractPlainText(kind: SourceKind, buffer: ArrayBuffer): Promise<string> {
-  try {
-    if (kind === "pdf") {
-      const pdf = await getDocumentProxy(new Uint8Array(buffer.slice(0)));
-      const { text } = await extractText(pdf, { mergePages: true });
-      return text;
-    }
-    if (kind === "docx") {
-      const { value } = await mammoth.extractRawText({ buffer: Buffer.from(buffer) });
-      return value;
-    }
-    return new TextDecoder().decode(buffer);
-  } catch {
-    throw new ImportError(
-      kind === "pdf"
-        ? "This PDF couldn't be read. It may be password-protected or damaged."
-        : "This file couldn't be read. Try exporting it again, or paste the text instead.",
-    );
+const UNREADABLE: Record<SourceKind, string> = {
+  pdf: "This PDF couldn't be read. It may be password-protected or damaged.",
+  docx: "This file couldn't be read. Try exporting it again, or paste the text instead.",
+  text: "This file couldn't be read. Try exporting it again, or paste the text instead.",
+};
+
+/**
+ * Reads an uploaded resume file. PDF and Word files are inspected and read
+ * inside the budgeted file worker (lib/report/inspectBudget.ts); one that is
+ * over a budget or unreadable is refused before anything else happens.
+ * Layout facts are null for a plain-text file.
+ */
+export async function readResumeUpload(file: File): Promise<{ kind: SourceKind; facts: ResumeFileFacts | null; resume: ExtractedResume }> {
+  const kind = detectKind(file);
+  if (!kind) throw new ImportError("Upload a PDF, Word (.docx), or text file.");
+  if (file.size > MAX_UPLOAD_BYTES) throw new ImportError("That file is over 8 MB. Upload a smaller one.");
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  if (kind === "text") {
+    const text = new TextDecoder().decode(bytes);
+    if (text.length > MAX_RESUME_CHARS) throw new ImportError("That's longer than a resume. Upload just your resume.");
+    return { kind, facts: null, resume: { source: "text", text, parsed: null } };
   }
+  const { facts, resume } = await readWithinBudget(kind, bytes);
+  if (facts.format === "invalid" && facts.reason === "too-large") {
+    throw new ImportError("That file is too large or complex to read. Save a simpler copy, or paste the text instead.");
+  }
+  if (facts.format === "invalid" || !resume) throw new ImportError(UNREADABLE[kind]);
+  return { kind, facts, resume };
 }
 
 /** Without AI: one paragraph per line, with short all-caps or title lines promoted to headings. */
@@ -64,27 +76,21 @@ export function plainTextToDocument(text: string): DocumentContent {
 }
 
 /**
- * Turns an uploaded file (or pasted text) into a resume document. A Word file
- * is read paragraph by paragraph, word for word, so its own design can be
- * kept on export (`keepsDesign`). Otherwise, with a Gemini key, the AI
- * rebuilds clean structure from the extracted text; without one, PDFs go
- * through the rule-based parser and other text is split by line.
+ * Turns an extracted resume into a resume document. A Word file read word
+ * for word keeps its own design on export (`keepsDesign`). Otherwise, with a
+ * Gemini key, the AI rebuilds clean structure from the text; without one,
+ * the rule-based PDF parse is used, or the text is split by line.
  */
 export async function importResume(
   userId: string,
-  input: { kind: SourceKind; buffer: ArrayBuffer } | { kind: "text"; text: string },
+  resume: ExtractedResume,
   apiKey: string | null,
 ): Promise<{ title: string; content: DocumentContent; usedAi: boolean; keepsDesign: boolean }> {
-  if ("buffer" in input && input.kind === "docx") {
-    const content = await docxToDocument(input.buffer.slice(0)).catch(() => null);
-    const units = content ? toUnits(content) : [];
-    if (content && units.length >= 3) {
-      const name = units[0].kind === "heading" ? units[0].text : "";
-      return { title: name || "Master resume", content, usedAi: false, keepsDesign: true };
-    }
+  if (resume.source === "word") {
+    return { title: resume.title || "Master resume", content: resume.content, usedAi: false, keepsDesign: true };
   }
 
-  const text = "text" in input ? input.text : await extractPlainText(input.kind, input.buffer);
+  const { text, parsed } = resume;
   if (text.replace(/\s+/g, "").length < 80) {
     throw new ImportError(
       "We found almost no text in that resume. If it's a scanned image, paste the text instead.",
@@ -93,21 +99,14 @@ export async function importResume(
 
   if (apiKey) {
     try {
-      const parsed = await parseResume(geminiModel(apiKey, userId), text);
-      const content = markdownToDocument(parsed.markdown);
-      if (content.content.length >= 3) return { title: parsed.title.trim() || "Master resume", content, usedAi: true, keepsDesign: false };
+      const ai = await parseResume(geminiModel(apiKey, userId), text);
+      const content = markdownToDocument(ai.markdown);
+      if (content.content.length >= 3) return { title: ai.title.trim() || "Master resume", content, usedAi: true, keepsDesign: false };
     } catch {
       // Fall through to the non-AI path; the user can still review and fix it.
     }
   }
 
-  if ("buffer" in input && input.kind === "pdf") {
-    try {
-      const { content } = await parseResumeFile(input.buffer.slice(0));
-      return { title: "Master resume", content: resumeContentToDoc(content), usedAi: false, keepsDesign: false };
-    } catch {
-      // Use the line-based fallback below.
-    }
-  }
+  if (parsed) return { title: "Master resume", content: parsed, usedAi: false, keepsDesign: false };
   return { title: "Master resume", content: plainTextToDocument(text), usedAi: false, keepsDesign: false };
 }

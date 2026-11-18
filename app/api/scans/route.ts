@@ -5,17 +5,14 @@ import { currentUser } from "@/lib/auth/current-user";
 import { createJobDescription, findJobDescriptionByText, getJobDescription } from "@/lib/data/job-descriptions";
 import { getResume } from "@/lib/data/resumes";
 import { resolveDocument } from "@/lib/documentConversion";
-import { MAX_UPLOAD_BYTES } from "@/lib/report/inspectLimits";
-import { inspectResumeFile } from "@/lib/report/inspectFile";
 import { MAX_JOB_DESCRIPTION_LENGTH, MIN_JOB_DESCRIPTION_LENGTH } from "@/lib/schemas/tailoring";
-import { detectKind, ImportError, importResume } from "@/lib/server/importResume";
-import { scanResume, type ScannedResume, type ScanResult } from "@/lib/server/scan";
+import { ImportError, importResume, MAX_RESUME_CHARS, MAX_UPLOAD_FORM_BYTES, readResumeUpload } from "@/lib/server/importResume";
+import { BodyTooLarge, readFormData } from "@/lib/server/request-body";
+import { limitScans, scanResume, type ScannedResume, type ScanResult } from "@/lib/server/scan";
 import { postingUrlSchema } from "@/lib/tracker/schema";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
-
-const MAX_PASTE_CHARS = 40_000;
 
 /** Pasted text bound for Postgres, which rejects U+0000. */
 const pasted = (schema: z.ZodString) => z.preprocess((v) => (typeof v === "string" ? v.replaceAll("\0", "") : v), schema);
@@ -26,7 +23,7 @@ const ScanForm = z.object({
     z.object({ source: z.literal("upload"), file: z.instanceof(File, { message: "Choose a PDF or Word file." }) }),
     z.object({
       source: z.literal("paste"),
-      text: pasted(z.string().trim().min(80, "Paste your whole resume.").max(MAX_PASTE_CHARS, "That's longer than a resume.")),
+      text: pasted(z.string().trim().min(80, "Paste your whole resume.").max(MAX_RESUME_CHARS, "That's longer than a resume.")),
     }),
   ]),
   job: z.discriminatedUnion("source", [
@@ -63,19 +60,12 @@ async function readResume(userId: string, input: ScanInput["resume"]): Promise<S
     return { ok: true, value: { id: resume.id, label: resume.title, content, file: null } };
   }
   if (input.source === "paste") {
-    const { content } = await importResume(userId, { kind: "text", text: input.text }, null);
+    const { content } = await importResume(userId, { source: "text", text: input.text, parsed: null }, null);
     return { ok: true, value: { id: null, label: "Pasted resume", content, file: null } };
   }
-  const kind = detectKind(input.file);
-  if (!kind) return { ok: false, status: 400, code: "invalid_input", error: "Upload a PDF, Word (.docx), or text file." };
-  if (input.file.size > MAX_UPLOAD_BYTES) return { ok: false, status: 400, code: "invalid_input", error: "That file is over 8 MB. Upload a smaller one." };
-  const buffer = await input.file.arrayBuffer();
-  // The layout check reads its own copy, so the text import below still sees every byte.
-  const [file, { content }] = await Promise.all([
-    kind === "text" ? null : inspectResumeFile(input.file.name, buffer.slice(0)),
-    importResume(userId, { kind, buffer }, null),
-  ]);
-  return { ok: true, value: { id: null, label: input.file.name.slice(0, 250), content, file } };
+  const { facts, resume } = await readResumeUpload(input.file);
+  const { content } = await importResume(userId, resume, null);
+  return { ok: true, value: { id: null, label: input.file.name.slice(0, 250), content, file: facts } };
 }
 
 async function readJob(userId: string, input: ScanInput["job"]) {
@@ -100,9 +90,18 @@ export async function POST(request: Request) {
   const user = await currentUser();
   if (!user) return error(401, "Sign in to continue.");
 
-  const form = await request.formData().catch(() => null);
+  let form: FormData | null;
+  try {
+    form = await readFormData(request, MAX_UPLOAD_FORM_BYTES);
+  } catch (e) {
+    if (e instanceof BodyTooLarge) return error(413, "That file is over 8 MB. Upload a smaller one.", "invalid_input");
+    throw e;
+  }
   const parsed = ScanForm.safeParse(form ? fromForm(form) : null);
   if (!parsed.success) return error(400, parsed.error.issues[0]?.message ?? "Choose a resume and a job.");
+
+  const slow = await limitScans(user.id);
+  if (slow) return error(slow.status, slow.error, slow.code);
 
   let resume: ScanResult<ScannedResume>;
   try {
