@@ -75,7 +75,43 @@ function parse(prompt) {
   return { title: `${lines[0] ?? "Resume"} — Master`, markdown: md };
 }
 
+const QUESTIONS = [
+  ["behavioral", "Tell me about a time you led an incident response.", "Ownership and communication under pressure.", "Incident response"],
+  ["behavioral", "Describe a time you helped a colleague build a new skill.", "Coaching and adapting to the learner.", "Mentoring"],
+  ["behavioral", "Tell me about a time you had to change direction on a project.", "How you communicate and handle changing priorities.", null],
+  ["technical", "How did you measure the effect of your Kafka pipeline on invoice latency?", "Measurement and a fair baseline.", "Kafka"],
+  ["technical", "How would you diagnose a slow PostgreSQL query?", "A systematic approach to query plans and indexes.", "PostgreSQL"],
+  ["technical", "How would you handle cancellation across Go services?", "Understanding of context propagation.", "Go"],
+  ["role", "What would you prioritize in your first month on a payments team?", "How you learn the system and assess risk.", "Reliability"],
+  ["role", "How would you decide whether to retry a failed payment?", "Balancing availability with duplicate payment risk.", "Payments"],
+  ["role", "Why do you want to work on this payments platform?", "Interest in the role and understanding of its priorities.", null],
+].map(([category, question, assessing, requirement], i) => ({ id: `question-${i + 1}`, category, question, assessing, requirement }));
+
 function answer(system, prompt) {
+  if (system.includes("candidate names a role")) {
+    return { ...JOB, title: prompt.split("# Target role")[1]?.trim() || JOB.title, company: null };
+  }
+  if (system.includes("rewrite a candidate's LinkedIn headline")) {
+    return {
+      headlines: [
+        "Backend Engineer | Go, PostgreSQL, Kafka | Cut invoice latency by 38%",
+        "Backend Engineer | Go services and incident response",
+        "Backend Engineer | Kafka pipelines and PostgreSQL",
+      ],
+      about: "I build dependable backend services in Go on PostgreSQL. At Analytical Engines I built a Kafka pipeline that cut invoice latency by 38%. I also ran the on-call rotation and incident reviews.",
+      notes: ["List Kafka in your Skills section so recruiters can find it."],
+    };
+  }
+  if (system.includes("prepare a candidate for interviews")) return { questions: QUESTIONS };
+  if (system.includes("coach a candidate on one practice interview answer")) {
+    return {
+      star: { situation: true, task: true, action: true, result: true },
+      specificity: 4,
+      relevance: 5,
+      strengths: ["The 38% reduction makes the result measurable."],
+      improvements: ["Explain how you measured invoice latency."],
+    };
+  }
   if (system.includes("senior technical recruiter")) return JOB;
   if (system.includes("numbered lines")) return tailor(prompt);
   if (system.includes("convert text extracted")) return parse(prompt);
