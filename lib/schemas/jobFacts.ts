@@ -57,3 +57,38 @@ export const JobFactsSchema = z.object({
   predictedSkills: z.array(PredictedSkillSchema).default([]),
 });
 export type JobFacts = z.infer<typeof JobFactsSchema>;
+
+/**
+ * Gemini's reply: the facts' shape, with each list's entries left unchecked,
+ * so one bad entry is dropped by `readJobFactsReply` instead of failing the
+ * whole read. The model is still asked for `JobFactsSchema`.
+ */
+const unchecked = z.array(z.unknown()).default([]);
+export const JobFactsReplySchema = JobFactsSchema.extend({
+  hardSkills: unchecked,
+  softSkills: unchecked,
+  otherKeywords: unchecked,
+  predictedSkills: unchecked,
+});
+export type JobFactsReply = z.infer<typeof JobFactsReplySchema>;
+
+type ListName = "hardSkills" | "softSkills" | "otherKeywords" | "predictedSkills";
+
+/** The reply's valid entries, and how many entries of each list were dropped. */
+export function readJobFactsReply(reply: JobFactsReply): { facts: JobFacts; dropped: Record<ListName, number> } {
+  const dropped: Record<ListName, number> = { hardSkills: 0, softSkills: 0, otherKeywords: 0, predictedSkills: 0 };
+  const keep = <T>(list: ListName, schema: z.ZodType<T>): T[] => reply[list].flatMap((entry) => {
+    const parsed = schema.safeParse(entry);
+    if (parsed.success) return [parsed.data];
+    dropped[list]++;
+    return [];
+  });
+  const facts: JobFacts = {
+    ...reply,
+    hardSkills: keep("hardSkills", JobSkillSchema),
+    softSkills: keep("softSkills", JobSkillSchema),
+    otherKeywords: keep("otherKeywords", JobSkillSchema),
+    predictedSkills: keep("predictedSkills", PredictedSkillSchema),
+  };
+  return { facts, dropped };
+}

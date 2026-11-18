@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { AiError, toGeminiSchema, type JsonModel, type JsonRequest } from "@/lib/gemini/model";
-import { JobFactsSchema } from "@/lib/schemas/jobFacts";
+import { JobFactsReplySchema, JobFactsSchema, readJobFactsReply } from "@/lib/schemas/jobFacts";
 import { extractJobFacts } from "./extractJobFacts";
 
 function fakeModel(replies: unknown[]): JsonModel & { calls: JsonRequest[] } {
@@ -91,6 +91,29 @@ describe("extractJobFacts", () => {
   it.each(["...", "🚀", "X".repeat(81)])("rejects a bogus skill term %s", (term) => {
     expect(JobFactsSchema.safeParse({ ...REPLY, hardSkills: [{ term, importance: "high" }] }).success).toBe(false);
     expect(JobFactsSchema.safeParse({ ...REPLY, predictedSkills: [{ term }] }).success).toBe(false);
+  });
+
+  it("drops bad list entries one by one and keeps the rest of the facts", async () => {
+    const model = fakeModel([{
+      ...REPLY,
+      hardSkills: [...REPLY.hardSkills, { term: "...", importance: "high" }, { term: "X".repeat(81), importance: "high" }, { term: "Go", importance: "critical" }],
+      predictedSkills: [...REPLY.predictedSkills, { term: "🚀" }, "gRPC"],
+    }]);
+    const facts = await extractJobFacts(model, POSTING);
+    expect(model.calls).toHaveLength(1);
+    expect(JobFactsSchema.parse(facts)).toEqual(facts);
+    expect(facts.hardSkills.map((s) => s.term)).toEqual(["Go", "PostgreSQL", "Kubernetes", "JavaScript"]);
+    expect(facts.predictedSkills.map((s) => s.term)).toEqual(["Docker", "gRPC"]);
+  });
+
+  it("counts what it dropped", () => {
+    const reply = JobFactsReplySchema.parse({ ...REPLY, hardSkills: [...REPLY.hardSkills, { term: "..." }], softSkills: ["x".repeat(81)] });
+    expect(readJobFactsReply(reply).dropped).toEqual({ hardSkills: 1, softSkills: 1, otherKeywords: 0, predictedSkills: 0 });
+  });
+
+  it("still fails when the reply's overall shape is wrong", async () => {
+    await expect(extractJobFacts(fakeModel([{ ...REPLY, hardSkills: "Go, PostgreSQL" }, { ...REPLY, title: "" }]), POSTING))
+      .rejects.toMatchObject({ code: "schema_validation_failed" });
   });
 
   it("fills defaults when Gemini returns nulls for optional facts", async () => {
