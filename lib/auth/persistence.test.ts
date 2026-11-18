@@ -3,9 +3,10 @@ import { eq } from "drizzle-orm";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { db } from "@/lib/db";
 import { cache } from "@/lib/cache";
-import { authTokens, sessions, users } from "@/lib/db/schema";
+import { authTokens, recoveryCodes, sessions, users } from "@/lib/db/schema";
 import { clearSessionCache, createSession, removeSessions, revokeSession, validateSession } from "./sessions";
 import { hashToken } from "./secrets";
+import { authenticator, checkSecondFactor, protectTotp, replaceRecoveryCodes } from "./totp";
 import { consumeToken, findToken, issueToken } from "./tokens";
 
 const fixture = vi.hoisted(() => ({ close: async () => {} }));
@@ -111,4 +112,23 @@ describe("email and reset tokens", () => {
     await expect(findToken(token, "reset_password")).resolves.toBeUndefined();
     await expect(db.transaction((tx) => consumeToken(tx, token, "reset_password", userId))).resolves.toBeUndefined();
   });
+});
+
+it("validates authenticator codes and consumes hashed recovery codes once", async () => {
+  vi.stubEnv("KEY_ENCRYPTION_SECRET", Buffer.alloc(32, 7).toString("base64"));
+  try {
+    const totp = authenticator("test@example.com");
+    const ciphertext = protectTotp(totp);
+    const check = (code: string) => db.transaction((tx) => checkSecondFactor(tx, userId, "test@example.com", ciphertext, code));
+    await expect(check(totp.generate())).resolves.toBe(true);
+    await expect(check("wrong")).resolves.toBe(false);
+    const codes = await db.transaction((tx) => replaceRecoveryCodes(tx, userId));
+    const rows = await db.select().from(recoveryCodes).where(eq(recoveryCodes.user_id, userId));
+    expect(rows.map((row) => row.code_hash).sort()).toEqual(codes.map(hashToken).sort());
+    expect(codes).toHaveLength(10);
+    await expect(check(codes[0])).resolves.toBe(true);
+    await expect(check(codes[0])).resolves.toBe(false);
+  } finally {
+    vi.unstubAllEnvs();
+  }
 });

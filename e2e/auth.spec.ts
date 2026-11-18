@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { mailboxLink, signIn, signUp, submitSignUp, verifySignUp } from "./auth-helpers";
+import { mailboxLink, signIn, signUp, submitSignUp, TEST_PASSWORD, verifySignUp } from "./auth-helpers";
 import { onboard } from "./onboard";
 
 test("sign-up requires email verification and the link works once", async ({ page }) => {
@@ -68,4 +68,42 @@ test("sign out everywhere revokes a second active browser session", async ({ bro
   } finally {
     await second.close();
   }
+});
+
+test("settings verify a new email, export data, and delete the account", async ({ page }) => {
+  const email = await signUp(page);
+  await onboard(page);
+  await page.getByRole("link", { name: "Settings" }).click();
+
+  const newEmail = `changed-${email}`;
+  const emailForm = page.locator("form").filter({ has: page.getByRole("button", { name: "Change email" }) });
+  await emailForm.getByLabel("New email").fill(newEmail);
+  await emailForm.getByLabel("Current password").fill(TEST_PASSWORD);
+  await emailForm.getByRole("button", { name: "Change email" }).click();
+  await expect(page.getByText("Check your new inbox for a verification link.")).toBeVisible();
+  await page.goto(await mailboxLink(newEmail, "changeEmail"));
+  await page.getByRole("button", { name: "Verify email" }).click();
+  await expect(page).toHaveURL(/\/sign-in$/);
+  await signIn(page, newEmail);
+  await expect(page).toHaveURL(/\/dashboard$/);
+
+  await page.getByRole("link", { name: "Settings" }).click();
+  const download = page.waitForEvent("download");
+  await page.getByRole("link", { name: "Download my data" }).click();
+  const exportFile = await download;
+  const { readFile } = await import("node:fs/promises");
+  const JSZip = (await import("jszip")).default;
+  const zip = await JSZip.loadAsync(await readFile((await exportFile.path())!));
+  const data = JSON.parse(await zip.file("resume-architect.json")!.async("string"));
+  expect(data.account.email).toBe(newEmail);
+  expect(data.resumes).toHaveLength(1);
+  expect(data.profile).not.toHaveProperty("gemini_key_ciphertext");
+
+  await page.getByRole("button", { name: "Delete my account" }).click();
+  const dialog = page.getByRole("dialog");
+  await dialog.getByLabel("Current password").fill(TEST_PASSWORD);
+  await dialog.getByRole("button", { name: "Permanently delete account" }).click();
+  await expect(page).toHaveURL(/\/$/);
+  await signIn(page, newEmail);
+  await expect(page.getByText("That email and password don't match an account.")).toBeVisible();
 });
