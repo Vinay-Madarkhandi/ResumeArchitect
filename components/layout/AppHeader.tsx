@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LogOut, Plus, Settings, UserRound } from "lucide-react";
+import { Columns3, LogOut, Plus, Settings, UserRound } from "lucide-react";
 import { signOut } from "@/app/actions/auth";
 import { Logo } from "@/components/ui/Logo";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
@@ -12,6 +12,7 @@ import { cn } from "@/lib/cn";
 
 const NAV = [
   { href: "/dashboard", label: "Applications" },
+  { href: "/tracker", label: "Job tracker" },
   { href: "/settings", label: "Settings" },
 ];
 
@@ -64,6 +65,9 @@ export function AppHeader({ email }: { email: string }) {
               </MenuItem>
               <MenuItem onSelect={() => router.push("/dashboard")} className="sm:hidden">
                 <Plus /> Applications
+              </MenuItem>
+              <MenuItem onSelect={() => router.push("/tracker")} className="sm:hidden">
+                <Columns3 /> Job tracker
               </MenuItem>
               <MenuItem onSelect={leaveAccount}>
                 <LogOut /> Sign out

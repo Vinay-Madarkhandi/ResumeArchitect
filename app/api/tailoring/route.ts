@@ -1,3 +1,4 @@
+import { getTrackedJob } from "@/lib/data/jobs";
 import { getResume } from "@/lib/data/resumes";
 import { getTailoringSession } from "@/lib/data/tailoring";
 import { createJobDescription, getJobDescription } from "@/lib/data/job-descriptions";
@@ -42,9 +43,10 @@ export async function POST(request: Request) {
   let sourceResumeId = str(body?.sourceResumeId);
   let jobDescriptionText = str(body?.jobDescriptionText);
   let jobDescriptionId: string | null = null;
-  const jobTitle = str(body?.jobTitle) || null;
-  const company = str(body?.company) || null;
+  let jobTitle = str(body?.jobTitle) || null;
+  let company = str(body?.company) || null;
 
+  const trackedJobId = str(body?.trackedJobId);
   const retrySessionId = str(body?.retrySessionId);
   if (retrySessionId) {
     const previous = await getTailoringSession(user.id, retrySessionId);
@@ -56,6 +58,15 @@ export async function POST(request: Request) {
     sourceResumeId = previous.source_resume_id;
     jobDescriptionText = jd.raw_text;
     jobDescriptionId = jd.id;
+    jobTitle = jd.job_title;
+    company = jd.company;
+  } else if (trackedJobId) {
+    const job = await getTrackedJob(user.id, trackedJobId);
+    if (!job) return fail(404, "invalid_jd", "That tracked job could not be found.");
+    jobDescriptionId = job.id;
+    jobDescriptionText = job.description.trim();
+    jobTitle = job.title;
+    company = job.company || null;
   }
 
   if (!sourceResumeId) return fail(400, "source_not_found", "Choose a resume to tailor.");
