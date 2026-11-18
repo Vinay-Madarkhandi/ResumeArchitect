@@ -11,7 +11,7 @@ const apt = "(?:[, \\t]+(?:Apt\\.?|Suite|Unit|Flat|#)[ \\t]*[A-Za-z\\d-]+)?";
 const address = new RegExp(
   [
     `\\bP\\.[ \\t]*O\\.[ \\t]+Box[ \\t]+\\d+[a-z]?\\b|\\bPO[ \\t]+Box[ \\t]+\\d+[a-z]?\\b`,
-    `\\b\\d+[A-Za-z]?(?:[-–]\\d+[A-Za-z]?)?[ \\t]+(?:[A-Z][\\p{L}\\p{N}.'’\\-]*[ \\t]+){1,5}${streetSuffix}\\b(?!\\s+[a-z])${apt}`,
+    `\\b\\d+[A-Za-z]?(?:[-–]\\d+[A-Za-z]?)?[ \\t]+(?:[A-Z][\\p{L}\\p{N}.'’\\-]*[ \\t]+){1,5}${streetSuffix}\\b${apt}`,
     `\\b\\d+[A-Za-z]?[ \\t]+(?:rue|avenue|boulevard|via|calle|carrer|rua)[ \\t]+(?:(?:de|du|des|d'|d’)[ \\t]+)?[A-Z][\\p{L}'’\\-]+(?:[ \\t]+[A-Z][\\p{L}'’\\-]+)*\\b`,
     `\\b(?:rue|avenue|boulevard|via|calle|carrer|rua)[ \\t]+(?:[A-Z][\\p{L}'’\\-]+[ \\t]+){1,4}\\d+[A-Za-z]?\\b`,
     `\\b[A-Z][\\p{L}.'’\\-]+(?:straße|strasse|gasse|weg|allee|platz)[ \\t]+\\d+[A-Za-z]?\\b`,

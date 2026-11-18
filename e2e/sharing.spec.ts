@@ -45,7 +45,9 @@ Wrote public docs; contact via linkedin.com/in/ada.`);
     await dialog.getByRole("button", { name: "Close" }).click();
     await page.getByRole("button", { name: "Share resume" }).click();
     await expect(dialog.getByText("1 view · Anyone with the link")).toBeVisible();
-    const anotherVisitor = await guest.request.get(publicPath, { headers: { "user-agent": "Independent share visitor" } });
+    const anotherVisitor = await guest.request.get(publicPath, {
+      headers: { "user-agent": "Independent share visitor", "x-forwarded-for": "198.51.100.42" },
+    });
     expect(anotherVisitor.ok()).toBe(true);
     await dialog.getByRole("button", { name: "Close" }).click();
     await page.getByRole("button", { name: "Share resume" }).click();
