@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { LogOut, Plus, Settings, UserRound } from "lucide-react";
-import { createClient } from "@/utils/supabase/client";
+import { signOut } from "@/app/actions/auth";
 import { Logo } from "@/components/ui/Logo";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { buttonVariants } from "@/components/ui/Button";
@@ -19,8 +19,8 @@ export function AppHeader({ email }: { email: string }) {
   const pathname = usePathname();
   const router = useRouter();
 
-  async function signOut() {
-    await createClient().auth.signOut();
+  async function leaveAccount() {
+    await signOut();
     router.push("/");
     router.refresh();
   }
@@ -65,7 +65,7 @@ export function AppHeader({ email }: { email: string }) {
               <MenuItem onSelect={() => router.push("/dashboard")} className="sm:hidden">
                 <Plus /> Applications
               </MenuItem>
-              <MenuItem onSelect={signOut}>
+              <MenuItem onSelect={leaveAccount}>
                 <LogOut /> Sign out
               </MenuItem>
             </MenuContent>

@@ -21,7 +21,7 @@ import { CoverLetter } from "@/components/workspace/CoverLetter";
 import { JobPostPanel } from "@/components/workspace/JobPostPanel";
 import { StatusSelect } from "@/components/tracker/StatusSelect";
 import { changeImpact } from "@/lib/resume/impact";
-import type { ApplicationStatus } from "@/lib/supabase/database.types";
+import type { ApplicationStatus } from "@/lib/db/schema";
 import { setOriginalLines, setPageBreaks } from "@/lib/editor/extensions";
 import { useAutosave, type SaveStatus } from "@/lib/editor/useAutosave";
 import { usePageCount } from "@/lib/editor/usePageCount";

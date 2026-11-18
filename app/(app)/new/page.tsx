@@ -1,28 +1,16 @@
+import { listResumes } from "@/lib/data/resumes";
+import { getProfileStatus } from "@/lib/data/profiles";
+import { requireOnboardedUser } from "@/lib/auth/onboarding";
 import type { Metadata } from "next";
-import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
-import { createClient } from "@/utils/supabase/server";
 import { NewApplication } from "@/components/tailor/NewApplication";
 
 export const metadata: Metadata = { title: "New application" };
 
 export default async function NewApplicationPage({ searchParams }: PageProps<"/new">) {
   const { retry } = await searchParams;
-  const supabase = createClient(await cookies());
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/sign-in");
+  const user = await requireOnboardedUser();
 
-  const [{ data: resumes }, { data: profile }] = await Promise.all([
-    supabase
-      .from("resumes")
-      .select("id, title, kind, is_default, status")
-      .eq("user_id", user.id)
-      .eq("status", "draft")
-      .order("updated_at", { ascending: false }),
-    supabase.from("profiles").select("gemini_key_status").eq("id", user.id).single(),
-  ]);
+  const [resumes, profile] = await Promise.all([listResumes(user.id, true), getProfileStatus(user.id)]);
 
   // Master first, then tailored resumes (tailoring a tailored copy is allowed).
   const sources = (resumes ?? [])
