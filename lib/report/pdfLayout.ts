@@ -1,6 +1,6 @@
 import { getResolvedPDFJS } from "unpdf";
 import type { PDFPageProxy } from "unpdf/pdfjs";
-import { InspectionLimit, MAX_PDF_PAGES } from "./inspectLimits.ts";
+import { InspectionLimit, MAX_PDF_OPERATORS, MAX_PDF_PAGES, MAX_PDF_TEXT_ITEMS } from "./inspectLimits.ts";
 import { TYPED_BULLET } from "./docxLayout.ts";
 import type { ResumeFileFacts } from "./report";
 
@@ -176,6 +176,8 @@ export async function readPdfLayout(file: Uint8Array): Promise<Extract<ResumeFil
     const pdf = await task.promise;
     if (pdf.numPages > MAX_PDF_PAGES) throw new InspectionLimit();
 
+    let operators = 0;
+    let textItems = 0;
     let images = 0;
     let columns = 1;
     let textPages = 0;
@@ -186,12 +188,14 @@ export async function readPdfLayout(file: Uint8Array): Promise<Extract<ResumeFil
     for (let n = 1; n <= pdf.numPages; n++) {
       const page = await pdf.getPage(n);
       const ops = await page.getOperatorList();
-      if (ops.fnArray.length > 100_000) throw new InspectionLimit();
+      operators += ops.fnArray.length;
+      if (operators > MAX_PDF_OPERATORS) throw new InspectionLimit();
       const raster = pageImages(ops, pdfjs);
       images += raster.count;
 
       const content = await page.getTextContent();
-      if (content.items.length > 10_000) throw new InspectionLimit();
+      textItems += content.items.length;
+      if (textItems > MAX_PDF_TEXT_ITEMS) throw new InspectionLimit();
       const items = (content.items as PdfTextItem[]).filter((i) => typeof i.str === "string" && i.str.trim());
       for (const item of items) {
         const font = page.commonObjs.has(item.fontName) ? (page.commonObjs.get(item.fontName) as { name?: string }).name : undefined;

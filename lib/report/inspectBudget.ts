@@ -1,7 +1,7 @@
 import { Worker } from "node:worker_threads";
 import type { ExtractedResume } from "@/lib/resume/extract";
 import type { FileInspectionFailure, ResumeFileFacts } from "./report";
-import { INSPECTION_TIMEOUT_MS, MAX_UPLOAD_BYTES } from "./inspectLimits";
+import { INSPECTION_BACKSTOP_MS, MAX_UPLOAD_BYTES } from "./inspectLimits";
 
 type FileFormat = FileInspectionFailure["extension"];
 export type InspectionResult<F extends FileFormat> = Extract<ResumeFileFacts, { format: F }> | FileInspectionFailure;
@@ -39,7 +39,7 @@ export async function readWithinBudget<F extends FileFormat>(extension: F, file:
         void worker.terminate();
         resolve(result);
       };
-      const timer = setTimeout(() => finish(failure("too-large")), INSPECTION_TIMEOUT_MS);
+      const timer = setTimeout(() => finish(failure("too-large")), INSPECTION_BACKSTOP_MS);
       worker.once("message", finish);
       worker.once("error", () => finish(failure("unreadable")));
       worker.once("exit", () => finish(failure("unreadable")));

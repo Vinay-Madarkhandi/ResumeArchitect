@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import JSZip from "jszip";
 import { Document, Packer, Paragraph } from "docx";
 import { pdfFlateBomb, pdfPages } from "./__fixtures__/bombs";
-import { INSPECTION_TIMEOUT_MS, MAX_DOCX_ENTRIES, MAX_UPLOAD_BYTES, MAX_XML_BYTES } from "./inspectLimits";
+import { INSPECTION_BACKSTOP_MS, MAX_DOCX_ENTRIES, MAX_PDF_PAGES, MAX_UPLOAD_BYTES, MAX_XML_BYTES } from "./inspectLimits";
 import { inspectDocx } from "./inspectDocx";
 import { inspectPdf } from "./inspectPdf";
 
@@ -53,11 +53,20 @@ describe("file inspection budget", () => {
     }
   }, 30_000);
 
-  it("stops inspection at its deadline", async () => {
+  it("budgets the work, not the clock: operators count across every page", async () => {
+    const busyPage = "1 w ".repeat(15_000);
+    const file = pdfPages(MAX_PDF_PAGES, () => "x").toString("latin1").replaceAll("BT /F1 12 Tf 72 720 Td (x) Tj ET", busyPage);
+    await expect(inspectPdf(Buffer.from(file, "latin1"))).resolves.toMatchObject({ format: "invalid", reason: "too-large" });
+  }, 30_000);
+
+  it("gives a slow inspection well past 4 seconds before its wall-clock backstop", async () => {
     vi.useFakeTimers();
     try {
-      const inspection = inspectPdf(new Uint8Array());
-      vi.advanceTimersByTime(INSPECTION_TIMEOUT_MS);
+      let settled = false;
+      const inspection = inspectPdf(new Uint8Array()).finally(() => { settled = true; });
+      await vi.advanceTimersByTimeAsync(5_000);
+      expect(settled).toBe(false);
+      await vi.advanceTimersByTimeAsync(INSPECTION_BACKSTOP_MS);
       await expect(inspection).resolves.toMatchObject({ format: "invalid", reason: "too-large" });
     } finally {
       vi.useRealTimers();
