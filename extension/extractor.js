@@ -24,6 +24,7 @@ export function extractJob(doc = document, href = location.href) {
   function description(value) {
     if (typeof value !== "string" || !value.trim()) return "";
     if (!/<[!a-z][^>]*>|&(?:#\d+|#x[\da-f]+|[a-z]+);/i.test(value)) return value.trim();
+    // Template content stays inert. Only the resulting plain text leaves the tab.
     const template = doc.createElement("template");
     template.innerHTML = value;
     return readable(template.content);
