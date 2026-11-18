@@ -203,11 +203,14 @@ export const sessions = pgTable("sessions", {
   user_agent: text("user_agent"),
 }, (t) => [index("sessions_user_idx").on(t.user_id), index("sessions_expires_idx").on(t.expires_at)]);
 
+// The new address for an email change; where an emailed sign-in returns to.
+export type LinkPayload = { email?: string; redirect?: string };
+
 export const authTokens = pgTable("auth_tokens", {
   id: text("id").primaryKey(),
   user_id: owner(),
   purpose: text("purpose", { enum: ["verify_email", "reset_password", "change_email", "sign_in"] }).notNull(),
-  payload: jsonb("payload").$type<{ email?: string }>(),
+  payload: jsonb("payload").$type<LinkPayload>(),
   expires_at: date("expires_at").notNull(),
   used_at: date("used_at"),
 }, (t) => [

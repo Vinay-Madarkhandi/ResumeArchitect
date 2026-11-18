@@ -57,7 +57,7 @@ function SignInForm() {
     setError(null);
     setPending(true);
     try {
-      await requestSignInLink(email);
+      await requestSignInLink(email, searchParams.get("redirect") ?? "");
       setLinkSent(true);
     } catch {
       setError("Couldn't send the link. Try again.");

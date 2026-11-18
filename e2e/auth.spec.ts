@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import { gotoForm, mailboxLink, queuedEmailsContaining, signIn, signUp, submitSignUp, TEST_PASSWORD, verifySignUp } from "./auth-helpers";
 import { onboard } from "./onboard";
 
@@ -43,6 +43,14 @@ test("sign in and out with a password", async ({ page, context }) => {
   });
 });
 
+async function guessFromManyAddresses(page: Page, email: string, guesses: number) {
+  for (let attempt = 1; attempt <= guesses; attempt++) {
+    await page.setExtraHTTPHeaders({ "x-forwarded-for": `198.51.100.${attempt}` });
+    await signIn(page, email, "someone-elses-guess");
+    await expect(page.getByText("That email and password don't match an account.")).toBeVisible();
+  }
+}
+
 test("an owner whose account is backing off signs in with an emailed link", async ({ browser, page }) => {
   const email = await signUp(page);
   const [owner, guesser] = [await browser.newPage(), await browser.newPage()];
@@ -52,11 +60,7 @@ test("an owner whose account is backing off signs in with an emailed link", asyn
       await signIn(owner, email, "owner-typo-guess");
       await expect(owner.getByText("That email and password don't match an account.")).toBeVisible();
     }
-    for (let attempt = 1; attempt <= 15; attempt++) {
-      await guesser.setExtraHTTPHeaders({ "x-forwarded-for": `198.51.100.${attempt}` });
-      await signIn(guesser, email, "someone-elses-guess");
-      await expect(guesser.getByText("That email and password don't match an account.")).toBeVisible();
-    }
+    await guessFromManyAddresses(guesser, email, 15);
     await signIn(owner, email);
     await expect(owner.getByText("Too many sign-in attempts.")).toBeVisible();
     await owner.getByRole("button", { name: "Email me a sign-in link" }).click();
@@ -68,6 +72,30 @@ test("an owner whose account is backing off signs in with an emailed link", asyn
     await expect(owner).toHaveURL(/\/onboarding$/);
     await owner.goto(link);
     await expect(owner.getByRole("heading", { name: "This link isn't valid" })).toBeVisible();
+  } finally {
+    await Promise.all([owner.close(), guesser.close()]);
+  }
+});
+
+test("an emailed sign-in returns to the protected page it started from", async ({ browser, page }) => {
+  const email = await signUp(page);
+  await onboard(page);
+  const [owner, guesser] = [await browser.newPage(), await browser.newPage()];
+  try {
+    await guessFromManyAddresses(guesser, email, 20);
+    await owner.setExtraHTTPHeaders({ "x-forwarded-for": "192.0.2.78" });
+    await owner.goto("/tracker?view=all");
+    await expect(owner).toHaveURL(/\/sign-in\?redirect=%2Ftracker%3Fview%3Dall$/);
+    await owner.locator("form[data-hydrated]").waitFor();
+    await owner.getByLabel("Email").fill(email);
+    await owner.getByLabel("Password").fill(TEST_PASSWORD);
+    await owner.getByRole("button", { name: "Sign in", exact: true }).click();
+    await owner.getByRole("button", { name: "Email me a sign-in link" }).click();
+    await expect(owner.getByRole("heading", { name: "Check your email" })).toBeVisible();
+
+    await gotoForm(owner, await mailboxLink(email, "signIn"));
+    await owner.getByRole("button", { name: "Sign in" }).click();
+    await expect(owner).toHaveURL(/\/tracker\?view=all$/);
   } finally {
     await Promise.all([owner.close(), guesser.close()]);
   }

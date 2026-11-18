@@ -1,6 +1,6 @@
 import { and, eq, gt, isNull, sql } from "drizzle-orm";
 import { db, type Transaction } from "@/lib/db";
-import { authTokens } from "@/lib/db/schema";
+import { authTokens, type LinkPayload } from "@/lib/db/schema";
 import { hashToken, isToken, newToken } from "./secrets";
 
 type Purpose = typeof authTokens.$inferInsert.purpose;
@@ -10,7 +10,7 @@ const lifetimes: Record<Purpose, number> = {
 };
 export const tokenLifetime = (purpose: Purpose) => lifetimes[purpose];
 
-export async function issueToken(tx: Transaction, userId: string, purpose: Purpose, payload?: { email: string }) {
+export async function issueToken(tx: Transaction, userId: string, purpose: Purpose, payload?: LinkPayload) {
   const token = newToken();
   const id = hashToken(token);
   await tx.insert(authTokens).values({

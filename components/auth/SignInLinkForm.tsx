@@ -6,6 +6,7 @@ import { signInWithLink } from "@/app/actions/auth";
 import { Button } from "@/components/ui/Button";
 import { Field, Input } from "@/components/ui/Field";
 import { AuthHeading, FormError } from "@/components/auth/AuthHeading";
+import { safeRedirect } from "@/lib/safeRedirect";
 import { useHydrated } from "@/lib/useHydrated";
 
 // Signing in takes a click, so mail scanners that open the link don't use it up.
@@ -27,7 +28,7 @@ export function SignInLinkForm({ token }: { token: string }) {
         setNeedsCode(Boolean(result.needsCode));
         return setError(result.error);
       }
-      router.replace("/dashboard");
+      router.replace(safeRedirect(result.redirect));
       router.refresh();
     } catch {
       setError("Couldn't sign in. Try again.");

@@ -1,6 +1,6 @@
 import { and, eq, inArray, isNotNull, isNull, sql } from "drizzle-orm";
 import { db, type Transaction } from "@/lib/db";
-import { authTokens, profiles, recoveryCodes, users } from "@/lib/db/schema";
+import { authTokens, profiles, recoveryCodes, users, type LinkPayload } from "@/lib/db/schema";
 import { appUrl, adminEmails } from "./config";
 import { issueToken } from "./tokens";
 import { sealText } from "@/lib/crypto/keyCipher";
@@ -48,20 +48,20 @@ const emailDetails = {
 export async function sendAccountLink(
   userId: string,
   purpose: keyof typeof emailDetails,
-  options?: { recipient: string; authorize: (tx: Transaction, account: Account) => Promise<boolean> },
+  options?: { payload?: LinkPayload; authorize?: (tx: Transaction, account: Account) => Promise<boolean> },
 ) {
   const result = await db.transaction(async (tx) => {
     const user = await lockAccount(tx, userId);
     if (!user) return;
     if (purpose === "verify_email" ? user.email_verified_at : purpose !== "reset_password" && !user.email_verified_at) return;
-    if (options && !await options.authorize(tx, user)) return;
-    const recipient = options?.recipient;
+    if (options?.authorize && !await options.authorize(tx, user)) return;
+    const payload = options?.payload;
     // Every delivered link works until it expires or one of its kind is used
     // (callers rate-limit). Only a new email change replaces the old request.
     if (purpose === "change_email") {
       await tx.delete(authTokens).where(and(eq(authTokens.user_id, userId), eq(authTokens.purpose, purpose), isNull(authTokens.used_at)));
     }
-    return { ...await issueToken(tx, userId, purpose, recipient ? { email: recipient } : undefined), to: recipient ?? user.email };
+    return { ...await issueToken(tx, userId, purpose, payload), to: payload?.email ?? user.email };
   });
   if (!result) return false;
 

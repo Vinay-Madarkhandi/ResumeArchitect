@@ -257,6 +257,14 @@ describe("sign-in throttling", () => {
     await expect(signIn(email, OWNER, "")).resolves.toEqual(backingOff);
   }, 20_000);
 
+  it("returns to the page the owner was headed for, and only on this site", async () => {
+    const email = await verifiedOwner();
+    await requestSignInLink(email, "/tracker?job=42");
+    await expect(signInWithLink(lastLink(email, "signIn"), "")).resolves.toEqual({ redirect: "/tracker?job=42" });
+    await requestSignInLink(email, "/.//evil.com");
+    await expect(signInWithLink(lastLink(email, "signIn"), "")).resolves.toEqual({});
+  });
+
   it("rejects an expired sign-in link", async () => {
     const email = await verifiedOwner();
     await requestSignInLink(email);

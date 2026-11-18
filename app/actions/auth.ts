@@ -16,6 +16,7 @@ import { consumeToken, findToken } from "@/lib/auth/tokens";
 import { hashToken } from "@/lib/auth/secrets";
 import { authenticator, checkSecondFactor, protectTotp, replaceRecoveryCodes } from "@/lib/auth/totp";
 import { logger } from "@/lib/logger";
+import { safeRedirect } from "@/lib/safeRedirect";
 
 const HOUR = 3_600_000;
 const invalidCredentials = "That email and password don't match an account.";
@@ -44,7 +45,7 @@ export async function signUp(rawEmail: string, password: string): Promise<{ erro
   return {};
 }
 
-type SignInResult = { error?: string; needsCode?: boolean; offerLink?: boolean };
+type SignInResult = { error?: string; needsCode?: boolean; offerLink?: boolean; redirect?: string };
 
 export async function signIn(rawEmail: string, password: string, code: string): Promise<SignInResult> {
   const email = normalizeEmail(rawEmail);
@@ -86,13 +87,14 @@ export async function signIn(rawEmail: string, password: string, code: string): 
   return {};
 }
 
-export async function requestSignInLink(rawEmail: string) {
+export async function requestSignInLink(rawEmail: string, destination = "") {
   const email = normalizeEmail(rawEmail);
   if (!validEmail(email) || await rateLimit("sign-in-link", email, 3, HOUR)) return {};
   const user = await accountByEmail(email);
   if (user && !user.banned_at) {
+    const redirect = safeRedirect(destination, "");
     try {
-      await sendAccountLink(user.id, "sign_in");
+      await sendAccountLink(user.id, "sign_in", redirect ? { payload: { redirect } } : undefined);
     } catch {
       logger.error("Could not queue sign-in link");
     }
@@ -115,13 +117,14 @@ export async function signInWithLink(token: string, code: string): Promise<SignI
       if (!user?.email_verified_at || !user.password_set_at) return;
       // Spend the link before the code. A rejected code rolls the link back for
       // a retry, and no code is ever spent without the session it creates.
-      if (!await consumeToken(tx, token, "sign_in", user.id)) return;
+      const used = await consumeToken(tx, token, "sign_in", user.id);
+      if (!used) return;
       if (user.totp_enabled_at && (!code || !await checkSecondFactor(tx, user.id, user.email, user.totp_secret_ciphertext, code))) {
         throw new SecondFactorRequired();
       }
       await invalidateLinks(tx, user.id, ["sign_in"]);
       await tx.update(users).set({ last_sign_in_at: sql`now()` }).where(eq(users.id, user.id));
-      return { email: user.email, session: await createSession(tx, user.id, ip, userAgent) };
+      return { email: user.email, redirect: used.payload?.redirect, session: await createSession(tx, user.id, ip, userAgent) };
     });
   } catch (error) {
     if (!(error instanceof SecondFactorRequired)) throw error;
@@ -135,7 +138,7 @@ export async function signInWithLink(token: string, code: string): Promise<SignI
   const previous = await sessionToken();
   if (previous) await revokeSession(previous);
   await writeSession(result.session);
-  return {};
+  return result.redirect ? { redirect: result.redirect } : {};
 }
 
 export async function signOut() {
@@ -272,7 +275,7 @@ export async function changeEmail(rawEmail: string, password: string, code: stri
   if (await credentialLimit(user.id)) return fail("Too many attempts. Try again later.");
   // Whether the address is taken is only revealed to its inbox, when the link is used.
   const sent = await sendAccountLink(user.id, "change_email", {
-    recipient: email,
+    payload: { email },
     authorize: (tx, account) => account.email !== email
       ? confirmCredentials(tx, account, password, code)
       : Promise.resolve(false),
