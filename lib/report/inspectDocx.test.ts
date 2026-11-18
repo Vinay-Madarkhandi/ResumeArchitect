@@ -139,7 +139,7 @@ describe("inspectDocx", () => {
 
   it("reads Word's own markup: drawings counted once, theme fonts resolved, symbol-font bullets rendered", async () => {
     const JSZip = (await import("jszip")).default;
-    const W = 'xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:wps="x" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:pic="y"';
+    const W = 'xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:wps="x" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"';
     const zip = new JSZip();
     zip.file(
       "word/document.xml",
@@ -167,6 +167,28 @@ describe("inspectDocx", () => {
     );
     const facts = await inspectDocx(await zip.generateAsync({ type: "uint8array" }));
     expect(facts).toMatchObject({ textBoxes: 1, images: 1, columns: 1, fonts: ["Aptos"], bulletChars: ["•"], headerText: "", footerText: "" });
+  });
+
+  it("recognizes tables and attributes by namespace URI with different prefixes", async () => {
+    const JSZip = (await import("jszip")).default;
+    const zip = new JSZip();
+    zip.file("word/document.xml", `<wp:document xmlns:wp="http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+      xmlns:w="urn:unrelated"><wp:body><wp:tbl/><w:tbl/><wp:p><wp:r>
+      <wp:rPr><wp:rFonts wp:ascii="Calibri"/></wp:rPr><wp:t>Ada Lovelace</wp:t>
+      </wp:r></wp:p></wp:body></wp:document>`);
+    expect(await inspectDocx(await zip.generateAsync({ type: "uint8array" }))).toMatchObject({
+      format: "docx", tables: 1, fonts: ["Calibri"],
+    });
+  });
+
+  it("rejects malformed Word XML even if the parser could repair it", async () => {
+    const JSZip = (await import("jszip")).default;
+    const zip = new JSZip();
+    zip.file("word/document.xml", `<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+      <w:body><w:p><w:r><w:t>Ada Lovelace</w:r></w:p></w:body></w:document>`);
+    expect(await inspectDocx(await zip.generateAsync({ type: "uint8array" }))).toMatchObject({
+      format: "invalid", reason: "unreadable",
+    });
   });
 
   it("rejects a file that is not a Word document", async () => {

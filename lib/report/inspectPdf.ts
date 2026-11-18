@@ -1,4 +1,5 @@
 import { getResolvedPDFJS } from "unpdf";
+import type { PDFPageProxy } from "unpdf/pdfjs";
 import { InspectionLimit, MAX_PDF_PAGES, inspectWithinBudget } from "./inspectBudget";
 import { TYPED_BULLET } from "./inspectDocx";
 import type { ResumeFileFacts } from "./report";
@@ -7,7 +8,7 @@ import type { ResumeFileFacts } from "./report";
  * Reads a PDF for the layout facts the formatting checks need. A PDF has no
  * Word tables, text boxes, or header parts, so those facts are null; what it
  * does show is where text sits (columns), which fonts set it, whether images
- * are drawn, and whether there is any text at all (a scanned page has none).
+ * are drawn, and whether the pages carry enough selectable text to be read.
  */
 
 /** A run of text on one baseline with no wide gap inside it. */
@@ -116,33 +117,87 @@ interface PdfTextItem {
   fontName: string;
 }
 
+type PdfJs = Awaited<ReturnType<typeof getResolvedPDFJS>>;
+type OperatorList = Awaited<ReturnType<PDFPageProxy["getOperatorList"]>>;
+
+/** An image paints a unit square transformed by the PDF's current graphics state. */
+function pageImages({ fnArray, argsArray }: OperatorList, { OPS, Util }: PdfJs) {
+  let count = 0;
+  let area = 0;
+  let transform = [1, 0, 0, 1, 0, 0];
+  const saved: number[][] = [];
+  const addImage = (m: number[], instances = 1) => {
+    area += Math.abs(m[0] * m[3] - m[1] * m[2]) * instances;
+    count += instances;
+  };
+
+  fnArray.forEach((op, i) => {
+    const args = argsArray[i] ?? [];
+    switch (op) {
+      case OPS.save:
+        saved.push(transform);
+        break;
+      case OPS.paintFormXObjectBegin:
+        saved.push(transform);
+        if (args[0]) transform = Util.transform(transform, args[0]);
+        break;
+      case OPS.restore:
+      case OPS.paintFormXObjectEnd:
+        transform = saved.pop() ?? transform;
+        break;
+      case OPS.transform:
+        transform = Util.transform(transform, args);
+        break;
+      case OPS.paintImageXObject:
+      case OPS.paintInlineImageXObject:
+      case OPS.paintImageMaskXObject:
+        addImage(transform);
+        break;
+      case OPS.paintImageXObjectRepeat: {
+        const [, scaleX, skewX, skewY, scaleY, positions] = args;
+        addImage(Util.transform(transform, [scaleX, skewX, skewY, scaleY, 0, 0]), positions.length / 2);
+        break;
+      }
+      case OPS.paintInlineImageXObjectGroup:
+        for (const item of args[1]) addImage(Util.transform(transform, item.transform));
+        break;
+    }
+  });
+  return { count, area };
+}
+
+const DOMINANT_IMAGE_FRACTION = 0.35;
+const SCAN_TEXT_FRACTION = 0.008;
+
 export function inspectPdf(file: ArrayBuffer | Uint8Array) {
   return inspectWithinBudget("pdf", file);
 }
 
 export async function readPdfLayout(file: Uint8Array): Promise<Extract<ResumeFileFacts, { format: "pdf" }>> {
-  const { getDocument, OPS } = await getResolvedPDFJS();
-  const task = getDocument({ data: file, stopAtErrors: true, maxImageSize: 16_000_000, useSystemFonts: true });
+  const pdfjs = await getResolvedPDFJS();
+  const task = pdfjs.getDocument({ data: file, stopAtErrors: true, maxImageSize: 16_000_000, useSystemFonts: true });
   try {
     const pdf = await task.promise;
     if (pdf.numPages > MAX_PDF_PAGES) throw new InspectionLimit();
-    const imageOps = new Set<number>([OPS.paintImageXObject, OPS.paintInlineImageXObject, OPS.paintImageXObjectRepeat]);
 
     let images = 0;
     let columns = 1;
-    let characters = 0;
+    let textPages = 0;
+    let scannedPages = 0;
     const fonts = new Set<string>();
     const bullets = new Set<string>();
 
     for (let n = 1; n <= pdf.numPages; n++) {
       const page = await pdf.getPage(n);
       const ops = await page.getOperatorList();
-      images += ops.fnArray.filter((fn) => imageOps.has(fn)).length;
+      if (ops.fnArray.length > 100_000) throw new InspectionLimit();
+      const raster = pageImages(ops, pdfjs);
+      images += raster.count;
 
       const content = await page.getTextContent();
+      if (content.items.length > 10_000) throw new InspectionLimit();
       const items = (content.items as PdfTextItem[]).filter((i) => typeof i.str === "string" && i.str.trim());
       for (const item of items) {
-        characters += item.str.replace(/\s/g, "").length;
         const font = page.commonObjs.has(item.fontName) ? (page.commonObjs.get(item.fontName) as { name?: string }).name : undefined;
         const family = font ? fontFamily(font) : "";
         if (family && !SYMBOL_FONTS.test(family)) fonts.add(family);
@@ -153,8 +208,20 @@ export async function readPdfLayout(file: Uint8Array): Promise<Extract<ResumeFil
         x: i.transform[4],
         y: i.transform[5],
         width: i.width,
-        size: Math.hypot(i.transform[2], i.transform[3]) || 10,
+        size: Math.hypot(i.transform[2], i.transform[3]),
       }));
+      const [left, bottom, right, top] = page.view;
+      const pageArea = (right - left) * (top - bottom);
+      const textArea = placed.reduce((area, item) => {
+        if (!/[\p{L}\p{N}]/u.test(item.str)) return area;
+        const width = Math.max(0, Math.min(item.x + item.width, right) - Math.max(item.x, left));
+        const height = Math.max(0, Math.min(item.y + item.size, top) - Math.max(item.y, bottom));
+        return area + width * height;
+      }, 0);
+      if (textArea > 0) textPages++;
+      if (raster.count > 0 && (textArea === 0 ||
+          (raster.area / pageArea >= DOMINANT_IMAGE_FRACTION && textArea / pageArea < SCAN_TEXT_FRACTION))) scannedPages++;
+
       const segments = segmentsOf(placed);
       columns = Math.max(columns, countColumns(segments, page.view[2] - page.view[0]));
       for (const seg of segments) {
@@ -166,7 +233,7 @@ export async function readPdfLayout(file: Uint8Array): Promise<Extract<ResumeFil
 
     return {
       format: "pdf",
-      hasTextLayer: characters >= 20,
+      hasTextLayer: textPages > 0 && scannedPages === 0,
       tables: null,
       images,
       textBoxes: null,

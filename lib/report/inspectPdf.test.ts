@@ -73,6 +73,20 @@ describe("inspectPdf", () => {
     expect(await inspectPdf(scan)).toMatchObject({ hasTextLayer: false, images: 1, fonts: [] });
   });
 
+  it("fails when a scanned page has only a tiny selectable caption", async () => {
+    const scan = h(Image, { src: { data: tinyPng(), format: "png" }, style: { width: 500, height: 680 } });
+    const caption = h(Text, { style: { fontSize: 6 } }, "Scanned by the hiring office");
+    expect(await inspectPdf(await pdf(scan, caption))).toMatchObject({ hasTextLayer: false, images: 1 });
+    const mixed = await renderToBuffer(h(Document, null, h(Page, null, name()), h(Page, null, scan, caption)));
+    expect(await inspectPdf(mixed)).toMatchObject({ hasTextLayer: false, images: 1 });
+  });
+
+  it("accepts a short text-based PDF, including one with a small logo", async () => {
+    const logo = h(Image, { src: { data: tinyPng(), format: "png" }, style: { width: 24, height: 24 } });
+    expect(await inspectPdf(await pdf(name()))).toMatchObject({ hasTextLayer: true, images: 0 });
+    expect(await inspectPdf(await pdf(name(), logo))).toMatchObject({ hasTextLayer: true, images: 1 });
+  });
+
   it("rejects a PDF with more pages than the inspection budget", async () => {
     const pages = Array.from({ length: 21 }, (_, i) => h(Page, { key: i }, name()));
     const file = await renderToBuffer(h(Document, null, ...pages));

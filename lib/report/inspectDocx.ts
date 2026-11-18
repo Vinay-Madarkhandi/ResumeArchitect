@@ -1,7 +1,7 @@
 import yauzl, { type Entry, type ZipFile } from "yauzl";
 import { DOMParser } from "@xmldom/xmldom";
 import { InspectionLimit, MAX_DOCX_BYTES, MAX_DOCX_ENTRIES, MAX_XML_BYTES, inspectWithinBudget } from "./inspectBudget";
-import type { LayoutFacts, ResumeFileFacts } from "./report";
+import type { ResumeFileFacts } from "./report";
 
 /**
  * Reads a .docx for the layout facts the formatting checks need: what an
@@ -12,7 +12,30 @@ import type { LayoutFacts, ResumeFileFacts } from "./report";
 type Xml = Document;
 
 function parse(text: string): Xml {
-  return new DOMParser().parseFromString(text, "text/xml");
+  let malformed = false;
+  const doc = new DOMParser({ errorHandler: () => { malformed = true; } }).parseFromString(text, "text/xml");
+  if (malformed || !doc.documentElement || doc.doctype) throw new Error("Malformed Word XML.");
+  return doc;
+}
+
+const NAMESPACES: Record<string, readonly string[]> = {
+  w: ["http://schemas.openxmlformats.org/wordprocessingml/2006/main", "http://purl.oclc.org/ooxml/wordprocessingml/main"],
+  a: ["http://schemas.openxmlformats.org/drawingml/2006/main", "http://purl.oclc.org/ooxml/drawingml/main"],
+  pic: ["http://schemas.openxmlformats.org/drawingml/2006/picture", "http://purl.oclc.org/ooxml/drawingml/picture"],
+  c: ["http://schemas.openxmlformats.org/drawingml/2006/chart", "http://purl.oclc.org/ooxml/drawingml/chart"],
+  dgm: ["http://schemas.openxmlformats.org/drawingml/2006/diagram", "http://purl.oclc.org/ooxml/drawingml/diagram"],
+  mc: ["http://schemas.openxmlformats.org/markup-compatibility/2006"],
+  v: ["urn:schemas-microsoft-com:vml"],
+};
+
+function expandedName(name: string) {
+  const [prefix, localName] = name.split(":");
+  return { localName: localName ?? prefix, namespaces: NAMESPACES[prefix] ?? [] };
+}
+
+function isElement(node: Node, name: ReturnType<typeof expandedName>): node is Element {
+  const element = node as Element;
+  return node.nodeType === 1 && element.localName === name.localName && name.namespaces.includes(element.namespaceURI ?? "");
 }
 
 async function indexParts(zip: ZipFile): Promise<Map<string, Entry>> {
@@ -48,24 +71,31 @@ async function part(zip: ZipFile, entry: Entry | undefined): Promise<Xml | null>
   return parse(bytes.toString("utf8", 0, offset));
 }
 
+const FALLBACK = expandedName("mc:Fallback");
+const PARAGRAPH = expandedName("w:p");
+
 /** Word writes a modern and a legacy copy of drawings; only the modern one counts. */
 function insideFallback(el: Element): boolean {
-  for (let p = el.parentNode; p; p = p.parentNode) if (p.nodeName === "mc:Fallback") return true;
+  for (let p = el.parentNode; p; p = p.parentNode) if (isElement(p, FALLBACK)) return true;
   return false;
 }
 
 function all(xml: Xml | Element, tag: string): Element[] {
-  return Array.from(xml.getElementsByTagName(tag)).filter((el) => !insideFallback(el));
+  const { localName, namespaces } = expandedName(tag);
+  return namespaces.flatMap((ns) => Array.from(xml.getElementsByTagNameNS(ns, localName))).filter((el) => !insideFallback(el));
 }
 
 function child(el: Element | null, name: string): Element | null {
-  if (!el) return null;
-  for (let n = el.firstChild; n; n = n.nextSibling) if (n.nodeType === 1 && n.nodeName === name) return n as Element;
+  const tag = expandedName(name);
+  for (let n = el?.firstChild; n; n = n.nextSibling) if (isElement(n, tag)) return n;
   return null;
 }
 
 function attr(el: Element | null, name: string): string | null {
-  return el?.getAttribute(name) || null;
+  if (!el) return null;
+  const { localName, namespaces } = expandedName(name);
+  if (namespaces.length === 0) return el.getAttributeNS(null, localName) || null;
+  return namespaces.map((ns) => el.getAttributeNS(ns, localName)).find(Boolean) || null;
 }
 
 function paragraphText(p: Element): string {
@@ -133,7 +163,7 @@ function readStyles(styles: Xml | null, theme: FontScheme): Styles {
 }
 
 function ownParagraph(el: Element): Element | null {
-  for (let p = el.parentNode; p; p = p.parentNode) if (p.nodeName === "w:p") return p as Element;
+  for (let p = el.parentNode; p; p = p.parentNode) if (isElement(p, PARAGRAPH)) return p;
   return null;
 }
 
@@ -231,12 +261,14 @@ export async function readDocxLayout(file: Uint8Array): Promise<Extract<ResumeFi
     const entries = await indexParts(zip);
     const read = (path: string) => part(zip, entries.get(path));
     const doc = await read("word/document.xml");
-    if (!doc) throw new Error("Not a Word document.");
+    if (!doc || !isElement(doc.documentElement, expandedName("w:document")) || !child(doc.documentElement, "w:body")) {
+      throw new Error("Not a Word document.");
+    }
     const theme = themeFonts(await read("word/theme/theme1.xml"));
     const styles = readStyles(await read("word/styles.xml"), theme);
     const numbering = await read("word/numbering.xml");
 
-    const facts: LayoutFacts = {
+    const facts = {
       tables: all(doc, "w:tbl").length,
       images: graphics(doc),
       textBoxes: all(doc, "w:txbxContent").length,
@@ -246,8 +278,8 @@ export async function readDocxLayout(file: Uint8Array): Promise<Extract<ResumeFi
       fonts: usedFonts(doc, styles, theme),
       bulletChars: bulletGlyphs(doc, numbering, theme),
     };
-    const headers = [];
-    const footers = [];
+    const headers: string[] = [];
+    const footers: string[] = [];
     for (const path of [...entries.keys()].sort()) {
       const margin = /^word\/(header|footer)\d*\.xml$/.exec(path);
       if (!margin) continue;
