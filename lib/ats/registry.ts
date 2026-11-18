@@ -12,10 +12,10 @@ const entry = (id: string, name: string, hosts: string[], htmlMarkers: RegExp[],
 
 export const atsRegistry: AtsEntry[] = [
   entry('workday', 'Workday', ['myworkdayjobs.com'], [/\bmyworkdayjobs\.com\b/i]),
-  entry('greenhouse', 'Greenhouse', ['boards.greenhouse.io', 'job-boards.greenhouse.io'], [/\b(?:boards|job-boards)\.greenhouse\.io\b/i], undefined, [/^[^/]+\/.*[?&]gh_jid=\d+(?:&|$)/i]),
+  entry('greenhouse', 'Greenhouse', ['boards.greenhouse.io', 'job-boards.greenhouse.io'], [/\b(?:boards|job-boards)\.greenhouse\.io\b/i], undefined, [/^(?:boards|job-boards)\.greenhouse\.io\//i, /^[^/]+\/.*[?&]gh_jid=\d+(?:&|$)/i]),
   entry('lever', 'Lever', ['jobs.lever.co'], [/\bjobs\.lever\.co\b/i]),
   entry('icims', 'iCIMS', ['icims.com'], [/\bicims\.com\b/i]),
-  entry('taleo', 'Taleo / Oracle Recruiting Cloud', ['taleo.net', 'oraclecloud.com'], [/\btaleo\.net\b/i, /\bfa-[a-z0-9-]+\.oraclecloud\.com\/hcmUI\/CandidateExperience\b/i], undefined, [/^[^/]*oraclecloud\.com\/hcmUI\/CandidateExperience(?:\/|\?|$)/i]),
+  entry('taleo', 'Taleo / Oracle Recruiting Cloud', ['taleo.net', 'oraclecloud.com'], [/\btaleo\.net\b/i, /\bfa-[a-z0-9-]+\.oraclecloud\.com\/hcmUI\/CandidateExperience\b/i], undefined, [/^(?:[^/]+\.)?taleo\.net\//i, /^[^/]*oraclecloud\.com\/hcmUI\/CandidateExperience(?:\/|\?|$)/i]),
   entry('successfactors', 'SAP SuccessFactors', ['successfactors.com', 'successfactors.eu', 'career5.successfactors.eu'], [/\bsuccessfactors\.(?:com|eu)\b/i]),
   entry('smartrecruiters', 'SmartRecruiters', ['jobs.smartrecruiters.com'], [/\bjobs\.smartrecruiters\.com\b/i]),
   entry('ashby', 'Ashby', ['jobs.ashbyhq.com'], [/\bjobs\.ashbyhq\.com\b/i]),
