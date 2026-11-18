@@ -96,6 +96,13 @@ test("sign up, tailor a resume, review every change, edit, and download", async 
   await expect(page.getByText("Average score lift")).toBeVisible();
   await expect(page.getByRole("button", { name: /Application status: Applied/ })).toBeVisible();
 
+  // The tracker and the workspace share the application stage.
+  await page.getByRole("link", { name: "Job tracker" }).click();
+  const trackedJob = page.getByRole("region", { name: "Applied", exact: true }).getByRole("button", { name: "Senior Backend Engineer" });
+  await trackedJob.click();
+  await page.getByRole("link", { name: "Tailored resume" }).click();
+  await expect(page.getByRole("button", { name: /Application status: Applied/ })).toBeVisible();
+
   // Job import refuses private network addresses.
   await page.goto("/new");
   await page.getByLabel(/Import from a link/).fill("http://127.0.0.1:4010/");

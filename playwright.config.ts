@@ -29,6 +29,7 @@ export default defineConfig({
         GEMINI_API_BASE_URL: `http://127.0.0.1:${fakePort}`,
         KEY_ENCRYPTION_SECRET: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
         RESEND_API_KEY: "",
+        CLIPPER_EXTENSION_ORIGINS: "chrome-extension://abcdefghijklmnopabcdefghijklmnop",
       },
       gracefulShutdown: { signal: "SIGTERM", timeout: 5000 },
     },
