@@ -3,7 +3,7 @@
  * and the DOCX writer, so all three agree on faces, sizes, and colors.
  * Sizes are in points.
  */
-export type TemplateId = "classic" | "modern";
+export type TemplateId = "classic" | "modern" | "standard";
 
 export interface Template {
   id: TemplateId;
@@ -17,6 +17,10 @@ export interface Template {
   size: { name: number; section: number; entry: number; body: number };
   color: { ink: string; muted: string; accent: string; rule: string };
   sectionStyle: "rule" | "accent";
+  /** Name and the contact line under it: flush left, or centered. */
+  header: "left" | "center";
+  /** Section headings set in capitals, or as written. */
+  sectionCase: "upper" | "asis";
 }
 
 export const TEMPLATES: Record<TemplateId, Template> = {
@@ -31,6 +35,8 @@ export const TEMPLATES: Record<TemplateId, Template> = {
     size: { name: 22, section: 10.5, entry: 10, body: 9.75 },
     color: { ink: "#1d1b18", muted: "#5b5750", accent: "#1d1b18", rule: "#c9c3b8" },
     sectionStyle: "rule",
+    header: "left",
+    sectionCase: "upper",
   },
   modern: {
     id: "modern",
@@ -43,9 +49,25 @@ export const TEMPLATES: Record<TemplateId, Template> = {
     size: { name: 24, section: 9.5, entry: 10, body: 9.5 },
     color: { ink: "#18191b", muted: "#55585e", accent: "#8a6420", rule: "#e2ddd3" },
     sectionStyle: "accent",
+    header: "left",
+    sectionCase: "upper",
+  },
+  standard: {
+    id: "standard",
+    label: "Standard",
+    description: "Centered name, plain sans, ruled headings. Like a well-made Word resume.",
+    bodyFont: "Hanken Grotesk",
+    headingFont: "Hanken Grotesk",
+    docxBodyFont: "Calibri",
+    docxHeadingFont: "Calibri",
+    size: { name: 20, section: 11.5, entry: 10, body: 9.5 },
+    color: { ink: "#111111", muted: "#4a4a4a", accent: "#111111", rule: "#9a9a9a" },
+    sectionStyle: "rule",
+    header: "center",
+    sectionCase: "asis",
   },
 };
 
 export function getTemplate(id: string | null | undefined): Template {
-  return id === "modern" ? TEMPLATES.modern : TEMPLATES.classic;
+  return id === "modern" || id === "standard" ? TEMPLATES[id] : TEMPLATES.classic;
 }

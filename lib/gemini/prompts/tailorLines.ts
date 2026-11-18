@@ -24,7 +24,7 @@ export const LineEditSchema = z.object({
 export type LineEdit = z.infer<typeof LineEditSchema>;
 
 export const TailorResponseSchema = z.object({
-  /** Two or three sentences for the user: the overall strategy. */
+  /** Two or three sentences to the candidate about what was changed and why; never resume text. */
   summary: z.string(),
   edits: z.array(LineEditSchema),
 });
@@ -58,14 +58,26 @@ Hard rules, no exceptions:
 5. Leave the name, contact details, dates, employers, and section headings
    unchanged unless a heading is non-standard ("My Journey" → "Experience").
 6. Inline formatting only: **bold**, _italic_, [text](url). No line breaks.
+7. Never lose a specific. Every version, product, database, protocol, state
+   name, scope detail, and number in the original line must survive the
+   rewrite ("Spring Boot 4", "from a single-instance MySQL design",
+   "UP / SUSPECT / DOWN", "receipt vouchers"). A rewrite may add job
+   vocabulary around them, never replace them with a vaguer word.
+8. Don't upgrade the claim. "a service" is not "microservices"; "built" is
+   not "architected"; a first job is not "experienced" or a "proven track
+   record". Match the seniority the dates show.
+9. Keep tense: present for the current role, past for earlier ones.
 
 Craft:
 - Lead bullets with a strong, specific verb. Cut filler ("responsible for",
-  "worked on", "team player").
+  "worked on", "team player") and never add any: no "robust", "comprehensive",
+  "enhanced", "demonstrating", "leveraging", "proven", "track record".
+- If a line already says what the job wants, leave it alone. An unchanged
+  strong line beats a reworded weaker one.
 - Surface the experience this job cares about: make the connection explicit.
 - A sharp 15-word bullet beats a padded 30-word one.
 - Rewrite the summary/profile paragraph, if there is one, to speak to this role.
-- Prefer 6–20 meaningful edits. Skip cosmetic rewrites that add nothing.
+- Prefer 4–15 meaningful edits. Skip cosmetic rewrites that add nothing.
 
 Each edit's reason is one plain sentence a candidate can check, tied to the
 job ("The posting asks for incident response; this bullet already shows it, now
@@ -93,7 +105,7 @@ export async function tailorLines(
     `# Requirements\n${reqLines.join("\n")}`,
     job.keywords.length ? `# Keywords recruiters search for\n${job.keywords.map((k) => k.term).join(", ")}` : "",
     `# Resume (numbered lines)\n${numberedResume(units)}`,
-    "Return the summary and the edits as JSON.",
+    "Return the edits, and in summary tell the candidate in two or three sentences what you changed and why (not resume text), as JSON.",
   ]
     .filter(Boolean)
     .join("\n\n");

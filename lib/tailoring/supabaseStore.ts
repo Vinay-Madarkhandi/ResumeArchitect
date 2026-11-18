@@ -5,7 +5,7 @@ import type { PipelineStore } from "./pipeline";
 /** PipelineStore backed by Supabase, acting as the signed-in user (RLS applies). */
 export function supabasePipelineStore(
   supabase: SupabaseClient<Database>,
-  ctx: { userId: string; sourceResumeId: string; sourceTitle: string; jobDescriptionId: string },
+  ctx: { userId: string; sourceResumeId: string; sourceTitle: string; designSourcePath: string | null; jobDescriptionId: string },
 ): PipelineStore {
   return {
     async createSession({ sourceSnapshot, model }) {
@@ -48,6 +48,7 @@ export function supabasePipelineStore(
         job_title_snapshot: jobTitle,
         job_company_snapshot: company,
         tailoring_session_id: sessionId,
+        design_source_path: ctx.designSourcePath,
       });
       if (error) throw new Error("Couldn't save the tailored resume.");
       return id;

@@ -8,7 +8,7 @@ const PatchSchema = z
   .object({
     content: DocumentContentSchema.optional(),
     title: z.string().trim().min(1).max(160).optional(),
-    template: z.enum(["classic", "modern"]).optional(),
+    template: z.enum(["classic", "modern", "standard"]).optional(),
     reviewedChangeIds: z.array(z.string().max(32)).max(500).optional(),
     applicationStatus: z.enum(["saved", "applied", "interviewing", "offer", "rejected"]).optional(),
     coverLetter: z.string().max(20_000).optional(),

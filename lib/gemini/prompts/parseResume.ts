@@ -19,8 +19,13 @@ Rules:
   joined by " · " (email, phone, location, links), then "## " section headings
   (Summary, Experience, Education, Skills, Projects, Certifications, …).
 - Under Experience, give each role a "### Title — Company" heading, then a
-  paragraph with dates and location, then "-" bullets.
-- Skills as short paragraphs, e.g. "**Languages:** Go, Python".
+  paragraph with dates and location, then "-" bullets. Projects the same way
+  with a "### Project name" heading.
+- If an entry has a line listing its tech stack (e.g. "Java, Spring Boot,
+  PostgreSQL"), keep it as its own "_italic_" paragraph right under the dates.
+- Skills: one paragraph per group, each on its own line separated by a blank
+  line, e.g. "**Languages:** Go, Python". Never merge groups into one paragraph.
+- Keep the original wording and tense of every bullet.
 - Inline formatting only: **bold**, _italic_, [text](url). No tables, images,
   code blocks, or HTML.
 - Drop page numbers, headers/footers repeated on every page, and artifacts.`;

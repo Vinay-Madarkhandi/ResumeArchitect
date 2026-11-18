@@ -75,7 +75,7 @@ export async function POST(request: Request) {
 
   const { data: source } = await supabase
     .from("resumes")
-    .select("id, title, content")
+    .select("id, title, content, design_source_path")
     .eq("id", sourceResumeId)
     .eq("user_id", user.id)
     .single();
@@ -112,6 +112,7 @@ export async function POST(request: Request) {
         userId: user.id,
         sourceResumeId: source.id,
         sourceTitle: source.title,
+        designSourcePath: source.design_source_path,
         jobDescriptionId,
       }),
     },

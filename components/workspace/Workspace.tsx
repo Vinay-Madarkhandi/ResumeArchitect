@@ -28,7 +28,7 @@ import { usePageCount } from "@/lib/editor/usePageCount";
 import { diffUnits, revertHunk, type Hunk } from "@/lib/resume/diff";
 import { buildRedline, matchChange } from "@/lib/resume/review";
 import { addSkill } from "@/lib/resume/addSkill";
-import { fromUnits, toUnits } from "@/lib/resume/units";
+import { documentText, fromUnits, toUnits } from "@/lib/resume/units";
 import { TEMPLATES, type TemplateId } from "@/lib/resume/templates";
 import { atsChecks, scoreResume } from "@/lib/scoring/score";
 import type { DocumentContent } from "@/lib/schemas/document";
@@ -48,6 +48,8 @@ export interface WorkspaceProps {
     reviewedChangeIds: string[];
     applicationStatus: ApplicationStatus;
     coverLetter: string | null;
+    /** Imported from .docx: the Word download writes into the user's own file. */
+    keepsWordDesign: boolean;
   };
   session: SessionArtifacts | null;
   /** The original job post text, for the keyword panel. */
@@ -264,7 +266,14 @@ export function Workspace({ resume, session, jobText, initialView }: WorkspacePr
               </Select>
             </label>
             <ThemeToggle />
-            <ExportMenu resumeId={resume.id} doc={doc} template={template} flush={flush} />
+            <ExportMenu
+              resumeId={resume.id}
+              doc={doc}
+              template={template}
+              flush={flush}
+              keepsWordDesign={resume.keepsWordDesign}
+              lengthChange={original ? documentText(doc).length / Math.max(1, documentText(original).length) - 1 : 0}
+            />
           </div>
         </div>
       </header>

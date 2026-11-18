@@ -40,13 +40,16 @@ function runs(nodes: InlineNode[], t: Template, base: { bold?: boolean; size?: n
   });
 }
 
-function blockParagraphs(block: BlockNode, t: Template, ordinal: { n: number }): Paragraph[] {
+/** `contact` marks the paragraph right under the name, which follows the header alignment. */
+function blockParagraphs(block: BlockNode, t: Template, ordinal: { n: number }, contact = false): Paragraph[] {
+  const headerAlign = t.header === "center" ? AlignmentType.CENTER : undefined;
   switch (block.type) {
     case "heading": {
       if (block.attrs.level === 1) {
         return [
           new Paragraph({
             spacing: { after: 80 },
+            alignment: headerAlign,
             children: runs(block.content, t, { bold: true, size: pt(t.size.name), font: t.docxHeadingFont }),
           }),
         ];
@@ -61,7 +64,9 @@ function blockParagraphs(block: BlockNode, t: Template, ordinal: { n: number }):
                 ? { bottom: { style: BorderStyle.SINGLE, size: 6, color: hex(t.color.rule), space: 2 } }
                 : undefined,
             children: runs(
-              block.content.map((n) => (n.type === "text" ? { ...n, text: n.text.toUpperCase() } : n)),
+              t.sectionCase === "upper"
+                ? block.content.map((n) => (n.type === "text" ? { ...n, text: n.text.toUpperCase() } : n))
+                : block.content,
               t,
               {
                 bold: true,
@@ -82,7 +87,7 @@ function blockParagraphs(block: BlockNode, t: Template, ordinal: { n: number }):
       ];
     }
     case "paragraph":
-      return [new Paragraph({ spacing: { after: 60 }, children: runs(block.content, t) })];
+      return [new Paragraph({ spacing: { after: 60 }, alignment: contact ? headerAlign : undefined, children: runs(block.content, t) })];
     case "bulletList":
       return block.content.flatMap((item) => itemParagraphs(item, t, { reference: "bullets", level: 0 }));
     case "orderedList": {
@@ -154,7 +159,11 @@ export async function documentToDocx(doc: DocumentContent, template: Template, t
     sections: [
       {
         properties: { page: { margin: { top: 900, bottom: 900, left: 1000, right: 1000 } } },
-        children: doc.content.flatMap((block) => blockParagraphs(block, template, ordinal)),
+        children: doc.content.flatMap((block, i) => {
+          const prev = doc.content[i - 1];
+          const contact = prev?.type === "heading" && prev.attrs.level === 1 && block.type === "paragraph";
+          return blockParagraphs(block, template, ordinal, contact);
+        }),
       },
     ],
   });

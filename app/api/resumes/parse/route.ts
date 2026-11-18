@@ -70,6 +70,7 @@ export async function POST(request: Request) {
       is_default: false,
       original_file_storage_path: storagePath,
       original_file_name: fileName,
+      design_source_path: result.keepsDesign ? storagePath : null,
     });
     if (error) throw new Error("insert failed");
 
@@ -88,7 +89,7 @@ export async function POST(request: Request) {
       await supabase.from("resumes").delete().in("id", stale.map((r) => r.id));
     }
 
-    return NextResponse.json({ resumeId, usedAi: result.usedAi });
+    return NextResponse.json({ resumeId, usedAi: result.usedAi, keepsDesign: result.keepsDesign && !!storagePath });
   } catch (error) {
     if (storagePath) await supabase.storage.from(RESUME_UPLOADS_BUCKET).remove([storagePath]);
     if (error instanceof ImportError) return fail(422, "parse_failed", error.message);

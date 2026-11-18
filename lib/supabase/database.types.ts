@@ -86,9 +86,10 @@ export interface Database {
           original_file_storage_path: string | null;
           original_file_name: string | null;
           pdf_storage_path: string | null;
+          design_source_path: string | null;
           pdf_generated_at: string | null;
           low_confidence_fields: string[];
-          template: "classic" | "modern";
+          template: "classic" | "modern" | "standard";
           reviewed_change_ids: string[];
           application_status: ApplicationStatus;
           application_status_updated_at: string | null;

@@ -27,3 +27,17 @@ describe("letterToDocx", () => {
     expect(value).toContain("Ada Lovelace");
   });
 });
+
+describe("the Standard template", () => {
+  it("centers the name and contact line and keeps section headings as written", async () => {
+    const JSZip = (await import("jszip")).default;
+    const doc = markdownToDocument("# Ada Lovelace\n\nada@example.com · London\n\n## Work Experience\n\n- Built Go services");
+    const buffer = await documentToDocx(doc, TEMPLATES.standard, "Ada");
+    const xml = await (await JSZip.loadAsync(buffer)).file("word/document.xml")!.async("string");
+    const paragraphs = xml.match(/<w:p[ >][\s\S]*?<\/w:p>/g)!;
+    expect(paragraphs.find((p) => p.includes("Ada Lovelace"))).toContain('<w:jc w:val="center"/>');
+    expect(paragraphs.find((p) => p.includes("ada@example.com"))).toContain('<w:jc w:val="center"/>');
+    expect(xml).toContain("Work Experience");
+    expect(xml).not.toContain("WORK EXPERIENCE");
+  });
+});
