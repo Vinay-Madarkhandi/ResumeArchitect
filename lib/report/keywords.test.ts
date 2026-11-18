@@ -63,7 +63,7 @@ describe("matchTerm", () => {
     ["数据分析", "大数据分析师"],
   ])("ignores ambiguous or embedded %s in %s", (term, text) => {
     expect(matchTerm(term, ctx(text)).status).toBe("missing");
-    expect(postingCount(term, ctx("", text))).toBe(1); // Minimum score weight for older stored facts.
+    expect(postingCount(term, ctx("", text))).toBe(0);
   });
 
   it.each([
@@ -120,8 +120,8 @@ describe("postingCount", () => {
     expect(postingCount("Kubernetes", ctx("", job))).toBe(3);
   });
 
-  it("is at least 1 even when the extractor normalized the posting's wording", () => {
-    expect(postingCount("Terraform", ctx("", "Infrastructure tooling"))).toBe(1);
+  it("is zero when neither the term nor a synonym is present", () => {
+    expect(postingCount("Terraform", ctx("", "Infrastructure tooling"))).toBe(0);
   });
 });
 

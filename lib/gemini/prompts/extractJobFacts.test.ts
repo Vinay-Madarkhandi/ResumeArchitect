@@ -74,6 +74,25 @@ describe("extractJobFacts", () => {
     expect(facts.predictedSkills.map((p) => p.term)).toEqual(["Docker", "gRPC"]);
   });
 
+  it("moves hard skills unsupported by the posting to predictions and keeps documented synonyms", async () => {
+    const facts = await extractJobFacts(fakeModel([{
+      ...REPLY,
+      hardSkills: [
+        { term: "JavaScript", importance: "high" },
+        { term: "Docker", importance: "high" },
+        { term: "Terraform", importance: "low" },
+      ],
+    }]), "Backend Engineer. Required: JS.");
+    expect(facts.hardSkills).toEqual([{ term: "JavaScript", importance: "high" }]);
+    expect(facts.predictedSkills.filter((p) => p.term === "Docker")).toEqual([REPLY.predictedSkills[0]]);
+    expect(facts.predictedSkills.find((p) => p.term === "Terraform")?.reason).toBeTruthy();
+  });
+
+  it.each(["...", "🚀", "X".repeat(81)])("rejects a bogus skill term %s", (term) => {
+    expect(JobFactsSchema.safeParse({ ...REPLY, hardSkills: [{ term, importance: "high" }] }).success).toBe(false);
+    expect(JobFactsSchema.safeParse({ ...REPLY, predictedSkills: [{ term }] }).success).toBe(false);
+  });
+
   it("fills defaults when Gemini returns nulls for optional facts", async () => {
     const facts = await extractJobFacts(
       fakeModel([{ ...REPLY, softSkills: null, predictedSkills: null, yearsRequired: null }]),

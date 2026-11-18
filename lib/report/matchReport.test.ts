@@ -127,6 +127,23 @@ describe("buildMatchReport", () => {
     expect(twice).toBe(1);
   });
 
+  it("deduplicates stored facts before scoring, including case and synonym variants", () => {
+    const job = { ...JOB, predictedSkills: [{ term: "Microsoft Excel", reason: "Useful for reporting." }] };
+    const expected = report(STRONG.replace(/Terraform/g, "Ansible"), job);
+    const duplicate = report(STRONG.replace(/Terraform/g, "Ansible"), {
+      ...job,
+      hardSkills: [
+        ...JOB.hardSkills,
+        { term: "Postgres", importance: "low" },
+        { term: "postgresql", importance: "high" },
+        { term: "...", importance: "high" },
+      ],
+      softSkills: [...JOB.softSkills, { term: "Communication Skills", importance: "low" }],
+      predictedSkills: [...job.predictedSkills, { term: "Excel", reason: "Duplicate." }],
+    });
+    expect(duplicate).toEqual(expected);
+  });
+
   it("is reproducible: the same input always gives the same report", () => {
     expect(report(STRONG)).toEqual(report(STRONG));
   });

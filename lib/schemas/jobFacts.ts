@@ -17,15 +17,18 @@ export const DEGREES = ["high_school", "associate", "bachelor", "master", "docto
 export const DegreeSchema = z.enum(DEGREES);
 export type Degree = z.infer<typeof DegreeSchema>;
 
+const SkillTermSchema = z.string().trim().min(1).max(80)
+  .refine((term) => /[\p{L}\p{N}]/u.test(term), "A skill must contain a letter or digit.");
+
 export const JobSkillSchema = z.object({
   /** The skill as the posting writes it. */
-  term: z.string().trim().min(1),
+  term: SkillTermSchema,
   importance: ImportanceSchema,
 });
 export type JobSkill = z.infer<typeof JobSkillSchema>;
 
 export const PredictedSkillSchema = z.object({
-  term: z.string().trim().min(1),
+  term: SkillTermSchema,
   /** Why the role likely needs it, in one short sentence. */
   reason: z.string().trim().default(""),
 });

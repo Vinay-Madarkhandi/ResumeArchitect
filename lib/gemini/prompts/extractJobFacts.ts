@@ -1,7 +1,6 @@
 import { generateStructured, type JsonModel } from "@/lib/gemini/model";
-import { JobFactsSchema, type JobFacts, type JobSkill } from "@/lib/schemas/jobFacts";
-import { matchTerm } from "@/lib/report/keywords";
-import { buildLexicon, formKey, type Lexicon } from "@/lib/report/synonyms";
+import { JobFactsSchema, type JobFacts } from "@/lib/schemas/jobFacts";
+import { groundJobSkills } from "@/lib/report/keywords";
 
 const SYSTEM = `You are an applicant tracking system's job-posting parser. Read one job
 posting and return the facts a recruiter screens resumes against. Never score
@@ -40,27 +39,6 @@ Use empty arrays when there are no skills of that type. Never invent listed skil
 
 Skip benefits, salary, equal-opportunity statements, and company history.`;
 
-const IMPORTANCE_RANK = { high: 0, medium: 1, low: 2 } as const;
-
-/** One entry per skill, counting synonyms as the same skill, at its highest importance. */
-function dedupe(skills: JobSkill[], lexicon: Lexicon, taken: Set<string>): JobSkill[] {
-  const kept = new Map<string, JobSkill>();
-  for (const skill of skills) {
-    const id = identity(skill.term, lexicon);
-    if (taken.has(id)) continue;
-    const prev = kept.get(id);
-    if (!prev) kept.set(id, skill);
-    else if (IMPORTANCE_RANK[skill.importance] < IMPORTANCE_RANK[prev.importance]) {
-      kept.set(id, { ...prev, importance: skill.importance });
-    }
-  }
-  return [...kept.values()];
-}
-
-function identity(term: string, lexicon: Lexicon): string {
-  return formKey(lexicon(term)?.forms[0] ?? term);
-}
-
 /**
  * Reads a job posting into the facts the Match Report scores against
  * (lib/report). The AI extracts; it never produces the match rate.
@@ -74,16 +52,5 @@ export async function extractJobFacts(model: JsonModel, jobText: string): Promis
     temperature: 0.1,
   });
 
-  const lexicon = buildLexicon(jobText);
-  const hardSkills = dedupe(facts.hardSkills, lexicon, new Set());
-  const softSkills = dedupe(facts.softSkills, lexicon, new Set(hardSkills.map((s) => identity(s.term, lexicon))));
-  const named = new Set([...hardSkills, ...softSkills].map((s) => identity(s.term, lexicon)));
-  const predictedSkills = facts.predictedSkills.filter((p) => {
-    const id = identity(p.term, lexicon);
-    if (named.has(id)) return false;
-    named.add(id);
-    return matchTerm(p.term, { resumeText: jobText, jobText, lexicon }).status === "missing";
-  });
-
-  return { ...facts, hardSkills, softSkills, predictedSkills };
+  return groundJobSkills(facts, jobText);
 }

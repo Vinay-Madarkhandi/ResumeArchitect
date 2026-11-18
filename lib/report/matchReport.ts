@@ -1,6 +1,6 @@
 import type { Importance } from "@/lib/schemas/jobFacts";
 import { formattingChecks } from "./formatting";
-import { matchPredictedSkills, matchSkills, type MatchContext } from "./keywords";
+import { groundJobSkills, matchPredictedSkills, matchSkills, type MatchContext } from "./keywords";
 import { recruiterTips } from "./recruiterTips";
 import type { Check, CheckStatus, ComponentId, MatchReport, ReportInput, ScoreComponent, SkillMatch, TermMatch } from "./report";
 import { readResume } from "./resume";
@@ -105,7 +105,8 @@ function verdictMessage(rate: number, breakdown: ScoreComponent[]): string {
 }
 
 /** The whole Match Report for one resume version against one posting. Pure: same input, same report. */
-export function buildMatchReport({ job, jobText, resume: doc, file, asOf }: ReportInput): MatchReport {
+export function buildMatchReport({ job: facts, jobText, resume: doc, file, asOf }: ReportInput): MatchReport {
+  const job = groundJobSkills(facts, jobText);
   const resume = readResume(doc);
   const match: MatchContext = { resumeText: resume.text, jobText, lexicon: buildLexicon(jobText, resume.text) };
 

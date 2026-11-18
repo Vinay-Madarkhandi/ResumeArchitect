@@ -1,7 +1,7 @@
-import type { JobSkill, PredictedSkill } from "@/lib/schemas/jobFacts";
+import { JobSkillSchema, PredictedSkillSchema, type JobFacts, type JobSkill, type PredictedSkill } from "@/lib/schemas/jobFacts";
 import { sectionKind } from "./resume";
 import type { PredictedSkillMatch, SkillMatch, TermMatch } from "./report";
-import { formKey, type Lexicon, type SynonymGroup } from "./synonyms";
+import { buildLexicon, formKey, type Lexicon, type SynonymGroup } from "./synonyms";
 
 /**
  * Finds a job's skills in a resume the way an ATS keyword search does:
@@ -180,12 +180,56 @@ export function matchTerm(term: string, { resumeText, jobText, lexicon }: MatchC
   return { status: "missing", resumeCount: 0, matchedForm: null, advice: null };
 }
 
-/** Mentions of the term or any synonym in the posting; at least 1, since the posting asked for it. */
+/** Mentions of the term or any synonym in the posting. */
 export function postingCount(term: string, { jobText, lexicon }: MatchContext): number {
-  return Math.max(1, mentions([term, ...(lexicon(term)?.forms ?? [])], jobText).length);
+  return mentions([term, ...(lexicon(term)?.forms ?? [])], jobText).length;
 }
 
 const IMPORTANCE_RANK = { high: 0, medium: 1, low: 2 } as const;
+
+/** Normalize model output and recheck stored facts before using them for scoring. */
+export function groundJobSkills(facts: JobFacts, jobText: string): JobFacts {
+  const lexicon = buildLexicon(jobText);
+  const identity = (term: string) => formKey(lexicon(term)?.forms[0] ?? term);
+  const posting = { jobText, resumeText: "", lexicon };
+  const unlisted: PredictedSkill[] = [];
+  const taken = new Set<string>();
+
+  const listed = (skills: JobSkill[]) => {
+    const kept = new Map<string, JobSkill>();
+    for (const input of skills) {
+      const parsed = JobSkillSchema.safeParse(input);
+      if (!parsed.success) continue;
+      const skill = parsed.data;
+      const id = identity(skill.term);
+      if (taken.has(id)) continue;
+      if (postingCount(skill.term, posting) === 0) {
+        unlisted.push({ term: skill.term, reason: "Suggested by the job analysis. The posting does not list this skill." });
+        continue;
+      }
+      const previous = kept.get(id);
+      if (!previous) kept.set(id, skill);
+      else if (IMPORTANCE_RANK[skill.importance] < IMPORTANCE_RANK[previous.importance]) {
+        kept.set(id, { ...previous, importance: skill.importance });
+      }
+    }
+    for (const id of kept.keys()) taken.add(id);
+    return [...kept.values()];
+  };
+
+  const hardSkills = listed(facts.hardSkills);
+  const softSkills = listed(facts.softSkills);
+  const predictedSkills = [...facts.predictedSkills, ...unlisted].flatMap((input) => {
+    const parsed = PredictedSkillSchema.safeParse(input);
+    if (!parsed.success) return [];
+    const skill = parsed.data;
+    const id = identity(skill.term);
+    if (taken.has(id) || postingCount(skill.term, posting) > 0) return [];
+    taken.add(id);
+    return [skill];
+  });
+  return { ...facts, hardSkills, softSkills, predictedSkills };
+}
 
 /** Every job skill with its status, most important first, then most repeated in the posting. */
 export function matchSkills(skills: JobSkill[], ctx: MatchContext): SkillMatch[] {
