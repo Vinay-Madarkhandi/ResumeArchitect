@@ -17,6 +17,7 @@ import { TemplateGallery } from "@/components/paper/TemplateGallery";
 import { Redline } from "@/components/workspace/Redline";
 import { ChangeList, type ChangeEntry } from "@/components/workspace/ChangeList";
 import { AtsList, ScoreLockup, ScorePanel } from "@/components/workspace/ScorePanel";
+import { ShareDialog } from "@/components/workspace/ShareDialog";
 import { ExportMenu } from "@/components/workspace/ExportMenu";
 import { CoverLetter } from "@/components/workspace/CoverLetter";
 import { JobPostPanel } from "@/components/workspace/JobPostPanel";
@@ -272,6 +273,7 @@ export function Workspace({ resume, session, jobText, initialView }: WorkspacePr
               </DialogContent>
             </Dialog>
             <ThemeToggle />
+            <ShareDialog resumeId={resume.id} doc={doc} template={template} />
             <ExportMenu
               resumeId={resume.id}
               doc={doc}

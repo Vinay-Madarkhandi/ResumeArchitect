@@ -29,6 +29,13 @@
       "when": 1794985373246,
       "tag": "0003_career_bullets",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1794988464730,
+      "tag": "0004_resume_shares",
+      "breakpoints": true
     }
   ]
 }

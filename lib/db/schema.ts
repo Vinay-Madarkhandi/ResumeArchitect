@@ -1,6 +1,6 @@
 import { sql } from "drizzle-orm";
 import {
-  type AnyPgColumn, boolean, check, customType, index, inet, integer, jsonb,
+  type AnyPgColumn, bigint, boolean, check, customType, index, inet, integer, jsonb,
   pgTable, primaryKey, smallint, text, timestamp, uniqueIndex, uuid,
 } from "drizzle-orm/pg-core";
 import type { Link, ResumeContent } from "@/lib/schemas/resume";
@@ -103,6 +103,18 @@ export const resumes = pgTable("resumes", {
   index("resumes_job_description_id_idx").on(t.job_description_id),
   index("resumes_source_resume_id_idx").on(t.source_resume_id),
   index("resumes_tailoring_session_id_idx").on(t.tailoring_session_id),
+]);
+
+export const resumeShares = pgTable("resume_shares", {
+  resume_id: uuid("resume_id").primaryKey().references(() => resumes.id, { onDelete: "cascade" }),
+  slug: text("slug").notNull().unique(),
+  password_hash: text("password_hash"),
+  content: jsonb("content").$type<DocumentContent>().notNull(),
+  template: text("template", { enum: TEMPLATE_IDS }).notNull(),
+  views: bigint("views", { mode: "number" }).notNull().default(0),
+  created_at: created(),
+}, (t) => [
+  check("resume_shares_slug_check", sql`${t.slug} ~ '^[A-Za-z0-9_-]{43}$'`),
 ]);
 
 export const tailoringSessions = pgTable("tailoring_sessions", {
