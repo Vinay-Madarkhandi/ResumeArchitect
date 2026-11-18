@@ -116,7 +116,7 @@ export async function* runPipeline(
     yield { type: "stage", stage, status: "running" };
     await store.updateSession(sessionId, { stage, status: "generating" });
     const sourceUnits = toUnits(input.source.content);
-    const response = await tailorLines(model, { units: sourceUnits, job });
+    const response = await tailorLines(model, { units: sourceUnits, job, report: before });
     const applied = applyEdits(sourceUnits, response.edits);
     const rewrites = applied.changes.filter((c) => c.op === "rewrite").length;
     const inserts = applied.changes.filter((c) => c.op === "insert_after").length;

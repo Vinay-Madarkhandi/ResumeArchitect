@@ -185,6 +185,30 @@ export function postingCount(term: string, { jobText, lexicon }: MatchContext): 
   return mentions([term, ...(lexicon(term)?.forms ?? [])], jobText).length;
 }
 
+export type PostingSegment = { text: string; skill?: SkillMatch };
+
+/**
+ * The posting split into plain text and mentions of each skill (by the same
+ * matching that scores it), so highlights agree with the report. Overlaps
+ * resolve to the earliest, then longest, mention.
+ */
+export function highlightPosting(jobText: string, skills: SkillMatch[]): PostingSegment[] {
+  const lexicon = buildLexicon(jobText);
+  const hits = skills
+    .flatMap((skill) => mentions([skill.term, ...(lexicon(skill.term)?.forms ?? [])], jobText).map((span) => ({ ...span, skill })))
+    .sort((a, b) => a.start - b.start || b.end - a.end);
+  const segments: PostingSegment[] = [];
+  let pos = 0;
+  for (const hit of hits) {
+    if (hit.start < pos) continue;
+    if (hit.start > pos) segments.push({ text: jobText.slice(pos, hit.start) });
+    segments.push({ text: hit.text, skill: hit.skill });
+    pos = hit.end;
+  }
+  if (pos < jobText.length) segments.push({ text: jobText.slice(pos) });
+  return segments;
+}
+
 const IMPORTANCE_RANK = { high: 0, medium: 1, low: 2 } as const;
 
 /** Normalize model output and recheck stored facts before using them for scoring. */

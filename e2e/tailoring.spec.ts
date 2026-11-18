@@ -40,7 +40,7 @@ test("sign up, tailor a resume, review every change, edit, and download", async 
 
   // The score tab explains the number.
   await rail.getByRole("tab", { name: "Score" }).click();
-  await expect(rail.getByText("Must-have requirements")).toBeVisible();
+  await expect(rail.getByRole("heading", { name: /^Hard skills\s*\d+\/\d+$/ })).toBeVisible();
 
   // Each change shows what it's worth.
   await rail.getByRole("tab", { name: "Changes" }).click();

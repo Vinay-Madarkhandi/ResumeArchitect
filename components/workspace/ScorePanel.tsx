@@ -3,31 +3,27 @@
 import { Check, Minus, Plus } from "lucide-react";
 import type { JobAnalysis } from "@/lib/schemas/jobAnalysis";
 import { Breakdown, CheckList, MatchRateFigure } from "@/components/scan/reportParts";
-import type { MatchReport } from "@/lib/report/report";
-import type { RequirementEvidence, requirementEvidence } from "@/lib/tailoring/requirements";
+import type { MatchReport, SkillMatch } from "@/lib/report/report";
 import { cn } from "@/lib/cn";
 
 /**
  * The score lock-up: before → now in large mono figures, then the exact
- * breakdown that produces the number, then each requirement with the line
- * that satisfies it. Missing requirements can be added only by the user
+ * breakdown that produces the number, then each skill the score counts,
+ * read off the same report. Missing skills can be added only by the user
  * ("I have this"), never by the AI.
  */
 export function ScorePanel({
   before,
   now,
-  evidence,
-  originalEvidence,
   onAddSkill,
 }: {
   before: MatchReport;
   now: MatchReport;
-  evidence: ReturnType<typeof requirementEvidence>;
-  originalEvidence: RequirementEvidence[];
   onAddSkill: (label: string) => void;
 }) {
-  const must = evidence.requirements.filter((r) => r.importance === "must");
-  const nice = evidence.requirements.filter((r) => r.importance === "nice");
+  const shownBefore = new Set(
+    [...before.hardSkills, ...before.softSkills, ...before.otherKeywords].filter((s) => s.status !== "missing").map((s) => s.term),
+  );
 
   return (
     <div className="flex flex-col gap-6">
@@ -37,22 +33,22 @@ export function ScorePanel({
         <Breakdown components={now.breakdown} baseline={before.breakdown} />
       </div>
 
-      <RequirementGroup title="Must-have requirements" items={must} onAddSkill={onAddSkill} originalEvidence={originalEvidence} />
-      {nice.length > 0 && <RequirementGroup title="Nice-to-have requirements" items={nice} onAddSkill={onAddSkill} originalEvidence={originalEvidence} />}
+      <SkillGroup title="Hard skills" items={now.hardSkills} onAddSkill={onAddSkill} shownBefore={shownBefore} />
+      {now.softSkills.length > 0 && <SkillGroup title="Soft skills" items={now.softSkills} onAddSkill={onAddSkill} shownBefore={shownBefore} />}
 
-      {evidence.keywords.length > 0 && (
+      {now.otherKeywords.length > 0 && (
         <div>
           <h3 className="text-small font-medium text-ink-2">Recruiter keywords</h3>
           <ul className="mt-2 flex flex-wrap gap-1.5">
-            {evidence.keywords.map((k) => (
+            {now.otherKeywords.map((k) => (
               <li
                 key={k.term}
                 className={cn(
                   "rounded-sm border px-1.5 py-px text-label",
-                  k.matched ? "border-add/40 text-add" : "border-dashed border-line-strong text-ink-3",
+                  k.status !== "missing" ? "border-add/40 text-add" : "border-dashed border-line-strong text-ink-3",
                 )}
               >
-                {!k.matched && <span className="sr-only">Missing: </span>}
+                {k.status === "missing" && <span className="sr-only">Missing: </span>}
                 {k.term}
               </li>
             ))}
@@ -68,49 +64,50 @@ export function ScorePanel({
   );
 }
 
-function RequirementGroup({
+function SkillGroup({
   title,
   items,
   onAddSkill,
-  originalEvidence,
+  shownBefore,
 }: {
   title: string;
-  items: RequirementEvidence[];
+  items: SkillMatch[];
   onAddSkill: (label: string) => void;
-  originalEvidence: RequirementEvidence[];
+  shownBefore: Set<string>;
 }) {
-  const matched = items.filter((r) => r.matched).length;
+  const shown = items.filter((s) => s.status !== "missing").length;
   return (
     <div>
       <h3 className="flex items-baseline justify-between text-small font-medium text-ink-2">
         {title}
         <span className="font-mono text-label text-ink-3 tabular">
-          {matched}/{items.length}
+          {shown}/{items.length}
         </span>
       </h3>
       <ul className="mt-2 flex flex-col">
-        {items.map((r) => {
-          const wasMatched = originalEvidence.find((b) => b.id === r.id)?.matched;
+        {items.map((s) => {
+          const isShown = s.status !== "missing";
           return (
-            <li key={r.id} className="group flex items-start gap-2 border-t border-line py-2 first:border-t-0">
-              {r.matched ? (
+            <li key={s.term} data-skill={s.term} data-shown={isShown} className="group flex items-start gap-2 border-t border-line py-2 first:border-t-0">
+              {isShown ? (
                 <Check className="mt-0.5 size-3.5 shrink-0 text-add" aria-label="Shown" />
               ) : (
                 <Minus className="mt-0.5 size-3.5 shrink-0 text-ink-3" aria-label="Not shown" />
               )}
               <div className="min-w-0 flex-1">
-                <p className={cn("text-small", r.matched ? "text-ink" : "text-ink-2")}>
-                  {r.label}
-                  {r.matched && !wasMatched && <span className="ml-1.5 text-label text-add">new</span>}
+                <p className={cn("text-small", isShown ? "text-ink" : "text-ink-2")}>
+                  {s.term}
+                  {s.importance === "high" && <span className="ml-1.5 text-label text-ink-3">high importance</span>}
+                  {isShown && !shownBefore.has(s.term) && <span className="ml-1.5 text-label text-add">new</span>}
                 </p>
-                {r.evidence && <p className="mt-0.5 line-clamp-2 text-label text-ink-3">&ldquo;{r.evidence}&rdquo;</p>}
+                {s.advice && <p className="mt-0.5 line-clamp-2 text-label text-ink-3">{s.advice}</p>}
               </div>
-              {!r.matched && (
+              {!isShown && (
                 <button
                   type="button"
-                  onClick={() => onAddSkill(r.label)}
+                  onClick={() => onAddSkill(s.term)}
                   className="flex shrink-0 items-center gap-1 rounded-sm px-1.5 py-0.5 text-label text-ink-3 transition-colors hover:bg-hover hover:text-ink"
-                  title={`Add ${r.label} to your skills. Only if it's true.`}
+                  title={`Add ${s.term} to your skills. Only if it's true.`}
                 >
                   <Plus className="size-3" aria-hidden /> I have this
                 </button>

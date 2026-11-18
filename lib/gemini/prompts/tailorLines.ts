@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { generateStructured, type JsonModel } from "@/lib/gemini/model";
+import type { MatchReport } from "@/lib/report/report";
 import type { JobAnalysis } from "@/lib/schemas/jobAnalysis";
-import { requirementEvidence } from "@/lib/tailoring/requirements";
 import { isLocked, type Unit } from "@/lib/resume/units";
 
 /**
@@ -94,16 +94,17 @@ export function numberedResume(units: Unit[]): string {
 
 export async function tailorLines(
   model: JsonModel,
-  input: { units: Unit[]; job: JobAnalysis },
+  /** `report` scores the resume as it is now; its skills are the requirements the model sees. */
+  input: { units: Unit[]; job: JobAnalysis; report: MatchReport },
 ): Promise<TailorResponse> {
-  const { units, job } = input;
-  const reqLines = requirementEvidence(units, job).requirements.map(
-    (r) => `- ${r.id} · ${r.label} · ${r.importance === "must" ? "must-have" : "nice-to-have"} · ${r.matched ? "shown in resume" : "NOT shown in resume"}`,
+  const { units, job, report } = input;
+  const reqLines = [...report.hardSkills, ...report.softSkills].map(
+    (s) => `- ${s.term} · ${s.importance} importance · ${s.status === "missing" ? "NOT shown in resume" : "shown in resume"}`,
   );
   const prompt = [
     `# Role\n${job.title}${job.company ? ` at ${job.company}` : ""}${job.seniority ? ` (${job.seniority})` : ""}\n${job.summary}`,
     `# Requirements\n${reqLines.join("\n")}`,
-    job.keywords.length ? `# Keywords recruiters search for\n${job.keywords.map((k) => k.term).join(", ")}` : "",
+    report.otherKeywords.length ? `# Keywords recruiters search for\n${report.otherKeywords.map((k) => k.term).join(", ")}` : "",
     `# Resume (numbered lines)\n${numberedResume(units)}`,
     "Return the edits, and in summary tell the candidate in two or three sentences what you changed and why (not resume text), as JSON.",
   ]

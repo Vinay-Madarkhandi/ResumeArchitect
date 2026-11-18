@@ -38,7 +38,6 @@ import { buildMatchReport } from "@/lib/report/matchReport";
 import { legacyJobFacts } from "@/lib/report/legacyJobFacts";
 import { readResume } from "@/lib/report/resume";
 import { resumeSearchabilityChecks } from "@/lib/report/searchability";
-import { requirementEvidence } from "@/lib/tailoring/requirements";
 import { CheckList } from "@/components/scan/reportParts";
 import type { ScanTarget } from "@/lib/data/job-descriptions";
 import type { ReportTarget } from "@/lib/report/target";
@@ -134,8 +133,6 @@ export function Workspace({ resume, session, jobText, jobFacts, asOf, initialVie
   } : null, [job, jobFacts, jobText, asOf]);
   const scoreNow = useMemo(() => scoring ? buildMatchReport({ ...scoring, resume: deferredDoc }) : null, [scoring, deferredDoc]);
   const scoreBefore = useMemo(() => original && scoring ? buildMatchReport({ ...scoring, resume: original }) : null, [original, scoring]);
-  const evidence = useMemo(() => job ? requirementEvidence(units, job) : null, [job, units]);
-  const originalEvidence = useMemo(() => job && originalUnits ? requirementEvidence(originalUnits, job).requirements : [], [job, originalUnits]);
   const showImpact = view !== "edit" && rail === "changes";
   const entries: ChangeEntry[] = useMemo(
     () =>
@@ -394,7 +391,7 @@ export function Workspace({ resume, session, jobText, jobFacts, asOf, initialVie
         <aside id="score-rail" className="border-t border-line bg-panel/40 lg:sticky lg:top-14 lg:h-[calc(100dvh-3.5rem)] lg:overflow-y-auto lg:border-l lg:border-t-0">
           <PowerEdit active={view === "edit"} doc={doc} resumeId={resume.id} jobs={scanTargets} initialJobId={initialJobId}
             initialTarget={initialTarget} asOf={asOf} onAddSkill={onAddSkill} onInsert={insertAtCursor} flush={flush} />
-          {view === "edit" && tailored ? null : tailored && scoreBefore && scoreNow && job && evidence ? (
+          {view === "edit" && tailored ? null : tailored && scoreBefore && scoreNow && job ? (
             <div className="flex flex-col">
               <div className="border-b border-line px-4 py-4">
                 <ScoreLockup job={job} before={scoreBefore.matchRate} now={scoreNow.matchRate} />
@@ -448,11 +445,11 @@ export function Workspace({ resume, session, jobText, jobFacts, asOf, initialVie
                 </div>
               ) : rail === "score" ? (
                 <div className="p-4">
-                  <ScorePanel before={scoreBefore} now={scoreNow} evidence={evidence} originalEvidence={originalEvidence} onAddSkill={onAddSkill} />
+                  <ScorePanel before={scoreBefore} now={scoreNow} onAddSkill={onAddSkill} />
                 </div>
               ) : rail === "job" ? (
                 <div className="p-4">
-                  <JobPostPanel text={jobText} job={job} report={evidence} />
+                  <JobPostPanel text={jobText} summary={job.summary} report={scoreNow} />
                 </div>
               ) : (
                 <div className="p-4">

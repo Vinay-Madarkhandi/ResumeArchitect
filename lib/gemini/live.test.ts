@@ -6,6 +6,8 @@ import { tailorLines } from "@/lib/gemini/prompts/tailorLines";
 import { parseResume } from "@/lib/gemini/prompts/parseResume";
 import { editSelection } from "@/lib/gemini/prompts/editSelection";
 import { writeCoverLetter } from "@/lib/gemini/prompts/coverLetter";
+import { legacyJobFacts } from "@/lib/report/legacyJobFacts";
+import { buildMatchReport } from "@/lib/report/matchReport";
 import { toUnits } from "@/lib/resume/units";
 import { applyEdits } from "@/lib/tailoring/applyEdits";
 
@@ -52,7 +54,8 @@ describe.skipIf(!key)("Gemini live smoke test", () => {
     expect(job.requirements.length).toBeGreaterThan(2);
 
     const units = toUnits(doc);
-    const tailored = await tailorLines(model, { units, job });
+    const report = buildMatchReport({ job: legacyJobFacts(job), jobText: JOB, resume: doc, file: null, asOf: new Date() });
+    const tailored = await tailorLines(model, { units, job, report });
     const applied = applyEdits(units, tailored.edits);
     expect(applied.changes.length).toBeGreaterThan(0);
 
