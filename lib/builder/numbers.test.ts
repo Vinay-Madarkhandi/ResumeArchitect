@@ -17,6 +17,15 @@ describe("guardNumbers", () => {
     expect(guardNumbers("Led 12, then 15 people.", source)).toBe("Led [N], then [N] people.");
   });
 
+  it("guards changes in scale, units and quantities spelled out as words", () => {
+    expect(guardNumbers("Saved $4 billion and helped twenty-five customers", "Saved $4M with five teams"))
+      .toBe("Saved [$X] and helped [N] customers");
+    expect(guardNumbers("Reduced latency by thirty percent", "Reduced latency"))
+      .toBe("Reduced latency by [X%]");
+    expect(guardNumbers("Used a $4 million budget", "Budget was $4M"))
+      .toBe("Used a $4 million budget");
+  });
+
   it("leaves digits inside names alone", () => {
     expect(guardNumbers("Moved storage to S3 and ran K8s with OAuth2", "")).toBe("Moved storage to S3 and ran K8s with OAuth2");
   });
