@@ -1,4 +1,5 @@
-import { Bodoni_Moda, Geist_Mono, Hanken_Grotesk, Schibsted_Grotesk, Source_Serif_4 } from "next/font/google";
+import { Bodoni_Moda, Geist_Mono, Schibsted_Grotesk } from "next/font/google";
+import localFont from "next/font/local";
 
 /**
  * App chrome: Schibsted Grotesk (UI), Geist Mono (scores and measurements
@@ -15,12 +16,25 @@ const bodoni = Bodoni_Moda({
   style: ["normal", "italic"],
   display: "swap",
 });
-const sourceSerif = Source_Serif_4({
+const sourceSerif = localFont({
   variable: "--font-source-serif",
-  subsets: ["latin"],
-  style: ["normal", "italic"],
   display: "swap",
+  src: [
+    { path: "../public/fonts/SourceSerif4-Regular.ttf", weight: "400", style: "normal" },
+    { path: "../public/fonts/SourceSerif4-Italic.ttf", weight: "400", style: "italic" },
+    { path: "../public/fonts/SourceSerif4-SemiBold.ttf", weight: "600", style: "normal" },
+  ],
 });
-const hanken = Hanken_Grotesk({ variable: "--font-hanken", subsets: ["latin"], display: "swap" });
+const hanken = localFont({
+  variable: "--font-hanken",
+  display: "swap",
+  src: [
+    { path: "../public/fonts/HankenGrotesk-Regular.ttf", weight: "400", style: "normal" },
+    { path: "../public/fonts/HankenGrotesk-Italic.ttf", weight: "400", style: "italic" },
+    { path: "../public/fonts/HankenGrotesk-SemiBold.ttf", weight: "600", style: "normal" },
+    { path: "../public/fonts/HankenGrotesk-Bold.ttf", weight: "700", style: "normal" },
+    { path: "../public/fonts/HankenGrotesk-BoldItalic.ttf", weight: "700", style: "italic" },
+  ],
+});
 
 export const fontVariables = [schibsted, geistMono, bodoni, sourceSerif, hanken].map((f) => f.variable).join(" ");

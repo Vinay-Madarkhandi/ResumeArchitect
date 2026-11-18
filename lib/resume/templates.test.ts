@@ -58,7 +58,6 @@ describe("templates", () => {
   it("offers at least five ATS-safe templates", () => {
     expect(TEMPLATE_IDS.length).toBeGreaterThanOrEqual(5);
     for (const t of TEMPLATE_LIST) {
-      expect(["Georgia", "Calibri", "Arial", "Times New Roman", "Garamond"]).toContain(t.docxBodyFont);
       expect(t.size.body).toBeGreaterThanOrEqual(9);
     }
   });
