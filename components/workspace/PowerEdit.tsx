@@ -48,7 +48,8 @@ function Skills({ title, skills, onInsert, insertLabel }: {
   );
 }
 
-export function PowerEdit({ doc, resumeId, jobs, initialJobId, initialTarget, asOf, onAddSkill, onInsert, flush }: {
+export function PowerEdit({ active, doc, resumeId, jobs, initialJobId, initialTarget, asOf, onAddSkill, onInsert, flush }: {
+  active: boolean;
   doc: DocumentContent;
   resumeId: string;
   jobs: ScanTarget[];
@@ -68,13 +69,14 @@ export function PowerEdit({ doc, resumeId, jobs, initialJobId, initialTarget, as
   const [scoredDoc, setScoredDoc] = useState(doc);
 
   useEffect(() => {
+    if (!active) return;
     const timer = setTimeout(() => setScoredDoc(doc), 250);
     return () => clearTimeout(timer);
-  }, [doc]);
+  }, [active, doc]);
 
-  const report = useMemo(() => target ? buildMatchReport({
+  const report = useMemo(() => active && target ? buildMatchReport({
     job: target.facts, jobText: target.text, resume: scoredDoc, file: null, asOf: new Date(asOf),
-  }) : null, [target, scoredDoc, asOf]);
+  }) : null, [active, target, scoredDoc, asOf]);
   const ats = useMemo(() => target ? detectAts({ url: target.url, text: target.text }) : null, [target]);
 
   async function choose(id: string) {
@@ -109,6 +111,8 @@ export function PowerEdit({ doc, resumeId, jobs, initialJobId, initialTarget, as
       setSaving(false);
     }
   }
+
+  if (!active) return null;
 
   return (
     <section aria-label="Power Edit" className="grid gap-5 p-4">

@@ -269,7 +269,7 @@ export function Workspace({ resume, session, jobText, jobFacts, asOf, initialVie
           </Link>
           <div className="min-w-0">
             <h1 className="truncate text-body font-semibold text-ink">{resume.title}</h1>
-            <p className="truncate text-label text-ink-3">{tailored ? "Tailored application" : "Master resume"}</p>
+            <p className="truncate text-label text-ink-3">{tailored ? "Tailored application" : resume.kind === "master" ? "Master resume" : "Resume draft"}</p>
           </div>
           {tailored && (
             <span className="ml-1 hidden sm:block">
@@ -392,12 +392,9 @@ export function Workspace({ resume, session, jobText, jobFacts, asOf, initialVie
         </main>
 
         <aside id="score-rail" className="border-t border-line bg-panel/40 lg:sticky lg:top-14 lg:h-[calc(100dvh-3.5rem)] lg:overflow-y-auto lg:border-l lg:border-t-0">
-          <div hidden={view !== "edit"}>
-            <PowerEdit doc={doc} resumeId={resume.id} jobs={scanTargets} initialJobId={initialJobId} initialTarget={initialTarget}
-              asOf={asOf} onAddSkill={onAddSkill} onInsert={insertAtCursor} flush={flush} />
-          </div>
-          <div hidden={view === "edit" && tailored}>
-          {tailored && scoreBefore && scoreNow && job && evidence ? (
+          <PowerEdit active={view === "edit"} doc={doc} resumeId={resume.id} jobs={scanTargets} initialJobId={initialJobId}
+            initialTarget={initialTarget} asOf={asOf} onAddSkill={onAddSkill} onInsert={insertAtCursor} flush={flush} />
+          {view === "edit" && tailored ? null : tailored && scoreBefore && scoreNow && job && evidence ? (
             <div className="flex flex-col">
               <div className="border-b border-line px-4 py-4">
                 <ScoreLockup job={job} before={scoreBefore.matchRate} now={scoreNow.matchRate} />
@@ -470,7 +467,7 @@ export function Workspace({ resume, session, jobText, jobFacts, asOf, initialVie
                 {resume.kind === "master" && <p className="mt-1 text-small text-ink-2">
                   Every application starts from this copy. Tailoring never changes it; edits here apply to future applications.
                 </p>}
-                <Link href="/new" className="mt-3 inline-flex text-small text-brass hover:underline">
+                <Link href={`/new?resume=${resume.id}`} className="mt-3 inline-flex text-small text-brass hover:underline">
                   Tailor it for a job →
                 </Link>
               </div>
@@ -487,7 +484,6 @@ export function Workspace({ resume, session, jobText, jobFacts, asOf, initialVie
               )}
             </div>
           )}
-          </div>
         </aside>
       </div>
     </div>

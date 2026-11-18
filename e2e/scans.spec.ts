@@ -74,7 +74,10 @@ test("upload a resume, read and act on its match report, and re-open or delete s
   await expect.poll(async () => Number.parseInt(await rate.innerText())).toBeGreaterThan(before);
   expect(navigations).toEqual([]);
   await expect(page).toHaveURL(editUrl);
-  if (process.env.E2E_SCANNER_SCREENSHOTS) await page.screenshot({ path: "/tmp/ra-f2-power-edit.png" });
+  if (process.env.E2E_SCANNER_SCREENSHOTS) {
+    await expect(page.getByRole("status").filter({ hasText: "Saved" })).toBeVisible();
+    await page.screenshot({ path: "/tmp/ra-f2-power-edit.png" });
+  }
 
   await panel.getByRole("button", { name: "Add to skills: Kafka" }).click();
   await expect(editor.getByText(/Go, Postgres, Kubernetes, Kafka/)).toBeVisible();
