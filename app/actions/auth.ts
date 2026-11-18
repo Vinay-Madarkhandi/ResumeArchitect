@@ -61,10 +61,11 @@ export async function signIn(rawEmail: string, password: string, code: string): 
   if (!await verifyPassword(password, candidate.password_hash)) return rejected();
   if (candidate.banned_at) return fail("This account is suspended.");
   if (!candidate.email_verified_at) return fail("Verify your email before signing in. Sign up again to get a fresh link.");
+  if (!candidate.password_set_at) return fail("Choose a new password with “Forgot password?” before signing in.");
 
   const result = await db.transaction(async (tx) => {
     const user = await lockAccount(tx, candidate.id);
-    if (!user || user.email !== email || user.password_hash !== candidate.password_hash || !user.email_verified_at) return;
+    if (!user || user.email !== email || user.password_hash !== candidate.password_hash || !user.password_set_at) return;
     if (user.totp_enabled_at && (!code || !await confirmCredentials(tx, user, password, code))) return { needsCode: true } as const;
     await tx.update(users).set({ last_sign_in_at: sql`now()` }).where(eq(users.id, user.id));
     return createSession(tx, user.id, ip, userAgent);
@@ -121,7 +122,7 @@ export async function verifyEmail(token: string, change: boolean, password: stri
       }
       if (!await consumeToken(tx, token, purpose, user.id)) return;
       await tx.update(users).set({
-        email, email_verified_at: sql`now()`, password_hash: hash, role,
+        email, email_verified_at: sql`now()`, password_hash: hash, password_set_at: change ? undefined : sql`now()`, role,
         last_sign_in_at: change ? user.last_sign_in_at : sql`now()`,
       }).where(eq(users.id, user.id));
       if (change) {
@@ -172,7 +173,7 @@ export async function resetPassword(token: string, password: string): Promise<{ 
     const user = await lockAccount(tx, link.userId);
     if (!user || !await consumeToken(tx, token, "reset_password", user.id)) return;
     await tx.update(users).set({
-      password_hash: hash, role: roleFor(user.email, user.role),
+      password_hash: hash, password_set_at: sql`now()`, role: roleFor(user.email, user.role),
       email_verified_at: sql`coalesce(${users.email_verified_at}, now())`,
     }).where(eq(users.id, user.id));
     await invalidateLinks(tx, user.id, ["verify_email", "reset_password", "change_email"]);
@@ -195,7 +196,7 @@ export async function changePassword(current: string, next: string, code: string
   const result = await db.transaction(async (tx) => {
     const row = await lockAccount(tx, user.id);
     if (!row || !await confirmCredentials(tx, row, current, code)) return;
-    await tx.update(users).set({ password_hash: await hashPassword(next) }).where(eq(users.id, user.id));
+    await tx.update(users).set({ password_hash: await hashPassword(next), password_set_at: sql`now()` }).where(eq(users.id, user.id));
     await invalidateLinks(tx, user.id, ["reset_password", "change_email"]);
     const removed = await removeSessions(tx, user.id);
     return { removed, session: await createSession(tx, user.id, ip, userAgent) };

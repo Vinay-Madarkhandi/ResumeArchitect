@@ -61,7 +61,9 @@ checks are the app's job). Put those queries in small per-entity modules
 - "Sign out everywhere", change email (re-verify), change password, delete account
   (cascades rows + S3 objects), export my data (JSON zip).
 - Roles: `user`, `admin`. `ADMIN_EMAILS` grants admin when such an address is verified,
-  and at boot to verified accounts only.
+  and at boot only to accounts whose password was chosen on a verify or reset link
+  (`users.password_set_at`). Administrators cannot mark an address verified: only the
+  inbox can, and an unproven password never becomes usable.
   Banned users cannot sign in; their sessions are revoked.
 
 `proxy.ts` (Next 16 middleware) only checks that the cookie exists for protected

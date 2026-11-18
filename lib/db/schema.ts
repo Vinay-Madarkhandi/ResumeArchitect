@@ -26,6 +26,8 @@ export const users = pgTable("users", {
   email: citext("email").notNull().unique(),
   email_verified_at: date("email_verified_at"),
   password_hash: text("password_hash").notNull(),
+  // Set only when someone who proved the inbox chose the current password.
+  password_set_at: date("password_set_at"),
   role: text("role", { enum: ["user", "admin"] }).notNull().default("user"),
   banned_at: date("banned_at"),
   ban_reason: text("ban_reason"),

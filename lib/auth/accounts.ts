@@ -89,7 +89,10 @@ export async function confirmCredentials(tx: Transaction, user: Account, passwor
 export async function seedAdmins() {
   const emails = adminEmails();
   if (emails.length) {
-    await db.update(users).set({ role: "admin" }).where(and(inArray(users.email, emails), isNotNull(users.email_verified_at)));
+    // A password chosen before the inbox was proven must never gain the role.
+    await db.update(users).set({ role: "admin" }).where(and(
+      inArray(users.email, emails), isNotNull(users.email_verified_at), isNotNull(users.password_set_at),
+    ));
   }
 }
 

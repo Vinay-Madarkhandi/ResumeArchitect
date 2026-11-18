@@ -24,12 +24,11 @@ export type AdminResult = { error?: string; success?: string };
 
 const userCommand = z.object({
   id: z.uuid(),
-  command: z.enum(["resend", "verify", "ban", "unban", "revoke", "delete", "promote", "demote"]),
+  command: z.enum(["resend", "ban", "unban", "revoke", "delete", "promote", "demote"]),
   reason: z.string().trim().max(500),
 });
 
 const userMessages = {
-  verify: "Email marked verified.",
   ban: "Account suspended and sessions revoked.",
   unban: "Account suspension lifted.",
   revoke: "All sessions revoked.",
@@ -71,11 +70,6 @@ export async function updateUser(_previous: AdminResult, form: FormData): Promis
 
     let sessions: string[] = [];
     switch (command) {
-      case "verify":
-        if (target.email_verified_at) return { error: "This email is already verified." };
-        await tx.update(users).set({ email_verified_at: sql`now()` }).where(eq(users.id, id));
-        await invalidateLinks(tx, id, ["verify_email"]);
-        break;
       case "ban":
         if (target.banned_at) return { error: "This account is already suspended." };
         sessions = await banUser(tx, id, reason);

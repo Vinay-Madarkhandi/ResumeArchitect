@@ -42,12 +42,8 @@ export default async function UserPage({ params }: PageProps<"/admin/users/[id]"
       </dl>
       <Panel title="Account actions" className="mb-6">
         <div className="flex flex-wrap gap-2">
-          {!user.email_verified_at && (
-            <>
-              {!user.banned_at && <ActionForm action={updateUser} fields={{ id, command: "resend" }} label="Resend verification" />}
-              <ActionForm action={updateUser} fields={{ id, command: "verify" }} label="Mark verified"
-                confirmation="Confirm that this account owns the email address before verifying it." />
-            </>
+          {!user.email_verified_at && !user.banned_at && (
+            <ActionForm action={updateUser} fields={{ id, command: "resend" }} label="Resend verification" />
           )}
           <ActionForm action={updateUser} fields={{ id, command: "revoke" }} label="Revoke all sessions"
             confirmation="This signs the user out on every device." />

@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { db } from "@/lib/db";
 import { cache } from "@/lib/cache";
@@ -128,6 +128,27 @@ describe("an unverified address squatted by someone else", () => {
       expect((await account(email)).role).toBe("user");
       await verifyEmail(lastLink(email, "verify"), false, OWNER);
       expect((await account(email)).role).toBe("admin");
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
+  it("never activates or promotes a password chosen before the address was verified", async () => {
+    const email = victim();
+    vi.stubEnv("ADMIN_EMAILS", email);
+    try {
+      await signUp(email, ATTACKER);
+      // What a manual verification used to leave: verified, password still the squatter's.
+      await db.update(users).set({ email_verified_at: sql`now()` }).where(eq(users.email, email));
+      await seedAdmins();
+      expect((await account(email)).role).toBe("user");
+      await expect(signIn(email, ATTACKER, "")).resolves.toHaveProperty("error");
+
+      await forgotPassword(email);
+      await resetWith(lastLink(email, "reset"), OWNER);
+      await seedAdmins();
+      expect((await account(email)).role).toBe("admin");
+      await expect(signIn(email, OWNER, "")).resolves.toEqual({});
     } finally {
       vi.unstubAllEnvs();
     }
