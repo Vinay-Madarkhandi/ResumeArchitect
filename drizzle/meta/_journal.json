@@ -22,6 +22,20 @@
       "when": 1794990296356,
       "tag": "0002_totp_last_step",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1794990356356,
+      "tag": "0003_track_jobs",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1794990416356,
+      "tag": "0004_personal_api_tokens",
+      "breakpoints": true
     }
   ]
 }

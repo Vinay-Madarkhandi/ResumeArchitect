@@ -1,6 +1,5 @@
 {
-  "id": "dd1ffd83-242c-446f-8c45-c165eec5fec0",
-  "prevId": "7bf80723-e13e-4a07-9d9c-bae78508723f",
+  "id": "7bf80723-e13e-4a07-9d9c-bae78508723f",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -592,95 +591,6 @@
           "value": "\"job_descriptions\".\"excitement\" between 1 and 5"
         }
       },
-      "isRLSEnabled": false
-    },
-    "public.personal_api_tokens": {
-      "name": "personal_api_tokens",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "user_id": {
-          "name": "user_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "name": {
-          "name": "name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "token_hash": {
-          "name": "token_hash",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "last_used_at": {
-          "name": "last_used_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        }
-      },
-      "indexes": {
-        "personal_api_tokens_user_idx": {
-          "name": "personal_api_tokens_user_idx",
-          "columns": [
-            {
-              "expression": "user_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "personal_api_tokens_user_id_users_id_fk": {
-          "name": "personal_api_tokens_user_id_users_id_fk",
-          "tableFrom": "personal_api_tokens",
-          "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "personal_api_tokens_token_hash_unique": {
-          "name": "personal_api_tokens_token_hash_unique",
-          "nullsNotDistinct": false,
-          "columns": [
-            "token_hash"
-          ]
-        }
-      },
-      "policies": {},
-      "checkConstraints": {},
       "isRLSEnabled": false
     },
     "public.profiles": {
@@ -1917,6 +1827,12 @@
           "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": false
+        },
+        "totp_last_step": {
+          "name": "totp_last_step",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
         }
       },
       "indexes": {},
@@ -1964,5 +1880,6 @@
     "columns": {},
     "schemas": {},
     "tables": {}
-  }
+  },
+  "prevId": "21014e1c-85a1-43bd-bab6-8b738216aba6"
 }
