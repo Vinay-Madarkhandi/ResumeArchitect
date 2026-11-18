@@ -1,14 +1,14 @@
 import { randomUUID } from "node:crypto";
-import { eq, sql } from "drizzle-orm";
+import { and, eq, isNull, sql } from "drizzle-orm";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { db } from "@/lib/db";
 import { cache } from "@/lib/cache";
-import { authTokens, users } from "@/lib/db/schema";
+import { authTokens, recoveryCodes, users } from "@/lib/db/schema";
 import type { EmailJob } from "@/lib/queue";
 import { seedAdmins } from "@/lib/auth/accounts";
 import { hashToken } from "@/lib/auth/secrets";
 import { openText } from "@/lib/crypto/keyCipher";
-import { authenticator, protectTotp } from "@/lib/auth/totp";
+import { authenticator, protectTotp, replaceRecoveryCodes } from "@/lib/auth/totp";
 import { changeEmail, forgotPassword, requestSignInLink, resetPassword, signIn, signInWithLink, signUp, verifyEmail } from "./auth";
 
 const fixture = vi.hoisted(() => ({
@@ -277,6 +277,27 @@ describe("sign-in throttling", () => {
       expect(fixture.cookies.has("ra_session")).toBe(false);
       await expect(signInWithLink(token, totp.generate())).resolves.toEqual({});
       expect(fixture.cookies.get("ra_session")).toBeTruthy();
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
+  it("spends one recovery code, and only with the session, when two tabs use the same link", async () => {
+    vi.stubEnv("KEY_ENCRYPTION_SECRET", Buffer.alloc(32, 7).toString("base64"));
+    try {
+      const email = await verifiedOwner();
+      const { id } = await account(email);
+      await db.update(users).set({ totp_secret_ciphertext: protectTotp(authenticator(email)), totp_enabled_at: sql`now()` })
+        .where(eq(users.id, id));
+      const codes = await db.transaction((tx) => replaceRecoveryCodes(tx, id));
+      await requestSignInLink(email);
+      const token = lastLink(email, "signIn");
+
+      const results = await Promise.all([signInWithLink(token, codes[0]), signInWithLink(token, codes[1])]);
+      expect(results).toContainEqual({});
+      expect(results).toContainEqual({ error: "This link has expired or has already been used." });
+      const unused = await db.select().from(recoveryCodes).where(and(eq(recoveryCodes.user_id, id), isNull(recoveryCodes.used_at)));
+      expect(unused).toHaveLength(9);
     } finally {
       vi.unstubAllEnvs();
     }

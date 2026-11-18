@@ -100,25 +100,34 @@ export async function requestSignInLink(rawEmail: string) {
   return {};
 }
 
+class SecondFactorRequired extends Error {}
+
 // The link proves the inbox, so it ends the backoff that failed guesses built up.
 export async function signInWithLink(token: string, code: string): Promise<SignInResult> {
   const link = await findToken(token, "sign_in");
   if (!link) return fail(invalidLink);
   const { ip, userAgent } = await requestDetails();
   if (code && await rateLimit("sign-in-link-code", hashToken(token), 5, HOUR / 4)) return fail(tooManySignIns);
-  const result = await db.transaction(async (tx) => {
-    const user = await lockAccount(tx, link.userId);
-    if (!user?.email_verified_at) return;
-    if (user.totp_enabled_at && (!code || !await checkSecondFactor(tx, user.id, user.email, user.totp_secret_ciphertext, code))) {
-      return { needsCode: true } as const;
-    }
-    if (!await consumeToken(tx, token, "sign_in", user.id)) return;
-    await invalidateLinks(tx, user.id, ["sign_in"]);
-    await tx.update(users).set({ last_sign_in_at: sql`now()` }).where(eq(users.id, user.id));
-    return { email: user.email, session: await createSession(tx, user.id, ip, userAgent) };
-  });
+  let result;
+  try {
+    result = await db.transaction(async (tx) => {
+      const user = await lockAccount(tx, link.userId);
+      if (!user?.email_verified_at || !user.password_set_at) return;
+      // Spend the link before the code. A rejected code rolls the link back for
+      // a retry, and no code is ever spent without the session it creates.
+      if (!await consumeToken(tx, token, "sign_in", user.id)) return;
+      if (user.totp_enabled_at && (!code || !await checkSecondFactor(tx, user.id, user.email, user.totp_secret_ciphertext, code))) {
+        throw new SecondFactorRequired();
+      }
+      await invalidateLinks(tx, user.id, ["sign_in"]);
+      await tx.update(users).set({ last_sign_in_at: sql`now()` }).where(eq(users.id, user.id));
+      return { email: user.email, session: await createSession(tx, user.id, ip, userAgent) };
+    });
+  } catch (error) {
+    if (!(error instanceof SecondFactorRequired)) throw error;
+    return { needsCode: true, error: code ? "That code couldn't be verified." : undefined };
+  }
   if (!result) return fail(invalidLink);
-  if ("needsCode" in result) return { needsCode: true, error: code ? "That code couldn't be verified." : undefined };
   await Promise.all([
     rateLimitClear("sign-in-failures", result.email),
     rateLimitClear("sign-in", JSON.stringify([result.email, ip])),

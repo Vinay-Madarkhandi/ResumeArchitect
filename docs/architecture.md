@@ -63,7 +63,8 @@ checks are the app's job). Put those queries in small per-entity modules
   email, AI endpoints per user.
 - While an address is backing off, the sign-in page offers "Email me a sign-in link"
   (3/h per email), whatever the per-client limit says. The link is hashed, single use, valid 15 min, still asks for the
-  TOTP code when 2FA is on, and clears the failure count, so guessing cannot keep
+  TOTP code when 2FA is on (link and code are spent in one transaction with the
+  new session), and clears the failure count, so guessing cannot keep
   the inbox owner out.
 - Optional TOTP 2FA (`otpauth`), with 10 hashed recovery codes.
 - "Sign out everywhere", change email (re-verify), change password, delete account
