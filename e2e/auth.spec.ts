@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { mailboxLink, queuedEmailsContaining, signIn, signUp, submitSignUp, TEST_PASSWORD, verifySignUp } from "./auth-helpers";
+import { gotoForm, mailboxLink, queuedEmailsContaining, signIn, signUp, submitSignUp, TEST_PASSWORD, verifySignUp } from "./auth-helpers";
 import { onboard } from "./onboard";
 
 test("sign-up requires email verification and the link works once", async ({ page }) => {
@@ -47,14 +47,14 @@ test("forgot and reset password revokes the old session and uses the link once",
   const email = await signUp(page);
   const reset = await browser.newPage();
   try {
-    await reset.goto("/forgot-password");
+    await gotoForm(reset, "/forgot-password");
     await reset.getByLabel("Email").fill(email);
     await reset.getByRole("button", { name: "Send reset link" }).click();
     await expect(reset.getByRole("heading", { name: "Check your email" })).toBeVisible();
 
     const link = await mailboxLink(email, "reset");
     const password = "new-correct-horse-battery";
-    await reset.goto(link);
+    await gotoForm(reset, link);
     await reset.getByLabel("New password").fill(password);
     await reset.getByRole("button", { name: "Update password" }).click();
     await expect(reset.getByRole("status").filter({ hasText: "Password updated" })).toBeVisible();

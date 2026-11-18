@@ -7,8 +7,10 @@ import { signUp } from "@/app/actions/auth";
 import { Button } from "@/components/ui/Button";
 import { Field, Input } from "@/components/ui/Field";
 import { AuthHeading, FormError } from "@/components/auth/AuthHeading";
+import { useHydrated } from "@/lib/useHydrated";
 
 export function SignUpForm() {
+  const hydrated = useHydrated();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -51,7 +53,7 @@ export function SignUpForm() {
       <AuthHeading title="Create your account">
         You&rsquo;ll connect your own Gemini key next. Your resumes stay private to you.
       </AuthHeading>
-      <form onSubmit={onSubmit} className="flex flex-col gap-4" noValidate>
+      <form onSubmit={onSubmit} className="flex flex-col gap-4" noValidate data-hydrated={hydrated || undefined}>
         <Field label="Email">
           {(p) => <Input {...p} type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} />}
         </Field>

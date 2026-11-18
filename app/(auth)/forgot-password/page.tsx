@@ -7,8 +7,10 @@ import { forgotPassword } from "@/app/actions/auth";
 import { Button } from "@/components/ui/Button";
 import { Field, Input } from "@/components/ui/Field";
 import { AuthHeading, FormError } from "@/components/auth/AuthHeading";
+import { useHydrated } from "@/lib/useHydrated";
 
 export default function ForgotPasswordPage() {
+  const hydrated = useHydrated();
   const [email, setEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -45,7 +47,7 @@ export default function ForgotPasswordPage() {
   return (
     <>
       <AuthHeading title="Reset your password">We&rsquo;ll email you a link to choose a new one.</AuthHeading>
-      <form onSubmit={onSubmit} className="flex flex-col gap-4" noValidate>
+      <form onSubmit={onSubmit} className="flex flex-col gap-4" noValidate data-hydrated={hydrated || undefined}>
         <Field label="Email">
           {(p) => <Input {...p} type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} />}
         </Field>

@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { Field, Input } from "@/components/ui/Field";
 import { AuthHeading, FormError } from "@/components/auth/AuthHeading";
 import { safeRedirect } from "@/lib/safeRedirect";
+import { useHydrated } from "@/lib/useHydrated";
 
 export function SignInView() {
   return (
@@ -20,6 +21,7 @@ export function SignInView() {
 function SignInForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const hydrated = useHydrated();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [needsCode, setNeedsCode] = useState(false);
@@ -55,7 +57,7 @@ function SignInForm() {
           Password updated. Sign in using your new password.
         </p>
       )}
-      <form onSubmit={onSubmit} className="flex flex-col gap-4" noValidate>
+      <form onSubmit={onSubmit} className="flex flex-col gap-4" noValidate data-hydrated={hydrated || undefined}>
         <Field label="Email">
           {(p) => <Input {...p} type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} />}
         </Field>

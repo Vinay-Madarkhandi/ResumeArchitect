@@ -34,6 +34,15 @@ export async function queuedEmailsContaining(text: string) {
   }
 }
 
+/**
+ * Typing into a server-rendered form before React hydrates it is lost when
+ * hydration resets the controlled inputs, so wait for the form's marker.
+ */
+export async function gotoForm(page: Page, url: string) {
+  await page.goto(url);
+  await page.locator("form[data-hydrated]").waitFor();
+}
+
 export async function submitSignUp(page: Page, requestedEmail?: string, password = TEST_PASSWORD) {
   const unique = randomUUID();
   const email = requestedEmail ?? `e2e-${unique}@example.com`;
@@ -41,7 +50,7 @@ export async function submitSignUp(page: Page, requestedEmail?: string, password
   // Playwright user has an independent production-sized sign-up limit.
   const address = `2001:db8:${unique.split("-").slice(1, 4).join(":")}::1`;
   await page.setExtraHTTPHeaders({ "x-forwarded-for": address });
-  await page.goto("/sign-up");
+  await gotoForm(page, "/sign-up");
   await page.getByLabel("Email").fill(email);
   await page.getByLabel("Password").fill(password);
   await page.getByRole("button", { name: "Create account" }).click();
@@ -50,7 +59,7 @@ export async function submitSignUp(page: Page, requestedEmail?: string, password
 }
 
 export async function verifySignUp(page: Page, link: string) {
-  await page.goto(link);
+  await gotoForm(page, link);
   await page.getByLabel("Password").fill(TEST_PASSWORD);
   await page.getByRole("button", { name: "Verify email" }).click();
   await expect(page).toHaveURL(/\/onboarding$/);
@@ -63,7 +72,7 @@ export async function signUp(page: Page, requestedEmail?: string) {
 }
 
 export async function signIn(page: Page, email: string, password = TEST_PASSWORD) {
-  await page.goto("/sign-in");
+  await gotoForm(page, "/sign-in");
   await page.getByLabel("Email").fill(email);
   await page.getByLabel("Password").fill(password);
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
