@@ -58,6 +58,10 @@ export function formPattern(input: string): RegExp {
 
 const SKILL_QUALIFIER = /\b(?:experience with|proficien(?:t|cy) in|competence in|written in|coded in) +$/i;
 const SKILL_LABEL = /^\s*(?:(?:technical|core|key|relevant) +)?(?:skills|technologies|languages|requirements|qualifications) *: */i;
+/** A term inside a labeled list earlier in the same sentence ("Required: C, C++"). */
+const LIST_LABEL = /\b(?:required|requirements|qualifications|skills|technologies|languages|must[- ]haves?|preferred|nice[- ]to[- ]haves?) *:[^.:;\n]*$/i;
+/** Languages a bare "C" is listed beside ("C, C++", "C/C++ developer"). */
+const C_SIBLING = /(?<![\w+#-])(?:C\+\+|C#|Objective-C|Java|Python|Rust|Golang|Assembly|Fortran|Verilog|VHDL)(?![\w+#])/i;
 
 function skillLines(text: string): Set<number> {
   const starts = new Set<number>();
@@ -80,7 +84,7 @@ function everydayUse(form: string, left: string, right: string): boolean {
     case "Swift": return /^ *(?:action|response|recovery|decision)\b/i.test(right);
     case "Rust": return /^ *removal\b/i.test(right);
     case "Spark": return /^ *(?:an? |the )?(?:interest|conversation|debate|change|joy)\b/i.test(right);
-    case "C": return /(?:vitamin|grade|type) +$/i.test(left);
+    case "C": return /(?:vitamin|grade|type|class) +$/i.test(left) || /^-(?:suite|level)\b/i.test(right);
     case "Excel": return /^ *at\b/i.test(right);
     default: return false;
   }
@@ -107,7 +111,9 @@ function mentions(forms: readonly string[], text: string): Span[] {
         const left = text.slice(Math.max(lineStart, start - 45), start);
         const right = text.slice(end, Math.min(nextLine < 0 ? text.length : nextLine, end + 45));
         if (everydayUse(canonical, left, right)) return [];
-        if (technical && !technical.test(`${left} ${right}`) && !SKILL_QUALIFIER.test(left)) {
+        const context = `${left} ${right}`;
+        const listed = SKILL_QUALIFIER.test(left) || LIST_LABEL.test(left) || (canonical === "C" && C_SIBLING.test(context));
+        if (technical && !technical.test(context) && !listed) {
           if (!(skillStarts ??= skillLines(text)).has(lineStart)) return [];
         }
       }
