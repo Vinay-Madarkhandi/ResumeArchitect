@@ -53,6 +53,10 @@ export function decryptApiKey(blob: Buffer): string {
   return plaintext.toString("utf8");
 }
 
+/** Seals a short server secret, such as an emailed link, for storage outside Postgres. */
+export const sealText = (plaintext: string) => encryptApiKey(plaintext).toString("base64");
+export const openText = (sealed: string) => decryptApiKey(Buffer.from(sealed, "base64"));
+
 export function lastFour(plaintext: string): string {
   return plaintext.slice(-4);
 }

@@ -7,10 +7,12 @@ import { authTokens, users } from "@/lib/db/schema";
 import type { EmailJob } from "@/lib/queue";
 import { seedAdmins } from "@/lib/auth/accounts";
 import { hashToken } from "@/lib/auth/secrets";
+import { openText } from "@/lib/crypto/keyCipher";
 import { authenticator, protectTotp } from "@/lib/auth/totp";
 import { changeEmail, forgotPassword, requestSignInLink, resetPassword, signIn, signInWithLink, signUp, verifyEmail } from "./auth";
 
 const fixture = vi.hoisted(() => ({
+  serverKey: process.env.KEY_ENCRYPTION_SECRET ??= Buffer.alloc(32, 3).toString("base64"),
   close: async () => {},
   ip: "203.0.113.1",
   cookies: new Map<string, string>(),
@@ -68,8 +70,8 @@ const from = (ip: string) => { fixture.ip = ip; };
 
 function lastLink(to: string, template: "verify" | "reset" | "changeEmail" | "signIn") {
   const job = fixture.mail.findLast((entry) => "to" in entry && entry.to === to && entry.template === template);
-  if (!job || !("link" in job.data)) throw new Error(`No ${template} mail for ${to}`);
-  return new URL(job.data.link).searchParams.get("token")!;
+  if (!job || !("sealedLink" in job.data)) throw new Error(`No ${template} mail for ${to}`);
+  return new URL(openText(job.data.sealedLink)).searchParams.get("token")!;
 }
 
 async function ageLinks(email: string, ms: number) {
@@ -164,6 +166,13 @@ describe("an unverified address squatted by someone else", () => {
     await expect(signUp(email, ATTACKER)).resolves.toEqual({});
     expect(fixture.mail).toEqual([]);
   });
+});
+
+it("never queues a usable link in plaintext", async () => {
+  const email = victim();
+  await signUp(email, OWNER);
+  const token = lastLink(email, "verify");
+  expect(JSON.stringify(fixture.mail)).not.toContain(token);
 });
 
 describe("sign-in throttling", () => {

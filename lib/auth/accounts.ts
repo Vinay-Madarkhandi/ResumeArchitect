@@ -3,6 +3,7 @@ import { db, type Transaction } from "@/lib/db";
 import { authTokens, profiles, recoveryCodes, users } from "@/lib/db/schema";
 import { appUrl, adminEmails } from "./config";
 import { issueToken, tokenLifetime } from "./tokens";
+import { sealText } from "@/lib/crypto/keyCipher";
 import { emailQueue } from "@/lib/queue";
 import { verifyPassword } from "./password";
 import { checkSecondFactor } from "./totp";
@@ -73,7 +74,7 @@ export async function sendAccountLink(
   if (purpose === "change_email") link.searchParams.set("change", "1");
   try {
     // BullMQ reserves colons as separators in custom job IDs.
-    await emailQueue().add(template, { template, to: result.to, data: { link: link.href } }, {
+    await emailQueue().add(template, { template, to: result.to, data: { sealedLink: sealText(link.href) } }, {
       jobId: `${template}-${userId}-${result.id}`,
     });
   } catch (error) {

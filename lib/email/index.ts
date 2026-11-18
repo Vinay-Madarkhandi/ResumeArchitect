@@ -2,6 +2,7 @@ import { Resend } from "resend";
 import { cache } from "@/lib/cache";
 import { logger } from "@/lib/logger";
 import { appUrl } from "@/lib/auth/config";
+import { openText } from "@/lib/crypto/keyCipher";
 import { getTrackerDigest } from "@/lib/data/tracker-reminders";
 import type { EmailJob } from "@/lib/queue";
 
@@ -21,6 +22,7 @@ export async function deliverEmail(job: EmailJob, id: string) {
   const subject = subjects[job.template];
   let to: string;
   let html: string;
+  let link: string | undefined;
   if (job.template === "trackerDigest") {
     const { userId, day } = job.data;
     if (day !== new Date().toISOString().slice(0, 10)) return;
@@ -34,11 +36,13 @@ export async function deliverEmail(job: EmailJob, id: string) {
     }).join("");
     const settings = escape(new URL("/settings", appUrl()).href);
     html = `<p>Due on ${escape(day)} (UTC)</p><ul>${items}</ul><p><a href="${settings}">Manage reminder emails</a></p>`;
+  } else if (job.template === "alert") {
+    to = job.to;
+    html = `<p>${escape(job.data.message)}</p>`;
   } else {
     to = job.to;
-    html = job.template === "alert"
-      ? `<p>${escape(job.data.message)}</p>`
-      : `<p><a href="${escape(job.data.link)}">${subject}</a></p><p>Ignore this email if you didn’t make this request.</p>`;
+    link = openText(job.data.sealedLink);
+    html = `<p><a href="${escape(link)}">${subject}</a></p><p>Ignore this email if you didn’t make this request.</p>`;
   }
   const key = process.env.RESEND_API_KEY;
   if (!key) {
@@ -48,26 +52,11 @@ export async function deliverEmail(job: EmailJob, id: string) {
         redis.call('LTRIM', KEYS[1], 0, 999)
         redis.call('EXPIRE', KEYS[1], 86400)
       end
-    `, 2, "dev:mailbox", `dev:delivered:${id}`, JSON.stringify({ ...job, to, subject, html }));
+    `, 2, "dev:mailbox", `dev:delivered:${id}`, JSON.stringify({ template: job.template, to, subject, html, data: link ? { link } : job.data }));
     logger.info({ template: job.template, jobId: id }, "Email delivered to dev mailbox");
     return;
   }
   if (!process.env.EMAIL_FROM) throw new Error("EMAIL_FROM is required for Resend");
   const result = await new Resend(key).emails.send({ from: process.env.EMAIL_FROM, to, subject, html }, { idempotencyKey: id });
   if (result.error) throw new Error(`Resend delivery failed: ${result.error.name}`);
-}
-
-type EmailAttempt = { id?: string; data: EmailJob; attemptsMade: number; opts: { attempts?: number }; updateData(data: EmailJob): Promise<void> };
-
-export async function sendEmailJob(job: EmailAttempt) {
-  try {
-    await deliverEmail(job.data, job.id!);
-  } catch (error) {
-    // A job that will not be retried is kept for inspection without its usable link.
-    const { data } = job;
-    if (job.attemptsMade + 1 >= (job.opts.attempts ?? 1) && data.template !== "alert" && data.template !== "trackerDigest") {
-      await job.updateData({ ...data, data: { link: "" } });
-    }
-    throw error;
-  }
 }
