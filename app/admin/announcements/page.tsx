@@ -1,22 +1,16 @@
-import { desc } from "drizzle-orm";
 import { ActionForm } from "@/components/admin/ActionForm";
 import { DataTable, EmptyRow, PageTitle, Panel, Pager, dateTime } from "@/components/admin/parts";
 import { Badge } from "@/components/ui/Badge";
 import { Field, Input, Select, Textarea } from "@/components/ui/Field";
-import { announcementStatus } from "@/lib/admin/announcement-date";
 import { requireAdmin } from "@/lib/admin/authorization";
 import { PAGE_SIZE, pageNumber } from "@/lib/admin/queries";
-import { announcementLevels } from "@/lib/data/announcements";
-import { db } from "@/lib/db";
-import { announcements } from "@/lib/db/schema";
+import { announcementLevels, listAnnouncements } from "@/lib/data/announcements";
 import { createAnnouncement, endAnnouncement } from "../actions";
 
 export default async function AnnouncementsPage({ searchParams }: PageProps<"/admin/announcements">) {
   await requireAdmin();
   const page = pageNumber(await searchParams);
-  const rows = await db.select().from(announcements).orderBy(desc(announcements.starts_at), desc(announcements.id))
-    .limit(PAGE_SIZE + 1).offset((page - 1) * PAGE_SIZE);
-  const now = Date.now();
+  const rows = await listAnnouncements(PAGE_SIZE + 1, (page - 1) * PAGE_SIZE);
 
   return (
     <>
@@ -37,9 +31,7 @@ export default async function AnnouncementsPage({ searchParams }: PageProps<"/ad
       </Panel>
       <DataTable title="Announcements" headers={["Message", "Level", "Status", "Start (UTC)", "End (UTC)", "Actions"]}>
         {rows.length === 0 && <EmptyRow columns={6}>No announcements.</EmptyRow>}
-        {rows.slice(0, PAGE_SIZE).map((row) => {
-          const status = announcementStatus(row, now);
-          return (
+        {rows.slice(0, PAGE_SIZE).map(({ status, ...row }) => (
             <tr key={row.id}>
               <td className="min-w-48 max-w-lg whitespace-pre-wrap wrap-anywhere">{row.body}</td>
               <td className="capitalize">{row.level}</td>
@@ -51,8 +43,7 @@ export default async function AnnouncementsPage({ searchParams }: PageProps<"/ad
                   variant="danger" confirmation={status === "Scheduled" ? "Cancel this scheduled announcement." : "Remove this announcement from the signed-in banner."} />
               )}</td>
             </tr>
-          );
-        })}
+        ))}
       </DataTable>
       <Pager path="/admin/announcements" page={page} hasNext={rows.length > PAGE_SIZE} />
     </>

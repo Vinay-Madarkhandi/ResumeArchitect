@@ -1,4 +1,5 @@
 import { and, desc, gt, isNull, lte, or, sql } from "drizzle-orm";
+import { announcementStatus } from "@/lib/admin/announcement-date";
 import { db } from "@/lib/db";
 import { announcements } from "@/lib/db/schema";
 import { isEnabled } from "@/lib/feature-flags";
@@ -17,4 +18,11 @@ export async function activeAnnouncement() {
       or(isNull(announcements.ends_at), gt(announcements.ends_at, sql`now()`)),
     )).orderBy(desc(announcements.starts_at), desc(announcements.id)).limit(1);
   return row ?? null;
+}
+
+export async function listAnnouncements(limit: number, offset: number) {
+  const rows = await db.select().from(announcements).orderBy(desc(announcements.starts_at), desc(announcements.id))
+    .limit(limit).offset(offset);
+  const now = Date.now();
+  return rows.map((row) => ({ ...row, status: announcementStatus(row, now) }));
 }
