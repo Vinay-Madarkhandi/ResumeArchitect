@@ -37,8 +37,9 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
         ? { application_status: applicationStatus, application_status_updated_at: new Date().toISOString() }
         : {}),
       ...(coverLetter !== undefined ? { cover_letter: coverLetter } : {}),
-    }).catch(() => null);
+    }).catch(() => "failed" as const);
 
-  if (!data) return NextResponse.json({ error: "Couldn't save. Check your connection and try again." }, { status: 500 });
+  if (data === "failed") return NextResponse.json({ error: "Couldn't save. Check your connection and try again." }, { status: 500 });
+  if (!data) return NextResponse.json({ error: "Resume not found." }, { status: 404 });
   return NextResponse.json({ updatedAt: data.updated_at });
 }
