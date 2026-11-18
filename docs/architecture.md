@@ -52,7 +52,9 @@ checks are the app's job). Put those queries in small per-entity modules
 - CSRF: mutations are server actions (Next checks Origin) or route handlers that
   check `Origin` against `APP_URL` in one helper.
 - Email verification and password reset: random token emailed as a link, stored as
-  `sha256`, single use, expiry 24 h / 1 h. Reset revokes all sessions. The queued
+  `sha256`, single use, expiry 24 h / 1 h. Every link sent stays valid until it
+  expires or one of its kind is used, which spends the rest; only a new email change
+  replaces the pending one. Reset revokes all sessions. The queued
   email job carries the link sealed with `KEY_ENCRYPTION_SECRET` (AES-256-GCM); the
   worker opens it only to send, so no job state in Redis holds a usable link.
 - Proving the inbox always wins. Until an address is verified, its password is

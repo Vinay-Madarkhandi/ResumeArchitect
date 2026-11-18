@@ -107,8 +107,11 @@ describe("an unverified address squatted by someone else", () => {
     const email = victim();
     await signUp(email, ATTACKER);
     await signUp(email, OWNER);
-    expect(fixture.mail.filter((job) => "to" in job && job.to === email && job.template === "verify")).toHaveLength(2);
-    await expect(verifyEmail(lastLink(email, "verify"), false, OWNER)).resolves.toEqual({});
+    const links = fixture.mail.filter((job) => "to" in job && job.to === email && job.template === "verify")
+      .map((job) => "sealedLink" in job.data ? new URL(openText(job.data.sealedLink)).searchParams.get("token")! : "");
+    expect(links).toHaveLength(2);
+    await expect(verifyEmail(links[0], false, OWNER)).resolves.toEqual({});
+    await expect(verifyEmail(links[1], false, OWNER)).resolves.toEqual({ error: "This link has expired or has already been used." });
   });
 
   it("verifies from a link the owner did not request without knowing the squatter's password", async () => {

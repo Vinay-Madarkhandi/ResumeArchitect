@@ -56,8 +56,11 @@ export async function sendAccountLink(
     if (purpose === "verify_email" ? user.email_verified_at : purpose !== "reset_password" && !user.email_verified_at) return;
     if (options && !await options.authorize(tx, user)) return;
     const recipient = options?.recipient;
-    // Each request gets its own link (callers rate-limit), replacing any unused one.
-    await tx.delete(authTokens).where(and(eq(authTokens.user_id, userId), eq(authTokens.purpose, purpose), isNull(authTokens.used_at)));
+    // Every delivered link works until it expires or one of its kind is used
+    // (callers rate-limit). Only a new email change replaces the old request.
+    if (purpose === "change_email") {
+      await tx.delete(authTokens).where(and(eq(authTokens.user_id, userId), eq(authTokens.purpose, purpose), isNull(authTokens.used_at)));
+    }
     return { ...await issueToken(tx, userId, purpose, recipient ? { email: recipient } : undefined), to: recipient ?? user.email };
   });
   if (!result) return false;
