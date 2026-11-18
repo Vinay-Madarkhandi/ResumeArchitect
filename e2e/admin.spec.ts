@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { expect, test } from "@playwright/test";
+import { Queue } from "bullmq";
 import { signIn, signUp } from "./auth-helpers";
 
 test("admin publishes announcements, suspends users, and sees audited actions", async ({ page: user, browser }) => {
@@ -72,6 +73,27 @@ test("admin publishes announcements, suspends users, and sees audited actions", 
     await signIn(user, email);
     await expect(user.getByText("This account is suspended.")).toBeVisible();
 
+    const queue = new Queue("maintenance", { connection: { url: process.env.REDIS_URL ?? "redis://localhost:16379" } });
+    const jobId = `e2e-failed-${randomUUID()}`;
+    try {
+      await queue.add("delete-user-objects", {}, { jobId, attempts: 1, removeOnFail: false });
+      await expect.poll(async () => (await queue.getJob(jobId))?.getState()).toBe("failed");
+      const finishedOn = (await queue.getJob(jobId))?.finishedOn ?? 0;
+
+      await admin.getByRole("link", { name: "Queues", exact: true }).click();
+      const job = admin.getByRole("row").filter({ hasText: jobId });
+      await expect(job).toContainText("Account ID is required");
+      await job.getByRole("button", { name: "Retry" }).click();
+      await expect.poll(async () => (await queue.getJob(jobId))?.finishedOn ?? 0).toBeGreaterThan(finishedOn);
+      await admin.reload();
+
+      await job.getByRole("button", { name: "Remove" }).click();
+      await admin.getByRole("dialog", { name: "Remove" }).getByRole("button", { name: "Remove" }).click();
+      await expect(job).toHaveCount(0);
+    } finally {
+      await queue.close();
+    }
+
     await admin.getByRole("link", { name: "Audit log" }).click();
     const audit = admin.getByRole("table", { name: "Audit log" });
     const adminEntries = audit.getByRole("row").filter({ hasText: adminEmail });
@@ -79,6 +101,8 @@ test("admin publishes announcements, suspends users, and sees audited actions", 
     await expect(adminEntries.getByText("announcement.end", { exact: true })).toBeVisible();
     await expect(adminEntries.getByText("feature_flag.toggle", { exact: true })).toHaveCount(2);
     await expect(adminEntries.getByText("user.ban", { exact: true })).toBeVisible();
+    await expect(adminEntries.getByText("queue.retry", { exact: true })).toBeVisible();
+    await expect(adminEntries.getByText("queue.remove", { exact: true })).toBeVisible();
     await admin.getByLabel("Action", { exact: true }).selectOption("user.ban");
     await admin.getByLabel("Actor email").fill(adminEmail);
     await admin.getByRole("button", { name: "Filter" }).click();
