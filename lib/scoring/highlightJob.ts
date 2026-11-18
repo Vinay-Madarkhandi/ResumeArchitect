@@ -1,5 +1,6 @@
 import type { JobAnalysis } from "@/lib/schemas/jobAnalysis";
-import { termPattern, type ScoreReport } from "@/lib/scoring/score";
+import { termPattern } from "@/lib/resume/termPattern";
+import type { requirementEvidence } from "@/lib/tailoring/requirements";
 
 export interface JobTerm {
   label: string;
@@ -14,7 +15,7 @@ export type JobSegment = { text: string; term?: JobTerm };
  * keywords, with whether the resume currently shows them). Overlaps resolve
  * to the earliest, then longest, match.
  */
-export function highlightJob(text: string, job: JobAnalysis, report: ScoreReport): JobSegment[] {
+export function highlightJob(text: string, job: JobAnalysis, report: ReturnType<typeof requirementEvidence>): JobSegment[] {
   const terms: Array<{ term: JobTerm; patterns: string[] }> = [
     ...job.requirements.map((r) => ({
       term: {

@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import type { JobAnalysis } from "@/lib/schemas/jobAnalysis";
-import type { ScoreReport } from "@/lib/scoring/score";
+import type { requirementEvidence } from "@/lib/tailoring/requirements";
 import { highlightJob } from "@/lib/scoring/highlightJob";
 import { cn } from "@/lib/cn";
 
@@ -11,7 +11,7 @@ import { cn } from "@/lib/cn";
  * when your resume shows it, dashed vermilion when it doesn't. Updates live
  * as the resume changes.
  */
-export function JobPostPanel({ text, job, report }: { text: string | null; job: JobAnalysis; report: ScoreReport }) {
+export function JobPostPanel({ text, job, report }: { text: string | null; job: JobAnalysis; report: ReturnType<typeof requirementEvidence> }) {
   const segments = useMemo(() => (text ? highlightJob(text, job, report) : []), [text, job, report]);
   const missing = report.requirements.filter((r) => !r.matched);
 

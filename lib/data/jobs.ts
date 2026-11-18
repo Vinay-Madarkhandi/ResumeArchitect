@@ -84,7 +84,11 @@ export async function clipJob(userId: string, input: JobClip) {
 }
 
 export async function editJob(userId: string, id: string, input: Omit<JobInput, "stage">) {
-  const [row] = await db.update(jobs).set({ ...details(input), tracker_updated_at: sql`now()` })
+  const [row] = await db.update(jobs).set({
+    ...details(input),
+    job_facts: sql`case when ${jobs.raw_text} = ${input.description} then ${jobs.job_facts} else null end`,
+    tracker_updated_at: sql`now()`,
+  })
     .where(tracked(userId, id)).returning({ id: jobs.id });
   return row;
 }

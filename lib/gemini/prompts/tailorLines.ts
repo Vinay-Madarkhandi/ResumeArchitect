@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { generateStructured, type JsonModel } from "@/lib/gemini/model";
 import type { JobAnalysis } from "@/lib/schemas/jobAnalysis";
-import type { ScoreReport } from "@/lib/scoring/score";
+import { requirementEvidence } from "@/lib/tailoring/requirements";
 import { isLocked, type Unit } from "@/lib/resume/units";
 
 /**
@@ -94,10 +94,10 @@ export function numberedResume(units: Unit[]): string {
 
 export async function tailorLines(
   model: JsonModel,
-  input: { units: Unit[]; job: JobAnalysis; before: ScoreReport },
+  input: { units: Unit[]; job: JobAnalysis },
 ): Promise<TailorResponse> {
-  const { units, job, before } = input;
-  const reqLines = before.requirements.map(
+  const { units, job } = input;
+  const reqLines = requirementEvidence(units, job).requirements.map(
     (r) => `- ${r.id} · ${r.label} · ${r.importance === "must" ? "must-have" : "nice-to-have"} · ${r.matched ? "shown in resume" : "NOT shown in resume"}`,
   );
   const prompt = [

@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
-import { Check, ChevronDown, Minus, Plus } from "lucide-react";
+import { Check, Minus, Plus } from "lucide-react";
 import type { JobAnalysis } from "@/lib/schemas/jobAnalysis";
-import { componentPoints, type ScoreReport } from "@/lib/scoring/score";
+import { Breakdown, CheckList, MatchRateFigure } from "@/components/scan/reportParts";
+import type { MatchReport } from "@/lib/report/report";
+import type { RequirementEvidence, requirementEvidence } from "@/lib/tailoring/requirements";
 import { cn } from "@/lib/cn";
 
 /**
@@ -15,55 +16,35 @@ import { cn } from "@/lib/cn";
 export function ScorePanel({
   before,
   now,
+  evidence,
+  originalEvidence,
   onAddSkill,
 }: {
-  before: ScoreReport;
-  now: ScoreReport;
+  before: MatchReport;
+  now: MatchReport;
+  evidence: ReturnType<typeof requirementEvidence>;
+  originalEvidence: RequirementEvidence[];
   onAddSkill: (label: string) => void;
 }) {
-  const must = now.requirements.filter((r) => r.importance === "must");
-  const nice = now.requirements.filter((r) => r.importance === "nice");
+  const must = evidence.requirements.filter((r) => r.importance === "must");
+  const nice = evidence.requirements.filter((r) => r.importance === "nice");
 
   return (
     <div className="flex flex-col gap-6">
+      <MatchRateFigure rate={now.matchRate} target={now.verdict.target} size="md" />
       <div>
-        <h3 className="sr-only">Score breakdown</h3>
-        <ul className="flex flex-col gap-3">
-          {now.components.map((c) => {
-            const prev = before.components.find((b) => b.id === c.id);
-            return (
-              <li key={c.id}>
-                <div className="flex items-baseline justify-between gap-3 text-small">
-                  <span className="text-ink">{c.label}</span>
-                  <span className="font-mono text-ink-2 tabular">
-                    {componentPoints(c)}
-                    <span className="text-ink-3">/{Math.round(c.weight * 100)}</span>
-                  </span>
-                </div>
-                <div className="relative mt-1.5 h-1 rounded-full bg-sunken" aria-hidden>
-                  {prev && (
-                    <span className="absolute inset-y-0 left-0 rounded-full bg-line-strong" style={{ width: `${prev.ratio * 100}%` }} />
-                  )}
-                  <span
-                    className="absolute inset-y-0 left-0 rounded-full bg-brass transition-[width] duration-300 ease-[var(--ease-out-expo)]"
-                    style={{ width: `${c.ratio * 100}%` }}
-                  />
-                </div>
-                <p className="mt-1 text-label text-ink-3">{c.detail}</p>
-              </li>
-            );
-          })}
-        </ul>
+        <h3 className="mb-3 text-small font-medium text-ink-2">Score breakdown</h3>
+        <Breakdown components={now.breakdown} baseline={before.breakdown} />
       </div>
 
-      <RequirementGroup title="Must-haves" items={must} onAddSkill={onAddSkill} beforeReport={before} />
-      {nice.length > 0 && <RequirementGroup title="Nice-to-haves" items={nice} onAddSkill={onAddSkill} beforeReport={before} />}
+      <RequirementGroup title="Must-have requirements" items={must} onAddSkill={onAddSkill} originalEvidence={originalEvidence} />
+      {nice.length > 0 && <RequirementGroup title="Nice-to-have requirements" items={nice} onAddSkill={onAddSkill} originalEvidence={originalEvidence} />}
 
-      {now.keywords.length > 0 && (
+      {evidence.keywords.length > 0 && (
         <div>
           <h3 className="text-small font-medium text-ink-2">Recruiter keywords</h3>
           <ul className="mt-2 flex flex-wrap gap-1.5">
-            {now.keywords.map((k) => (
+            {evidence.keywords.map((k) => (
               <li
                 key={k.term}
                 className={cn(
@@ -79,7 +60,10 @@ export function ScorePanel({
         </div>
       )}
 
-      <AtsList report={now} />
+      <details>
+        <summary className="cursor-pointer text-small font-medium text-ink-2">ATS readability</summary>
+        <div className="mt-2"><CheckList checks={[...now.searchability, ...now.formatting]} /></div>
+      </details>
     </div>
   );
 }
@@ -88,12 +72,12 @@ function RequirementGroup({
   title,
   items,
   onAddSkill,
-  beforeReport,
+  originalEvidence,
 }: {
   title: string;
-  items: ScoreReport["requirements"];
+  items: RequirementEvidence[];
   onAddSkill: (label: string) => void;
-  beforeReport: ScoreReport;
+  originalEvidence: RequirementEvidence[];
 }) {
   const matched = items.filter((r) => r.matched).length;
   return (
@@ -106,7 +90,7 @@ function RequirementGroup({
       </h3>
       <ul className="mt-2 flex flex-col">
         {items.map((r) => {
-          const wasMatched = beforeReport.requirements.find((b) => b.id === r.id)?.matched;
+          const wasMatched = originalEvidence.find((b) => b.id === r.id)?.matched;
           return (
             <li key={r.id} className="group flex items-start gap-2 border-t border-line py-2 first:border-t-0">
               {r.matched ? (
@@ -164,46 +148,6 @@ export function ScoreLockup({ job, before, now }: { job: JobAnalysis; before: nu
           </p>
         )}
       </div>
-    </div>
-  );
-}
-
-export function AtsList({ report }: { report: Pick<ScoreReport, "ats"> }) {
-  const [open, setOpen] = useState(false);
-  const passed = report.ats.filter((c) => c.passed).length;
-  return (
-    <div>
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        aria-expanded={open}
-        className="flex w-full items-baseline justify-between text-small font-medium text-ink-2 hover:text-ink"
-      >
-        <span className="flex items-center gap-1.5">
-          <ChevronDown className={cn("size-3.5 self-center transition-transform", open && "rotate-180")} aria-hidden />
-          ATS readability
-        </span>
-        <span className="font-mono text-label text-ink-3 tabular">
-          {passed}/{report.ats.length}
-        </span>
-      </button>
-      {open && (
-        <ul className="mt-2 flex flex-col">
-          {report.ats.map((c) => (
-            <li key={c.id} className="flex gap-2 border-t border-line py-2 first:border-t-0">
-              {c.passed ? (
-                <Check className="mt-0.5 size-3.5 shrink-0 text-add" aria-label="Passes" />
-              ) : (
-                <Minus className="mt-0.5 size-3.5 shrink-0 text-del" aria-label="Fails" />
-              )}
-              <div>
-                <p className="text-small text-ink">{c.label}</p>
-                <p className="text-label text-ink-3">{c.detail}</p>
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
     </div>
   );
 }

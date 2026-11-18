@@ -28,6 +28,18 @@ const JOB = {
   ],
 };
 
+const FACTS = {
+  title: JOB.title,
+  level: "senior",
+  hardSkills: JOB.requirements.filter((r) => r.category !== "soft")
+    .map((r) => ({ term: r.label, importance: r.importance === "must" ? "high" : "low" })),
+  softSkills: [{ term: "Mentoring", importance: "low" }],
+  otherKeywords: JOB.keywords.map((k) => ({ term: k.term, importance: "medium" })),
+  education: null,
+  yearsRequired: null,
+  predictedSkills: [{ term: "Distributed tracing", reason: "Useful for diagnosing latency across services." }],
+};
+
 function tailor(prompt) {
   const lines = [...prompt.matchAll(/^\[(\d+)\] \(([^)]+)\) (.*)$/gm)].map((m) => ({ n: Number(m[1]), kind: m[2], text: m[3] }));
   const bullets = lines.filter((l) => l.kind === "bullet");
@@ -115,6 +127,7 @@ function answer(system, prompt) {
   if (system.includes("one field of a resume builder")) {
     return { lines: ["Built a Kafka pipeline that cut invoice latency by 38%"] };
   }
+  if (system.includes("job-posting parser")) return FACTS;
   if (system.includes("senior technical recruiter")) return JOB;
   if (system.includes("numbered lines")) return tailor(prompt);
   if (system.includes("convert text extracted")) return parse(prompt);

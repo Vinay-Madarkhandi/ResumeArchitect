@@ -45,9 +45,10 @@ const summary = {
 export type ScanSummary = Awaited<ReturnType<typeof listScans>>[number];
 
 /** Newest first. */
-export async function listScans(userId: string, limit = 200) {
-  return db.select(summary).from(scans).innerJoin(jobs, ownJob).where(eq(scans.user_id, userId))
-    .orderBy(desc(scans.created_at), desc(scans.id)).limit(limit);
+export async function listScans(userId: string, limit?: number) {
+  const ordered = db.select(summary).from(scans).innerJoin(jobs, ownJob).where(eq(scans.user_id, userId))
+    .orderBy(desc(scans.created_at), desc(scans.id));
+  return limit === undefined ? ordered : ordered.limit(limit);
 }
 
 export async function getScan(userId: string, id: string) {

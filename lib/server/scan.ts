@@ -54,7 +54,7 @@ export async function jobFactsFor(userId: string, job: JobRow): Promise<ScanResu
   if (slow) return slow;
   try {
     const facts = await extractJobFacts(geminiModel(key.apiKey, userId), job.raw_text);
-    await saveJobFacts(userId, job.id, facts);
+    await saveJobFacts(userId, job.id, facts, job.raw_text);
     return { ok: true, value: facts };
   } catch (error) {
     if (error instanceof AiError) {

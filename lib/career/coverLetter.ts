@@ -1,6 +1,6 @@
 import type { JobAnalysis } from "@/lib/schemas/jobAnalysis";
 import type { Check, CoverLetterReport } from "@/lib/schemas/career";
-import { termPattern } from "@/lib/scoring/score";
+import { termPattern } from "@/lib/resume/termPattern";
 import { keywordRatio, matchKeywords } from "./keywords";
 import { hasMeasurableResult, share, weightedScore, wordCount } from "./score";
 

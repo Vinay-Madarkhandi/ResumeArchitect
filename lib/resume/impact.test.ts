@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { markdownToDocument } from "@/lib/documentMarkdown";
 import type { JobAnalysis } from "@/lib/schemas/jobAnalysis";
-import { scoreResume } from "@/lib/scoring/score";
+import { buildMatchReport } from "@/lib/report/matchReport";
+import { legacyJobFacts } from "@/lib/report/legacyJobFacts";
 import { diffUnits } from "@/lib/resume/diff";
 import { changeImpact } from "@/lib/resume/impact";
 import { toUnits } from "@/lib/resume/units";
@@ -18,6 +19,13 @@ const job: JobAnalysis = {
   keywords: [{ term: "reliability", aliases: [] }],
 };
 
+const target = {
+  job: legacyJobFacts(job),
+  jobText: "Platform Engineer for Go services, Kubernetes and reliability.",
+  file: null,
+  asOf: new Date("2026-11-18"),
+};
+
 const base = "# Ada\n\nada@example.com +1 415 555 0100\n\n## Experience\n\n- Built services in Go\n- Wrote docs\n\n## Skills\n\nGo";
 
 describe("changeImpact", () => {
@@ -27,7 +35,7 @@ describe("changeImpact", () => {
     const after = toUnits(afterDoc);
     // Too different to pair with "Wrote docs", so it diffs as a removal plus an addition.
     const hunk = diffUnits(before, after).find((h) => h.kind === "added")!;
-    const impact = changeImpact(after, hunk, job, scoreResume(afterDoc, job));
+    const impact = changeImpact(after, hunk, target, buildMatchReport({ ...target, resume: afterDoc }));
     expect(impact.points).toBeGreaterThan(0);
     expect(impact.gained.sort()).toEqual(["Kubernetes", "reliability"]);
     expect(impact.lost).toEqual([]);
@@ -38,6 +46,6 @@ describe("changeImpact", () => {
     const afterDoc = markdownToDocument(base.replace("- Wrote docs", "- Wrote onboarding docs"));
     const after = toUnits(afterDoc);
     const [hunk] = diffUnits(before, after);
-    expect(changeImpact(after, hunk, job, scoreResume(afterDoc, job)).points).toBe(0);
+    expect(changeImpact(after, hunk, target, buildMatchReport({ ...target, resume: afterDoc })).points).toBe(0);
   });
 });

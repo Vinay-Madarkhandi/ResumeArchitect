@@ -26,11 +26,11 @@ export async function findJobDescriptionByText(userId: string, rawText: string) 
 }
 
 /** Stores the facts read from the posting, and names an untitled job after the title they found. */
-export async function saveJobFacts(userId: string, id: string, facts: JobFacts) {
+export async function saveJobFacts(userId: string, id: string, facts: JobFacts, rawText?: string) {
   await db.update(jobDescriptions).set({
     job_facts: facts,
     job_title: sql`coalesce(nullif(${jobDescriptions.job_title}, ''), ${facts.title})`,
-  }).where(owned(userId, id));
+  }).where(and(owned(userId, id), rawText === undefined ? undefined : eq(jobDescriptions.raw_text, rawText)));
 }
 
 export type ScanTarget = Awaited<ReturnType<typeof listScanTargets>>[number];

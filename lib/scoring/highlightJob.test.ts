@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 import { markdownToDocument } from "@/lib/documentMarkdown";
 import type { JobAnalysis } from "@/lib/schemas/jobAnalysis";
 import { highlightJob } from "@/lib/scoring/highlightJob";
-import { scoreResume } from "@/lib/scoring/score";
+import { requirementEvidence } from "@/lib/tailoring/requirements";
+import { toUnits } from "@/lib/resume/units";
 
 const job: JobAnalysis = {
   title: "x",
@@ -19,7 +20,7 @@ const job: JobAnalysis = {
 describe("highlightJob", () => {
   it("marks requirements and keywords with whether the resume shows them, keeping all text", () => {
     const text = "You will own payments on Postgres. Kubernetes is a plus.";
-    const report = scoreResume(markdownToDocument("# A\n\n- Scaled PostgreSQL"), job);
+    const report = requirementEvidence(toUnits(markdownToDocument("# A\n\n- Scaled PostgreSQL")), job);
     const segs = highlightJob(text, job, report);
     expect(segs.map((s) => s.text).join("")).toBe(text);
     const terms = segs.filter((s) => s.term).map((s) => [s.text, s.term!.kind, s.term!.matched]);

@@ -2,7 +2,7 @@ import { postingUrlSchema } from "@/lib/tracker/schema";
 import { getTrackedJob } from "@/lib/data/jobs";
 import { getResume } from "@/lib/data/resumes";
 import { getTailoringSession } from "@/lib/data/tailoring";
-import { createJobDescription, getJobDescription } from "@/lib/data/job-descriptions";
+import { createJobDescription, getJobDescription, saveJobFacts } from "@/lib/data/job-descriptions";
 import { checkOrigin } from "@/lib/auth/guards";
 import { currentUser } from "@/lib/auth/current-user";
 import { after, NextResponse } from "next/server";
@@ -15,6 +15,7 @@ import {
   MIN_JOB_DESCRIPTION_LENGTH,
   type PipelineEvent,
 } from "@/lib/schemas/tailoring";
+import { JobFactsSchema } from "@/lib/schemas/jobFacts";
 import { runPipeline } from "@/lib/tailoring/pipeline";
 import { postgresPipelineStore } from "@/lib/tailoring/postgresStore";
 
@@ -114,9 +115,13 @@ export async function POST(request: Request) {
     jobDescriptionId = jdId;
   }
 
+  const posting = await getJobDescription(user.id, jobDescriptionId);
+  if (!posting) return fail(404, "invalid_jd", "That job could not be found.");
+  const jobFacts = JobFactsSchema.safeParse(posting.job_facts);
   const events = runPipeline(
     {
       model: geminiModel(key.apiKey, user.id),
+      saveFacts: (facts) => saveJobFacts(user.id, posting.id, facts, posting.raw_text),
       store: postgresPipelineStore(user.id, {
         sourceResumeId: source.id,
         sourceTitle: source.title,
@@ -124,7 +129,7 @@ export async function POST(request: Request) {
         jobDescriptionId,
       }),
     },
-    { source: { title: source.title, content: sourceDoc }, jobDescription: jobDescriptionText, jobTitle, company },
+    { source: { title: source.title, content: sourceDoc }, jobDescription: posting.raw_text, jobFacts: jobFacts.data, jobTitle, company },
   );
 
   // The run is independent of the connection: if the browser goes away, sends

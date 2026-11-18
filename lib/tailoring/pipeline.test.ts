@@ -38,6 +38,15 @@ const JOB = {
   keywords: [{ term: "payments", aliases: [] }],
 };
 
+const FACTS = {
+  title: JOB.title,
+  level: "senior",
+  hardSkills: [{ term: "Go", importance: "high" }, { term: "PostgreSQL", importance: "high" }, { term: "Kubernetes", importance: "low" }],
+  otherKeywords: [{ term: "payments", importance: "medium" }],
+};
+
+const POSTING = "Senior Backend Engineer for Go, PostgreSQL, and Kubernetes services on the payments platform.";
+
 const TAILOR = {
   summary: "Leads with backend depth in Go and PostgreSQL.",
   edits: [
@@ -94,7 +103,7 @@ describe("runPipeline", () => {
   it("runs all five stages and saves a tailored resume", async () => {
     const { store, sessions, resumes } = memoryStore();
     const events = await collect(
-      runPipeline({ model: fakeModel([JOB, TAILOR]), store }, { source: { title: "Master", content: SOURCE }, jobDescription: "x".repeat(100) }),
+      runPipeline({ model: fakeModel([JOB, FACTS, TAILOR]), store }, { source: { title: "Master", content: SOURCE }, jobDescription: POSTING }),
     );
     const done = events.filter((e) => e.type === "stage" && e.status === "done").map((e) => (e as { stage: string }).stage);
     expect(done).toEqual(["copy", "markup", "set", "proof", "lockup"]);
@@ -109,7 +118,7 @@ describe("runPipeline", () => {
 
   it("flags numbers and requirements the original never mentions", async () => {
     const { store, sessions } = memoryStore();
-    await collect(runPipeline({ model: fakeModel([JOB, TAILOR]), store }, { source: { title: "M", content: SOURCE }, jobDescription: "x".repeat(100) }));
+    await collect(runPipeline({ model: fakeModel([JOB, FACTS, TAILOR]), store }, { source: { title: "M", content: SOURCE }, jobDescription: POSTING }));
     const bullet = sessions.get("s1")!.changes!.find((c) => c.after?.includes("2M"))!;
     expect(bullet.flags.map((f) => f.kind).sort()).toEqual(["number", "skill"]);
     expect(bullet.flags.find((f) => f.kind === "skill")!.value).toBe("Kubernetes");
@@ -120,7 +129,7 @@ describe("runPipeline", () => {
 
   it("produces a diff whose hunks line up with the recorded changes", async () => {
     const { store, resumes } = memoryStore();
-    await collect(runPipeline({ model: fakeModel([JOB, TAILOR]), store }, { source: { title: "M", content: SOURCE }, jobDescription: "x".repeat(100) }));
+    await collect(runPipeline({ model: fakeModel([JOB, FACTS, TAILOR]), store }, { source: { title: "M", content: SOURCE }, jobDescription: POSTING }));
     const tailored = (resumes.get("r1") as { content: Parameters<typeof toUnits>[0] }).content;
     const hunks = diffUnits(toUnits(SOURCE), toUnits(tailored));
     expect(hunks.map((h) => h.kind).sort()).toEqual(["added", "modified", "modified"]);
@@ -130,8 +139,8 @@ describe("runPipeline", () => {
     const { store, sessions } = memoryStore();
     const events = await collect(
       runPipeline(
-        { model: fakeModel([JOB, { nope: true }, { nope: true }]), store },
-        { source: { title: "M", content: SOURCE }, jobDescription: "x".repeat(100) },
+        { model: fakeModel([JOB, FACTS, { nope: true }, { nope: true }]), store },
+        { source: { title: "M", content: SOURCE }, jobDescription: POSTING },
       ),
     );
     const last = events.at(-1)!;
@@ -151,7 +160,7 @@ describe("runPipeline atomicity", () => {
       },
     };
     const events = await collect(
-      runPipeline({ model: fakeModel([JOB, TAILOR]), store: failing }, { source: { title: "M", content: SOURCE }, jobDescription: "x".repeat(100) }),
+      runPipeline({ model: fakeModel([JOB, FACTS, TAILOR]), store: failing }, { source: { title: "M", content: SOURCE }, jobDescription: POSTING }),
     );
     expect(events.at(-1)).toMatchObject({ type: "error", stage: "lockup" });
     expect(resumes.size).toBe(0);

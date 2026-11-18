@@ -22,10 +22,10 @@ import {
 
 type SearchabilityCheck = Check<SearchabilityCheckId>;
 
-export interface SearchabilityInput {
-  resume: ResumeModel;
+type ResumeSearchabilityInput = { resume: ResumeModel; file: ResumeFileFacts | null };
+
+export interface SearchabilityInput extends ResumeSearchabilityInput {
   job: JobFacts;
-  file: ResumeFileFacts | null;
   match: MatchContext;
 }
 
@@ -36,7 +36,7 @@ function inWordHeaderOnly(file: ResumeFileFacts | null, find: (text: string) => 
 
 const HEADER_FIX = "Move it into the body of the page, just under your name; many ATS skip Word headers and footers.";
 
-function contactName({ resume, file }: SearchabilityInput): SearchabilityCheck {
+function contactName({ resume, file }: ResumeSearchabilityInput): SearchabilityCheck {
   const label = "Name";
   const name = findName(resume);
   if (name) return pass("contact-name", label, `"${name}" leads the page, where an ATS expects the candidate's name.`);
@@ -50,7 +50,7 @@ function contactName({ resume, file }: SearchabilityInput): SearchabilityCheck {
   return fail("contact-name", label, "The first line isn't your name, so an ATS may file you under the wrong name.", "Make your full name the first line of the resume, on its own.");
 }
 
-function contactEmail({ resume, file }: SearchabilityInput): SearchabilityCheck {
+function contactEmail({ resume, file }: ResumeSearchabilityInput): SearchabilityCheck {
   const label = "Email address";
   const email = findEmail(resume.contact.text) ?? resume.contact.links.filter((link) => /^mailto:/i.test(link)).map(findEmail).find(Boolean);
   if (email) return pass("contact-email", label, `Found ${email}.`);
@@ -60,7 +60,7 @@ function contactEmail({ resume, file }: SearchabilityInput): SearchabilityCheck 
   return fail("contact-email", label, "No email address was found, so a recruiter can't reply.", "Add your email address to the contact line under your name.");
 }
 
-function contactPhone({ resume, file }: SearchabilityInput): SearchabilityCheck {
+function contactPhone({ resume, file }: ResumeSearchabilityInput): SearchabilityCheck {
   const label = "Phone number";
   const phone = resume.contact.units.map((unit) => findPhone(unit.text)).find(Boolean) ??
     resume.contact.links.filter((link) => /^tel:/i.test(link)).map(findPhone).find(Boolean);
@@ -71,7 +71,7 @@ function contactPhone({ resume, file }: SearchabilityInput): SearchabilityCheck 
   return fail("contact-phone", label, "No phone number was found.", "Add a phone number, with country code if you apply abroad, to the contact line.");
 }
 
-function contactLinkedIn({ resume }: SearchabilityInput): SearchabilityCheck {
+function contactLinkedIn({ resume }: ResumeSearchabilityInput): SearchabilityCheck {
   const label = "LinkedIn profile";
   const url = findLinkedIn(resume.contact);
   if (url) return pass("contact-linkedin", label, `Found ${url}.`);
@@ -87,7 +87,7 @@ function contactLinkedIn({ resume }: SearchabilityInput): SearchabilityCheck {
   return warn("contact-linkedin", label, "No LinkedIn URL was found. Recruiters check it before calling.", "Add your LinkedIn URL to the contact line, e.g. linkedin.com/in/your-name.");
 }
 
-function summary({ resume }: SearchabilityInput): SearchabilityCheck {
+function summary({ resume }: ResumeSearchabilityInput): SearchabilityCheck {
   const label = "Summary";
   const [first] = resume.sections;
   if (resume.header.length <= 8 && first?.kind === "summary" && first.units.some((u) => wordCount(u.text) > 0)) {
@@ -113,7 +113,7 @@ const REQUIRED_SECTIONS: ReadonlyArray<[SectionKind, string]> = [
   ["skills", "Skills"],
 ];
 
-function sectionHeadings({ resume }: SearchabilityInput): SearchabilityCheck {
+function sectionHeadings({ resume }: ResumeSearchabilityInput): SearchabilityCheck {
   const label = "Section headings";
   const kinds = new Set(resume.sections.map((s) => s.kind));
   const missing = REQUIRED_SECTIONS.filter(([kind]) => !kinds.has(kind)).map(([, name]) => name);
@@ -141,7 +141,7 @@ function sectionHeadings({ resume }: SearchabilityInput): SearchabilityCheck {
   return pass("section-headings", label, "Experience, Education, and Skills all use headings an ATS recognizes.");
 }
 
-function dateFormat({ resume }: SearchabilityInput): SearchabilityCheck {
+function dateFormat({ resume }: ResumeSearchabilityInput): SearchabilityCheck {
   const label = "Date format";
   // Roles under a creative heading ("My Journey") still carry dates an ATS has to read.
   const dated = resume.sections.filter((s) => s.kind === "experience" || s.kind === "education" || s.kind === null);
@@ -307,7 +307,7 @@ export function jobTitleMatch({ resume, job }: SearchabilityInput): Searchabilit
   return fail("job-title-match", label, `Your headline and experience do not list "${title}". Recruiters search by title first.`, fix);
 }
 
-function fileType({ file }: SearchabilityInput): SearchabilityCheck | null {
+function fileType({ file }: ResumeSearchabilityInput): SearchabilityCheck | null {
   if (!file) return null;
   const label = "File type";
   switch (file.format) {
@@ -338,7 +338,7 @@ function fileType({ file }: SearchabilityInput): SearchabilityCheck | null {
   }
 }
 
-export function searchabilityChecks(input: SearchabilityInput): SearchabilityCheck[] {
+export function resumeSearchabilityChecks(input: ResumeSearchabilityInput): SearchabilityCheck[] {
   return [
     contactName(input),
     contactEmail(input),
@@ -347,6 +347,12 @@ export function searchabilityChecks(input: SearchabilityInput): SearchabilityChe
     summary(input),
     sectionHeadings(input),
     dateFormat(input),
+  ];
+}
+
+export function searchabilityChecks(input: SearchabilityInput): SearchabilityCheck[] {
+  return [
+    ...resumeSearchabilityChecks(input),
     educationMatch(input),
     jobTitleMatch(input),
     fileType(input),

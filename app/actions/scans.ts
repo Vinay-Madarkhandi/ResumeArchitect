@@ -8,7 +8,8 @@ import { getResume } from "@/lib/data/resumes";
 import { deleteScan, getScan, saveScannedResume } from "@/lib/data/scans";
 import { resolveDocument } from "@/lib/documentConversion";
 import { markdownToDocument } from "@/lib/documentMarkdown";
-import { scanResume } from "@/lib/server/scan";
+import type { ReportTarget } from "@/lib/report/target";
+import { ownedJobFacts, scanResume } from "@/lib/server/scan";
 
 type Result<T = object> = ({ ok: true } & T) | { ok: false; error: string };
 
@@ -36,6 +37,7 @@ export async function rescanAction(id: string): Promise<Result<{ id: string }>> 
   const result = await scanResume(user.id, { id: saved?.id ?? null, label: saved?.title ?? scan.resumeLabel, content, file: null }, job);
   if (!result.ok) return { ok: false, error: result.error };
   revalidatePath("/scans");
+  revalidatePath("/dashboard");
   return { ok: true, id: result.value };
 }
 
@@ -74,4 +76,30 @@ export async function trackScannedJob(id: string): Promise<Result> {
   revalidatePath("/tracker");
   revalidatePath(`/scan/${id}`);
   return { ok: true };
+}
+
+export async function loadReportTarget(jobId: string): Promise<Result<{ target: ReportTarget }>> {
+  const user = await currentUser();
+  if (!user) return { ok: false, error: "Sign in to continue." };
+  const result = await ownedJobFacts(user.id, jobId);
+  if (!result.ok) return { ok: false, error: result.error };
+  const { job, facts } = result.value;
+  return { ok: true, target: {
+    id: job.id, title: job.job_title || facts.title, company: job.company,
+    text: job.raw_text, url: job.source_url, facts,
+  } };
+}
+
+export async function saveWorkspaceScan(resumeId: string, jobId: string): Promise<Result<{ id: string }>> {
+  const user = await currentUser();
+  if (!user) return { ok: false, error: "Sign in to continue." };
+  const [resume, job] = await Promise.all([getResume(user.id, resumeId), getJobDescription(user.id, jobId)]);
+  const content = resolveDocument(resume?.content);
+  if (!job?.raw_text.trim() || !resume || !content) return { ok: false, error: "That resume or job wasn't found." };
+
+  const result = await scanResume(user.id, { id: resume.id, label: resume.title, content, file: null }, job);
+  if (!result.ok) return { ok: false, error: result.error };
+  revalidatePath("/scans");
+  revalidatePath("/dashboard");
+  return { ok: true, id: result.value };
 }

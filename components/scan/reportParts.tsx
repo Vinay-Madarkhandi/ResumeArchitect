@@ -43,7 +43,7 @@ export function MatchRateFigure({ rate, target, size = "lg" }: { rate: number; t
   );
 }
 
-export function Breakdown({ components }: { components: ScoreComponent[] }) {
+export function Breakdown({ components, baseline }: { components: ScoreComponent[]; baseline?: ScoreComponent[] }) {
   return (
     <ul className="flex flex-col gap-3">
       {components.map((c) => (
@@ -56,6 +56,8 @@ export function Breakdown({ components }: { components: ScoreComponent[] }) {
             </span>
           </div>
           <div className="relative mt-1.5 h-1 rounded-full bg-sunken" aria-hidden>
+            {baseline && <span className="absolute inset-y-0 left-0 rounded-full bg-line-strong"
+              style={{ width: `${(baseline.find((b) => b.id === c.id)?.ratio ?? 0) * 100}%` }} />}
             <span
               className="absolute inset-y-0 left-0 rounded-full bg-brass transition-[width] duration-300 ease-[var(--ease-out-expo)]"
               style={{ width: `${c.ratio * 100}%` }}
@@ -172,9 +174,4 @@ export function PredictedSkills({ skills }: { skills: PredictedSkillMatch[] }) {
       ))}
     </ul>
   );
-}
-
-/** Items that need the user: missing or synonym skills, and checks that don't pass. */
-export function issueCount(items: Array<{ status: string }>): number {
-  return items.filter((i) => i.status !== "found" && i.status !== "pass").length;
 }
