@@ -112,7 +112,8 @@ test("issue a personal token, authenticate clipper requests, and revoke it", asy
   expect(clip.headers()["access-control-allow-origin"]).toBe(chromeOrigin);
   const { path } = await clip.json();
 
-  await page.getByRole("button", { name: "Dismiss" }).click();
+  const tokens = page.locator("section").filter({ has: page.getByRole("heading", { name: "Personal API tokens" }) });
+  await tokens.getByRole("button", { name: "Dismiss" }).click();
   await expect(tokenField).toHaveCount(0);
   await page.reload();
   await expect(page.getByText(/Last used .* UTC/)).toBeVisible();
