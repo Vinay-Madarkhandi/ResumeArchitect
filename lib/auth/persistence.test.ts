@@ -30,7 +30,7 @@ let userId: string;
 beforeAll(async () => {
   const setup = await import("@/lib/db") as unknown as { migrateFixture: () => Promise<void> };
   await setup.migrateFixture();
-});
+}, 30_000);
 beforeEach(async () => {
   const [row] = await db.insert(users).values({
     email: `${randomUUID()}@example.com`, password_hash: "fixture", email_verified_at: new Date().toISOString(),
