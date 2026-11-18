@@ -40,7 +40,7 @@ form.addEventListener("submit", async (event) => {
     const job = Object.fromEntries(new FormData(form));
     const saved = await serverRequest(server, token, "/api/v1/jobs", job);
     if (!/^[\da-f]{8}(?:-[\da-f]{4}){3}-[\da-f]{12}$/.test(saved.id)) throw new Error("The server returned an unexpected job ID.");
-    open.href = new URL(`/tracker?job=${saved.id}`, resolveServer(server)).href;
+    open.href = new URL(`/scan?job=${saved.id}`, resolveServer(server)).href;
     open.hidden = false;
     form.hidden = true;
     setStatus("Saved to your tracker.");
