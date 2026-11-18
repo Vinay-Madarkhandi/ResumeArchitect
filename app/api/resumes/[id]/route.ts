@@ -4,12 +4,13 @@ import { currentUser } from "@/lib/auth/current-user";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { DocumentContentSchema } from "@/lib/schemas/document";
+import { TEMPLATE_IDS } from "@/lib/resume/templates";
 
 const PatchSchema = z
   .object({
     content: DocumentContentSchema.optional(),
     title: z.string().trim().min(1).max(160).optional(),
-    template: z.enum(["classic", "modern", "standard"]).optional(),
+    template: z.enum(TEMPLATE_IDS).optional(),
     reviewedChangeIds: z.array(z.string().max(32)).max(500).optional(),
     applicationStatus: z.enum(["saved", "applied", "interviewing", "offer", "rejected"]).optional(),
     coverLetter: z.string().max(20_000).optional(),

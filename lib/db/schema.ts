@@ -7,6 +7,7 @@ import type { Link, ResumeContent } from "@/lib/schemas/resume";
 import type { DocumentContent } from "@/lib/schemas/document";
 import type { JobAnalysis } from "@/lib/schemas/jobAnalysis";
 import type { PipelineStage, TailoredChange } from "@/lib/schemas/tailoring";
+import { TEMPLATE_IDS } from "@/lib/resume/templates";
 
 const date = (name: string) => timestamp(name, { withTimezone: true, mode: "string" });
 const created = () => date("created_at").notNull().defaultNow();
@@ -84,7 +85,7 @@ export const resumes = pgTable("resumes", {
   design_source_path: text("design_source_path"),
   pdf_generated_at: date("pdf_generated_at"),
   low_confidence_fields: text("low_confidence_fields").array().notNull().default(sql`'{}'`),
-  template: text("template", { enum: ["classic", "modern", "standard"] }).notNull().default("classic"),
+  template: text("template", { enum: TEMPLATE_IDS }).notNull().default("classic"),
   reviewed_change_ids: text("reviewed_change_ids").array().notNull().default(sql`'{}'`),
   application_status: text("application_status", { enum: ["saved", "applied", "interviewing", "offer", "rejected"] }).notNull().default("saved"),
   application_status_updated_at: date("application_status_updated_at"),
@@ -94,7 +95,7 @@ export const resumes = pgTable("resumes", {
 }, (t) => [
   check("resumes_kind_check", sql`${t.kind} in ('master', 'tailored')`),
   check("resumes_status_check", sql`${t.status} in ('draft', 'archived')`),
-  check("resumes_template_check", sql`${t.template} in ('classic', 'modern', 'standard')`),
+  check("resumes_template_check", sql`${t.template} in (${sql.raw(TEMPLATE_IDS.map((id) => `'${id}'`).join(", "))})`),
   check("resumes_application_status_check", sql`${t.application_status} in ('saved', 'applied', 'interviewing', 'offer', 'rejected')`),
   index("resumes_user_id_idx").on(t.user_id),
   index("resumes_user_id_kind_idx").on(t.user_id, t.kind),
