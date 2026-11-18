@@ -4,6 +4,7 @@ import { eq, sql } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { db } from "@/lib/db";
+import { countOtherActiveAdmins, lockAdminMembership } from "@/lib/auth/admin-membership";
 import { users } from "@/lib/db/schema";
 import { rateLimit } from "@/lib/cache/rateLimit";
 import { hashPassword, passwordError, verifyPassword } from "@/lib/auth/password";
@@ -98,9 +99,13 @@ export async function verifyEmail(token: string, change: boolean, password: stri
   if (await credentialLimit(link.userId)) return fail("Too many attempts. Try again later.");
   try {
     const result = await db.transaction(async (tx) => {
+      if (change) await lockAdminMembership(tx);
       const user = await lockAccount(tx, link.userId);
       if (!user || (!change && user.email_verified_at)) return;
       if (!change && !await verifyPassword(password, user.password_hash)) return fail("Enter the password you used to sign up.");
+      if (change && user.role === "admin" && !await countOtherActiveAdmins(tx, user.id)) {
+        return fail("Assign another active administrator before changing your email.");
+      }
       const used = await consumeToken(tx, token, purpose, user.id);
       if (!used) return;
       const email = change ? used.payload?.email : user.email;
