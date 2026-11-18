@@ -43,12 +43,10 @@ function Segmented<T extends string>({ name, legend, options, value, onChange }:
   );
 }
 
-function Panel({ title, step, children }: { title: string; step: number; children: ReactNode }) {
+function Panel({ title, id, children }: { title: string; id: string; children: ReactNode }) {
   return (
-    <section aria-labelledby={`scan-step-${step}`} className="flex min-w-0 flex-col gap-4 rounded-lg border border-line bg-panel p-4 sm:p-5">
-      <h2 id={`scan-step-${step}`} className="flex items-baseline gap-2.5 text-lead font-semibold text-ink">
-        <span className="font-mono text-small font-normal text-ink-3 tabular">{step}</span> {title}
-      </h2>
+    <section aria-labelledby={id} className="flex min-w-0 flex-col gap-4 rounded-lg border border-line bg-panel p-4 sm:p-5">
+      <h2 id={id} className="text-lead font-semibold text-ink">{title}</h2>
       {children}
     </section>
   );
@@ -125,7 +123,7 @@ export function ScanForm({ resumes, jobs, hasKey, initialJobId, initialResumeId 
   return (
     <form onSubmit={submit} className="flex flex-col gap-6">
       <div className="grid gap-5 lg:grid-cols-2">
-        <Panel step={1} title="Your resume">
+        <Panel id="scan-resume" title="Your resume">
           <Segmented name="resume-source" legend="Resume source" value={resumeSource} onChange={setResumeSource} options={[
             { value: "saved", label: "Saved resume", disabled: resumes.length === 0 },
             { value: "upload", label: "Upload file" },
@@ -139,7 +137,7 @@ export function ScanForm({ resumes, jobs, hasKey, initialJobId, initialResumeId 
             </Field>
           )}
           {resumeSource === "upload" && (
-            <Field label="Resume file" hint="PDF or Word (.docx), up to 8 MB. The layout is checked the way an ATS would read it.">
+            <Field label="Resume file" hint="PDF, Word (.docx), or plain text, up to 8 MB. The layout is checked the way an ATS would read it.">
               {(p) => (
                 <label className="flex min-h-28 cursor-pointer flex-col items-center justify-center gap-2 rounded-md border border-dashed border-line-strong bg-sunken px-4 py-5 text-center transition-colors hover:border-ink-3 focus-within:border-brass">
                   <FileUp className="size-5 text-ink-3" aria-hidden />
@@ -158,10 +156,10 @@ export function ScanForm({ resumes, jobs, hasKey, initialJobId, initialResumeId 
           )}
         </Panel>
 
-        <Panel step={2} title="The job">
+        <Panel id="scan-job" title="The job">
           <Segmented name="job-source" legend="Job source" value={jobSource} onChange={setJobSource} options={[
             { value: "paste", label: "Paste posting" },
-            { value: "saved", label: "Tracked job", disabled: jobs.length === 0 },
+            { value: "saved", label: "Saved job", disabled: jobs.length === 0 },
             { value: "link", label: "From a link" },
           ]} />
           {jobSource === "saved" && (
