@@ -142,7 +142,7 @@ test("explain a missing Gemini key and still scan a cached posting", async ({ pa
 test("upload a real PDF resume through the UI and get a match report", async ({ page }) => {
   await signUp(page);
   await onboard(page);
-  await page.getByRole("link", { name: "Scanner" }).click();
+  await goTo(page, "Scan");
   await page.getByRole("radio", { name: "Upload file" }).check();
   const pdfBuffer = await readFile(join(process.cwd(), "lib/report/__fixtures__/valid_pdfs/pdf_photo_plus_real_text.pdf"));
   await page.getByLabel("Resume file").setInputFiles({
