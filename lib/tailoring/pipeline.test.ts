@@ -117,7 +117,7 @@ describe("runPipeline", () => {
   });
 
   it("flags numbers and requirements the original never mentions", async () => {
-    const { store, sessions } = memoryStore();
+    const { store, sessions, resumes } = memoryStore();
     await collect(runPipeline({ model: fakeModel([JOB, FACTS, TAILOR]), store }, { source: { title: "M", content: SOURCE }, jobDescription: POSTING }));
     const bullet = sessions.get("s1")!.changes!.find((c) => c.flags.some((f) => f.value === "2M"))!;
     expect(bullet.after).toMatch(/Worked on services.*\[Verify claim 2\]$/);
@@ -229,8 +229,8 @@ Experienced backend developer.
 
     // Verify change is NOT flagged "Claims Go..." or "Claims PostgreSQL..."
     const change = session.changes![0];
-    const skillFlags = change.flags.filter((f) => f.kind === "skill");
-    expect(skillFlags).toHaveLength(0);
+    const claimsSkillFlags = change.flags.filter((f) => f.kind === "skill" && f.message.startsWith("Claims "));
+    expect(claimsSkillFlags).toHaveLength(0);
   });
 });
 
