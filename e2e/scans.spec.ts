@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import { expect, test } from "@playwright/test";
 import { Document, HeadingLevel, Packer, Paragraph } from "docx";
 import { signUp } from "./auth-helpers";
+import { goTo } from "./nav";
 import { onboard } from "./onboard";
 
 const JOB = `Senior Backend Engineer at Northwind Payments.
@@ -24,7 +25,7 @@ async function resumeDocx() {
 test("upload a resume, read and act on its match report, and re-open or delete scans", async ({ page }) => {
   await signUp(page);
   await onboard(page);
-  await page.getByRole("link", { name: "Scanner" }).click();
+  await goTo(page, "Scan");
   await page.getByRole("radio", { name: "Upload file" }).check();
   await page.getByLabel("Resume file").setInputFiles({
     name: "ada.docx",

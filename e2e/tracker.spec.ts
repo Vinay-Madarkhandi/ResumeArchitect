@@ -3,6 +3,7 @@ import { Queue, QueueEvents } from "bullmq";
 import Redis from "ioredis";
 import { expect, test } from "@playwright/test";
 import { signUp } from "./auth-helpers";
+import { goTo } from "./nav";
 import { onboard } from "./onboard";
 
 const chromeOrigin = "chrome-extension://abcdefghijklmnopabcdefghijklmnop";
@@ -10,7 +11,7 @@ const chromeOrigin = "chrome-extension://abcdefghijklmnopabcdefghijklmnop";
 test("move jobs by dragging and keyboard, manage details, and exchange CSV", async ({ page }) => {
   await signUp(page);
   await onboard(page);
-  await page.getByRole("link", { name: "Job tracker" }).click();
+  await goTo(page, "Jobs");
   await page.getByRole("button", { name: "Add job", exact: true }).click();
   const editor = page.getByRole("dialog");
   await editor.getByLabel("Job title").fill("Product Engineer");
@@ -78,7 +79,7 @@ test("move jobs by dragging and keyboard, manage details, and exchange CSV", asy
 test("issue a personal token, authenticate clipper requests, and revoke it", async ({ page, request }) => {
   const email = await signUp(page);
   await onboard(page);
-  await page.getByRole("link", { name: "Settings" }).click();
+  await goTo(page, "Settings");
   await page.getByLabel("Token name").fill("Playwright clipper");
   await page.getByRole("button", { name: "Create token" }).click();
   const tokenField = page.getByLabel("New personal API token");
@@ -119,7 +120,7 @@ test("issue a personal token, authenticate clipper requests, and revoke it", asy
   await expect(page.getByText(/Last used .* UTC/)).toBeVisible();
   await expect(tokenField).toHaveCount(0);
 
-  await page.getByRole("link", { name: "Job tracker" }).click();
+  await goTo(page, "Jobs");
   await expect(page.getByRole("region", { name: "Saved", exact: true }).getByRole("button", { name: "Clipped Backend Engineer" })).toBeVisible();
   await page.goto(path);
   await expect(page.getByRole("dialog", { name: "Clipped Backend Engineer" }).getByLabel("Salary range")).toHaveValue("€80k–100k");
@@ -135,13 +136,13 @@ test("issue a personal token, authenticate clipper requests, and revoke it", asy
 test("email one daily digest for opted-in jobs due today", async ({ page }) => {
   const email = await signUp(page);
   await onboard(page);
-  await page.getByRole("link", { name: "Settings" }).click();
+  await goTo(page, "Settings");
   await page.getByLabel("Email me a daily digest").check();
   await page.getByRole("button", { name: "Save reminders" }).click();
   await expect(page.getByText("Reminder preference saved.")).toBeVisible();
   await page.reload();
   await expect(page.getByLabel("Email me a daily digest")).toBeChecked();
-  await page.getByRole("link", { name: "Job tracker" }).click();
+  await goTo(page, "Jobs");
   await page.getByRole("button", { name: "Add job", exact: true }).click();
 
   const today = new Date().toISOString().slice(0, 10);
@@ -174,7 +175,7 @@ test("email one daily digest for opted-in jobs due today", async ({ page }) => {
     await Promise.all([cache.quit(), maintenance.close(), events.close()]);
   }
 
-  await page.getByRole("link", { name: "Settings" }).click();
+  await goTo(page, "Settings");
   await page.getByLabel("Email me a daily digest").uncheck();
   await page.getByRole("button", { name: "Save reminders" }).click();
   await expect(page.getByText("Reminder preference saved.")).toBeVisible();

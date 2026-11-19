@@ -1,7 +1,7 @@
 import { rateLimit } from "@/lib/cache/rateLimit";
+import { RUNS_PER_HOUR } from "./limits";
 
-export const RUNS_PER_HOUR = 20;
-
+export { RUNS_PER_HOUR };
 export async function tailoringRateLimit(userId: string): Promise<number | null> {
   const retrySeconds = await rateLimit("tailoring", userId, RUNS_PER_HOUR, 3_600_000);
   return retrySeconds ? Math.ceil(retrySeconds / 60) : null;

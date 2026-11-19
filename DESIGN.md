@@ -309,7 +309,7 @@ Compact and confident, with weight 500 and no uppercase.
 - **Error / Disabled:** invalid fields get an error-red border and an error-red message in small text below, linked with `aria-describedby`. Disabled fields are 50% opacity. Labels are small at 500 in bone 2, with an "Optional" tag in label size.
 
 ### Navigation
-- **App bar:** a sticky 56px glass bar. Nav links are body-size bone 3, turning bone on hover. The active link is bone with a 2px brass underline that sits on the bar's bottom hairline. Below `sm`, nav moves into the account menu.
+- **App bar:** a sticky 56px glass bar holding the logo, six areas on one row (Dashboard, Scan, Resumes, Jobs, Career tools, Settings, plus Admin for admins), the "Scan a resume" primary button, the theme toggle and the account menu. Nav links are body-size bone 3, turning bone on hover. The active area is bone with a 2px brass underline that sits on the bar's bottom hairline and carries `aria-current="page"`. Career tools is a disclosure button with a short list of links; it opens with Enter or Space, closes with Escape (returning focus) or an outside click, and carries the underline when one of its tools is current. Each area owns its routes in `lib/nav.ts` (Scan owns `/scan` and `/scans`, Resumes owns `/resumes` and `/new`). Below `lg` (1024px) the row becomes a Menu button that discloses a full-width panel of the same links, with the Career tools links listed under their own label.
 - **Tabs (Review / Edit / Compare, Changes / How it's scored):** a sunken track with a 2px inset and 28px triggers. The active trigger is raised, bone, and seated with a shadow. Counts sit inside the trigger in mono, and the unreviewed count is in brass.
 
 ### Menus, dialogs, toasts

@@ -9,6 +9,7 @@ import { documentText } from "@/lib/resume/units";
 import type { DocumentContent } from "@/lib/schemas/document";
 import { JobFactsSchema, type JobFacts } from "@/lib/schemas/jobFacts";
 import { loadGeminiKey } from "./geminiKey";
+import { SCANS_PER_HOUR } from "./limits";
 
 /**
  * The Resume Scanner: one resume measured against one job, saved as a scan.
@@ -31,7 +32,6 @@ export interface ScannedResume {
   file: ResumeFileFacts | null;
 }
 
-const SCANS_PER_HOUR = 60;
 const JOB_READS_PER_HOUR = 30;
 
 const failure = (status: number, code: ScanFailureCode, error: string): ScanFailure => ({ ok: false, status, code, error });

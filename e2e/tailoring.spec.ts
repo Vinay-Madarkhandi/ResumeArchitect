@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { goTo } from "./nav";
 import { onboard } from "./onboard";
 import { signUp } from "./auth-helpers";
 
@@ -10,7 +11,8 @@ test("sign up, tailor a resume, review every change, edit, and download", async 
   await signUp(page);
   await onboard(page);
 
-  await expect(page.getByRole("heading", { name: "Applications" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Scan a resume against a job" })).toBeVisible();
+  await goTo(page, "Resumes");
   await expect(page.getByText("Tailor your first application")).toBeVisible();
 
   await page.getByRole("link", { name: "New application" }).first().click();
@@ -94,15 +96,14 @@ test("sign up, tailor a resume, review every change, edit, and download", async 
     expect((await download).suggestedFilename()).toMatch(new RegExp(`\\.${ext}$`));
   }
 
-  // The application shows up on the dashboard with its score change.
-  await page.goto("/dashboard");
+  // The application shows up under Resumes with its score change.
+  await page.goto("/resumes");
   await expect(page.getByRole("link", { name: "Senior Backend Engineer" })).toBeVisible();
   await expect(page.getByLabel(/Match score \d+ to \d+/)).toBeVisible();
-  await expect(page.getByText("Average score lift")).toBeVisible();
   await expect(page.getByRole("button", { name: /Application status: Applied/ })).toBeVisible();
 
   // The tracker and the workspace share the application stage.
-  await page.getByRole("link", { name: "Job tracker" }).click();
+  await goTo(page, "Jobs");
   const trackedJob = page.getByRole("region", { name: "Applied", exact: true }).getByRole("button", { name: "Senior Backend Engineer" });
   await trackedJob.click();
   await page.getByRole("link", { name: "Tailored resume" }).click();
@@ -185,6 +186,7 @@ test("a Word resume comes back as the same file with only the wording changed", 
   await page.getByRole("button", { name: "Save as my master resume" }).click();
   await expect(page).toHaveURL(/\/dashboard/);
 
+  await goTo(page, "Resumes");
   await page.getByRole("link", { name: "New application" }).first().click();
   await page.getByLabel("Job post").fill(JOB);
   await page.getByRole("button", { name: "Tailor resume" }).click();

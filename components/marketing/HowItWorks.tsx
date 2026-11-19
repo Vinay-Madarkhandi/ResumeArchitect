@@ -1,38 +1,41 @@
 import { Container, DisplayHeading, Lede } from "./Section";
 
-const STAGES = [
-  { name: "Read the job", outcome: "The must-haves, nice-to-haves and role keywords, pulled out of the posting." },
-  { name: "Measure your resume", outcome: "Your starting score against those requirements, before a word changes." },
-  { name: "Rewrite lines", outcome: "Your real experience, reworded toward the role. Nothing is invented." },
-  { name: "Proof every change", outcome: "Each edit checked against your original. Unbacked claims get a Verify flag." },
-  { name: "Score and save", outcome: "The same yardstick, after. A fair before and after, saved with the application." },
+const STEPS = [
+  {
+    name: "Add a resume and a job",
+    body: "Pick a saved resume, upload a PDF or Word file, or paste text. Paste the job post, or import it from its link.",
+  },
+  {
+    name: "Read the match report",
+    body: "A match rate out of 100 with the breakdown behind it: skills found and missing, searchability, formatting and recruiter tips.",
+  },
+  {
+    name: "Fix it, then rescan",
+    body: "Edit beside the report with the score updating, or have Gemini tailor the resume line by line. Every scan is saved so you can see the number move.",
+  },
 ];
 
 export function HowItWorks() {
   return (
-    <section id="how-it-works" aria-labelledby="how-title" className="scroll-mt-20 py-24 lg:py-32">
+    <section id="how-it-works" aria-labelledby="how-title" className="scroll-mt-20 border-t border-line py-24 lg:py-32">
       <Container>
         <div className="max-w-3xl">
-          <DisplayHeading id="how-title">Five steps you can watch, not a spinner and a surprise.</DisplayHeading>
+          <DisplayHeading id="how-title">Scan, read, fix, scan again.</DisplayHeading>
           <Lede className="mt-5">
-            Tailoring runs as a composing stick. Each stage reports what it found as it finishes, so you know what the
-            AI read, what it measured, and what it touched.
+            The loop takes a couple of minutes per job, and rescanning a job you&rsquo;ve already read doesn&rsquo;t need
+            your key.
           </Lede>
         </div>
-
-        <ol className="relative mt-16 grid gap-10 lg:grid-cols-5 lg:gap-6">
-          <span
-            aria-hidden
-            className="absolute bottom-3 left-3 top-3 w-px bg-brass/70 lg:bottom-auto lg:left-3 lg:right-3 lg:top-3 lg:h-px lg:w-auto"
-          />
-          {STAGES.map((s, i) => (
+        <ol className="relative mt-14 grid gap-10 lg:grid-cols-3 lg:gap-8">
+          <span aria-hidden className="absolute bottom-3 left-3 top-3 w-px bg-brass/70 lg:bottom-auto lg:left-3 lg:right-3 lg:top-3 lg:h-px lg:w-auto" />
+          {STEPS.map((s, i) => (
             <li key={s.name} className="relative grid grid-cols-[1.5rem_minmax(0,1fr)] gap-x-5 lg:block">
               <span className="relative z-10 flex size-6 items-center justify-center rounded-full border border-brass bg-ground font-mono text-[11px] text-brass tabular">
                 {i + 1}
               </span>
-              <div className="lg:mt-6 lg:pr-2">
+              <div className="lg:mt-6 lg:pr-4">
                 <h3 className="text-lead font-semibold text-ink">{s.name}</h3>
-                <p className="mt-2 text-small text-pretty text-ink-2">{s.outcome}</p>
+                <p className="mt-2 max-w-sm text-small text-pretty text-ink-2">{s.body}</p>
               </div>
             </li>
           ))}

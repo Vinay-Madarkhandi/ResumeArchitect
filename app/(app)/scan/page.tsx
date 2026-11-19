@@ -37,7 +37,7 @@ export default async function ScanPage({ searchParams }: PageProps<"/scan">) {
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="text-page font-semibold tracking-[-0.015em]">Resume scanner</h1>
-          <p className="mt-1.5 max-w-2xl text-body text-ink-2">
+          <p className="mt-1.5 max-w-[34rem] text-body text-ink-2">
             See how your resume reads to an applicant tracking system for one job: skills, searchability, and formatting.
             Aim for a <span className="font-mono tabular">{TARGET_MATCH_RATE}%</span> match rate before you apply.
           </p>

@@ -16,8 +16,9 @@ export default async function ConnectPage() {
       <div>
         <h1 className="text-page font-semibold tracking-[-0.015em]">Bring your own Gemini key</h1>
         <p className="mt-3 max-w-prose text-lead text-ink-2">
-          ResumeArchitect runs every AI step on your key, so you control the cost and the data. Gemini&rsquo;s free tier
-          covers dozens of tailored resumes a day.
+          ResumeArchitect is free to use. Its AI steps run on your own Google key, so you control the cost and where your
+          text goes. Connect it now to scan a job as soon as your resume is in, or start with your resume and connect the
+          key later.
         </p>
         <div className="mt-8">
           <ConnectStep status={profile?.gemini_key_status ?? "not_configured"} last4={profile?.gemini_key_last4 ?? null} />
@@ -32,9 +33,15 @@ export default async function ConnectPage() {
         </ol>
         <h2 className="mt-6 text-body font-semibold text-ink">What it&rsquo;s used for</h2>
         <p className="mt-2">
-          Reading job posts, rebuilding uploaded resumes, rewriting lines, and Ask&nbsp;AI edits. Nothing runs unless you
-          start it.
+          Reading each job post once, rebuilding uploaded resumes, rewriting lines, and the career tools. Nothing runs
+          unless you start it. Match reports are computed in code, so you can rescan a job you&rsquo;ve already read
+          without a key.
         </p>
+        <h2 className="mt-6 text-body font-semibold text-ink">What happens next</h2>
+        <ol className="mt-2 flex list-decimal flex-col gap-1.5 pl-4 marker:text-ink-3">
+          <li>Add your resume: import a file or build one.</li>
+          <li>Scan it against a job and read the match report.</li>
+        </ol>
       </aside>
     </div>
   );
