@@ -206,6 +206,32 @@ export const VERB_LEVELS: Record<string, number> = {
   document: 2, documented: 2, documenting: 2,
   schedule: 2, scheduled: 2, scheduling: 2,
   reconcile: 2, reconciled: 2, reconciling: 2,
+  stock: 2, stocked: 2, stocking: 2,
+  triage: 2, triaged: 2, triaging: 2,
+  assess: 2, assessed: 2, assessing: 2,
+  treat: 2, treated: 2, treating: 2,
+  dispense: 2, dispensed: 2, dispensing: 2,
+  unload: 2, unloaded: 2, unloading: 2,
+  scan: 2, scanned: 2, scanning: 2,
+  pick: 2, picked: 2, picking: 2,
+  palletize: 2, palletized: 2, palletizing: 2,
+  prospect: 2, prospected: 2, prospecting: 2,
+  pitch: 2, pitched: 2, pitching: 2,
+  close: 2, closed: 2, closing: 2,
+  sell: 2, sold: 2, selling: 2,
+  invoice: 2, invoiced: 2, invoicing: 2,
+  book: 2, booked: 2, booking: 2,
+  post: 2, posted: 2, posting: 2,
+  calculate: 2, calculated: 2, calculating: 2,
+  balance: 2, balanced: 2, balancing: 2,
+  grade: 2, graded: 2, grading: 2,
+  proctor: 2, proctored: 2, proctoring: 2,
+  tutor: 2, tutored: 2, tutoring: 2,
+  lecture: 2, lectured: 2, lecturing: 2,
+  code: 2, coded: 2, coding: 2,
+  program: 2, programmed: 2, programming: 2,
+  debug: 2, debugged: 2, debugging: 2,
+  configure: 2, configured: 2, configuring: 2,
 
   // Level 3: High ownership (leading, managing, directing, supervising)
   lead: 3, led: 3, leading: 3, "lead all": 3, "led all": 3,
@@ -222,6 +248,18 @@ export const VERB_LEVELS: Record<string, number> = {
   guide: 3, guided: 3, guiding: 3,
   steer: 3, steered: 3, steering: 3,
   champion: 3, championed: 3, championing: 3,
+  orchestrate: 3, orchestrated: 3, orchestrating: 3,
+  "preside over": 3, "presided over": 3, "presiding over": 3,
+  "in charge of": 3, "in charge": 3,
+  "responsible for managing": 3, "responsible for management": 3,
+  "responsible for overseeing": 3, "responsible for oversight": 3,
+  "responsible for leading": 3, "responsible for leadership": 3,
+  "responsible for directing": 3, "responsible for direction": 3,
+  "responsible for supervising": 3, "responsible for supervision": 3,
+  "responsible for governing": 3,
+  "management of": 3, "supervision of": 3, "oversight of": 3, "direction of": 3, "leadership of": 3,
+  "ran operations": 3, "run operations": 3, "running operations": 3,
+  "ran accounts payable": 3, "run accounts payable": 3, "running accounts payable": 3,
 };
 
 export const VERB_ORDER = Object.keys(VERB_LEVELS).sort((a, b) => b.length - a.length);
@@ -231,15 +269,58 @@ const VERB_REGEX = new RegExp(
   "gi",
 );
 
+const VERB_CANONICAL_WORD: Record<string, string> = {
+  "responsible for managing": "Managed",
+  "responsible for management": "Managed",
+  "management of": "Managed",
+  "responsible for overseeing": "Oversaw",
+  "responsible for oversight": "Oversaw",
+  "oversight of": "Oversaw",
+  "responsible for leading": "Led",
+  "responsible for leadership": "Led",
+  "leadership of": "Led",
+  "responsible for directing": "Directed",
+  "responsible for direction": "Directed",
+  "direction of": "Directed",
+  "responsible for supervising": "Supervised",
+  "responsible for supervision": "Supervised",
+  "supervision of": "Supervised",
+  "in charge of": "In charge of",
+  "in charge": "In charge of",
+  "ran accounts payable": "Ran",
+  "run accounts payable": "Run",
+  "running accounts payable": "Running",
+  "ran operations": "Ran",
+  "run operations": "Run",
+  "running operations": "Running",
+};
+
+const RAN_MANAGEMENT_REGEX = /\b(ran|run|running)\s+(?:the\s+)?(?:[a-zA-Z-]+\s+){0,3}(?:operations|accounts\s+payable|inventory|department|logistics|customer\s+support|support\s+operations|procurement|fulfillment|shipping|payroll|billing|division|clinic|store|warehouse|facility|branch|business|firm|team|services)\b/gi;
+
 export function findVerbs(text: string): Array<{ word: string; level: number }> {
   const matches: Array<{ word: string; level: number }> = [];
   for (const match of text.matchAll(VERB_REGEX)) {
     const raw = match[0].toLowerCase();
     const level = VERB_LEVELS[raw] ?? 0;
     if (level > 0) {
-      matches.push({ word: match[0], level });
+      const canonical = VERB_CANONICAL_WORD[raw] ?? match[0];
+      matches.push({ word: canonical, level });
     }
   }
+
+  // Dynamic check: running a department/function/operations is level 3 management
+  for (const match of text.matchAll(RAN_MANAGEMENT_REGEX)) {
+    const verb = match[1];
+    const capVerb = verb.charAt(0).toUpperCase() + verb.slice(1).toLowerCase();
+    // Replace or add Level 3 for Ran
+    const existingIdx = matches.findIndex((m) => m.word.toLowerCase() === verb.toLowerCase());
+    if (existingIdx !== -1) {
+      matches[existingIdx] = { word: capVerb, level: 3 };
+    } else {
+      matches.push({ word: capVerb, level: 3 });
+    }
+  }
+
   return matches;
 }
 

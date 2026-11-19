@@ -163,6 +163,12 @@ export function extractFiguresWithMeasures(clauseText: string): FigureMatch[] {
       idiomSpans.push([m.index, m.index + m[0].length]);
     }
   }
+  const PHONE_REGEX = /(?<![\w\d])(?:\+|\(\+?)?\d(?:[\d().\s-]{5,}\d)(?:[ \t]*(?:ext\.?|x)[ \t]*\d+)?(?![\w\d])/gu;
+  for (const m of clauseText.matchAll(PHONE_REGEX)) {
+    if (m.index !== undefined) {
+      idiomSpans.push([m.index, m.index + m[0].length]);
+    }
+  }
 
   for (const match of clauseText.matchAll(FIGURE)) {
     const raw = match[0].trim();
@@ -193,8 +199,8 @@ export function extractFiguresWithMeasures(clauseText: string): FigureMatch[] {
     const isCurrency = /^[$€£]/.test(raw) || /(?:dollar|euro|pound)/i.test(raw);
 
     // Isolate words strictly within the current clause boundary (stopping at . ! ? ; \n)
-    const beforeClause = clauseText.slice(0, start).split(/[.!?;\n]/).pop() ?? "";
-    const afterClause = clauseText.slice(end).split(/[.!?;\n]/)[0] ?? "";
+    const beforeClause = clauseText.slice(0, start).split(/[.!?;\n|]/).pop() ?? "";
+    const afterClause = clauseText.slice(end).split(/[.!?;\n|]/)[0] ?? "";
 
     const beforeWords = beforeClause.split(/\s+/).map(cleanWord).filter((w) => w.length >= 2 && !STOPWORDS.has(w) && !(w in NUMBER_WORDS) && !/^\d+$/.test(w));
     const afterWords = afterClause.split(/\s+/).map(cleanWord).filter((w) => w.length >= 2 && !STOPWORDS.has(w) && !(w in NUMBER_WORDS) && !/^\d+$/.test(w));

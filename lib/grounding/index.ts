@@ -9,6 +9,7 @@ import {
 import {
   extractEntities,
   findVerbs,
+  findQualifiers,
   isEntitySupported,
   checkTeamInflation,
   checkCausalJoins,
@@ -183,7 +184,7 @@ export function buildSourceIndex(
 
   const findBestMatchingLines = (sentence: string, maxLines = 1): number[] => {
     const sToks = tokenize(sentence);
-    if (sToks.length === 0) return linesList.length > 0 ? [linesList[0].lineNum] : [];
+    if (sToks.length === 0) return [];
 
     const scores = new Map<number, number>();
     for (const tok of sToks) {
@@ -209,7 +210,7 @@ export function buildSourceIndex(
     }
 
     if (scores.size === 0) {
-      return linesList.length > 0 ? [linesList[0].lineNum] : [];
+      return [];
     }
 
     const sorted = [...scores.entries()].sort((a, b) => b[1] - a[1]);
@@ -301,6 +302,11 @@ export function verifySentence(
   }
 
   if (effectiveCitedLines.length === 0) {
+    flags.push({
+      kind: "claim",
+      value: cleanSentence,
+      message: `Verify “${cleanSentence}”. We couldn't trace it to the supplied source.`,
+    });
     const entities = extractEntities(cleanSentence);
     for (const name of entities.properNames) {
       flags.push({ kind: "name", value: name, message: `Verify “${name}”: “${name}” isn't in the lines this cites.` });
@@ -417,6 +423,14 @@ export function verifySentence(
           value: fig.raw,
           message: `Verify “${fig.raw}”: “${fig.raw}” in “${cleanSentence}”. The source needs to show what the figure measures.`,
         });
+        const head = fig.headNoun?.toLowerCase();
+        if (head && !citedTexts.some((t) => t.toLowerCase().includes(head))) {
+          flags.push({
+            kind: "claim",
+            value: fig.headNoun!,
+            message: `Verify “${fig.headNoun}”: '${fig.headNoun}' isn't in your resume.`,
+          });
+        }
       } else {
         flags.push({
           kind: "number",
