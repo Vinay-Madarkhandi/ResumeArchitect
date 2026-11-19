@@ -13,6 +13,6 @@ export const MAX_PDF_TEXT_ITEMS = 40_000;
  * It is generous so a busy server never turns a slow, honest file into a
  * "too large" result.
  */
-export const INSPECTION_BACKSTOP_MS = 6_000;
+export const INSPECTION_BACKSTOP_MS = 15_000;
 
 export class InspectionLimit extends Error {}
