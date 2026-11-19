@@ -115,7 +115,7 @@ describe("POST /api/scans uploads", () => {
     const { result: response, growthMb } = await peakGrowth(() => post(form));
     expect(response.status).toBe(422);
     expect((await response.json()).error).toMatch(message);
-    expect(growthMb).toBeLessThan(256);
+    expect(growthMb).toBeLessThan(50);
     expect(await scanCount()).toBe(0);
   }, 60_000);
 
@@ -153,4 +153,42 @@ describe("POST /api/scans uploads", () => {
     expect(growthMb).toBeLessThan(64);
     expect(await jobCount()).toBe(jobsBefore);
   }, 30_000);
+
+  it.each([
+    ["chrome_jpeg_photo.pdf", "Ada Lovelace"],
+    ["chrome_png_photo.pdf", "Ada Lovelace"],
+    ["chrome_text.pdf", "Ada Lovelace"],
+  ] as const)("scans real PDF fixture %s and extracts its text", async (filename, expectedText) => {
+    const jobId = await signIn();
+    const filePath = join(process.cwd(), "lib/report/__fixtures__/real_pdfs", filename);
+    const buffer = readFileSync(filePath);
+    const response = await post(uploadForm(buffer, filename, "application/pdf", { jobSource: "saved", jobId }));
+    expect(response.status).toBe(201);
+    const [scan] = await db.select().from(scans).where(eq(scans.user_id, fixture.userId));
+    expect(scan.resume_text).toContain(expectedText);
+  }, 30_000);
+
+  it("returns 429 with Retry-After when the parser queue is busy", async () => {
+    const { parseSemaphore } = await import("@/lib/report/inspectBudget");
+    parseSemaphore.reset();
+    const rel1 = await parseSemaphore.acquire();
+    const rel2 = await parseSemaphore.acquire();
+    const q1 = parseSemaphore.acquire();
+    const q2 = parseSemaphore.acquire();
+    try {
+      const jobId = await signIn();
+      const filePath = join(process.cwd(), "lib/report/__fixtures__/real_pdfs/chrome_text.pdf");
+      const buffer = readFileSync(filePath);
+      const response = await post(uploadForm(buffer, "chrome_text.pdf", "application/pdf", { jobSource: "saved", jobId }));
+      expect(response.status).toBe(429);
+      expect(response.headers.get("retry-after")).toBe("2");
+      const json = await response.json();
+      expect(json.error).toBe("Busy, try again in a moment");
+    } finally {
+      rel1();
+      rel2();
+      (await q1)();
+      (await q2)();
+    }
+  });
 });

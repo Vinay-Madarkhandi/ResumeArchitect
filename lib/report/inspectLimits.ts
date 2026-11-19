@@ -9,10 +9,10 @@ export const MAX_PDF_STREAMS = 2_000;
 export const MAX_PDF_OPERATORS = 250_000;
 export const MAX_PDF_TEXT_ITEMS = 40_000;
 /**
- * The budgets above bound the work; this only catches a parser that hangs.
- * It is generous so a busy server never turns a slow, honest file into a
- * "too large" result.
+ * Hard wall-clock limit of about 8 s before SIGKILL catches a parser that hangs.
+ * It bounds worst-case execution time so a busy server never stays tied up
+ * by a slow or hostile file.
  */
-export const INSPECTION_BACKSTOP_MS = 6_000;
+export const INSPECTION_BACKSTOP_MS = 8_000;
 
 export class InspectionLimit extends Error {}

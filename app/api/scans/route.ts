@@ -7,6 +7,7 @@ import { getResume } from "@/lib/data/resumes";
 import { resolveDocument } from "@/lib/documentConversion";
 import { MAX_JOB_DESCRIPTION_LENGTH, MIN_JOB_DESCRIPTION_LENGTH } from "@/lib/schemas/tailoring";
 import { ImportError, importResume, MAX_RESUME_CHARS, MAX_UPLOAD_FORM_BYTES, readResumeUpload } from "@/lib/server/importResume";
+import { ParseBusyError } from "@/lib/report/inspectBudget";
 import { BodyTooLarge, readFormData } from "@/lib/server/request-body";
 import { limitScans, scanResume, type ScannedResume, type ScanResult } from "@/lib/server/scan";
 import { postingUrlSchema } from "@/lib/tracker/schema";
@@ -107,6 +108,9 @@ export async function POST(request: Request) {
   try {
     resume = await readResume(user.id, parsed.data.resume);
   } catch (e) {
+    if (e instanceof ParseBusyError) {
+      return NextResponse.json({ error: e.message }, { status: 429, headers: { "Retry-After": String(e.retryAfter) } });
+    }
     return error(422, e instanceof ImportError ? e.message : "That resume couldn't be read. Paste the text instead.");
   }
   if (failed(resume)) return error(resume.status, resume.error, resume.code);
