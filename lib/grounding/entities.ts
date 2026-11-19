@@ -461,7 +461,7 @@ export function checkTeamInflation(
   const citedWithTeam = citedLines.find((l) => l.hasTeamFraming);
   if (!citedWithTeam) return null;
 
-  const sentenceHasTeam = /\b(?:team|part of|collaborat[a-z]*|alongside|with a team|working with|with\s+(?:[a-zA-Z]+\s+)*(?:designers|engineers|managers|teams|developers|stakeholders|clients|peers|partners|colleagues|workers|nurses))\b/i.test(sentence);
+  const sentenceHasTeam = /\b(?:team|part of|collaborat[a-z]*|partner[a-z]*|alongside|with a team|working with|with\s+(?:[a-zA-Z]+\s+)*(?:designers|engineers|managers|teams|developers|stakeholders|clients|peers|partners|colleagues|workers|nurses|staff))\b/i.test(sentence);
   if (!sentenceHasTeam) {
     const verbs = findVerbs(sentence);
     const verb = verbs[0]?.word ?? "Work";

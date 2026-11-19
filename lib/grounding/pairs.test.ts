@@ -571,7 +571,7 @@ describe("Grounding pairs suite across 8 domains (>=120 pairs)", () => {
     const job = { requirements: [] } as unknown as Parameters<typeof verifyChange>[2];
     for (const [kind, label, before, after] of allLegacyPairs) {
       const t = verifyChange(
-        { id: "c1", op: "rewrite", before, after, reason: "", requirementIds: [] },
+        { id: "c1", op: "rewrite", before, after, reason: "", requirementIds: [], cites: [] },
         before,
         job,
         before,

@@ -61,7 +61,7 @@ export function verifyChange(
 ): ChangeFlag[] {
   if (!change.after) return [];
   const text = plain(change.after);
-  const sources = [sourceText, change.before, anchor].filter(Boolean) as string[];
+  const sources = [...new Set([sourceText, change.before, anchor].filter(Boolean) as string[])];
   const index = sourceIndex ?? buildSourceIndex(sources);
   const cites = change.cites?.length ? change.cites : undefined;
   const flags = checkGrounding(index, change.after, { cites }).flags;

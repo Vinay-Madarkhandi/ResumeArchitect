@@ -146,6 +146,10 @@ export function buildSourceIndex(
         }
         if (base === "led") addToken("lead", lineNum);
         if (base === "lead") addToken("led", lineNum);
+        if (base === "operated" || base === "operate") {
+          addToken("operation", lineNum);
+          addToken("operations", lineNum);
+        }
       }
 
       const hasTeamFraming = TEAM_FRAMING_REGEX.test(cleanRaw);
@@ -296,7 +300,7 @@ export function verifySentence(
   // Fallback: if no valid cited lines, try token overlap
   let effectiveCitedLines = validCitedLines;
   if (effectiveCitedLines.length === 0) {
-    const fallbackNums = sourceIndex.findBestMatchingLines(cleanSentence, 1);
+    const fallbackNums = sourceIndex.findBestMatchingLines(cleanSentence, 2);
     effectiveCitedLines = fallbackNums.map((n) => sourceIndex.lines.get(n)!).filter(Boolean);
   }
 
@@ -417,6 +421,14 @@ export function verifySentence(
           value: fig.raw,
           message: `Verify “${fig.raw}”: “${fig.raw}” in “${cleanSentence}”. The source needs to show what the figure measures.`,
         });
+        const head = fig.headNoun?.toLowerCase();
+        if (head && !citedTexts.some((t) => t.toLowerCase().includes(head))) {
+          flags.push({
+            kind: "claim",
+            value: fig.headNoun!,
+            message: `Verify “${fig.headNoun}”: '${fig.headNoun}' isn't in your resume.`,
+          });
+        }
       } else {
         flags.push({
           kind: "number",
