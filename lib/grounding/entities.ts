@@ -24,9 +24,9 @@ export const VERB_LEVELS: Record<string, number> = {
   contribute: 1, contributed: 1, contributing: 1,
   collaborate: 1, collaborated: 1, collaborating: 1,
   partner: 1, partnered: 1, partnering: 1,
-  "work on": 1, "worked on": 1, "working on": 1,
 
   // Level 2: Medium ownership
+  "work on": 2, "worked on": 2, "working on": 2,
   build: 2, built: 2, building: 2,
   develop: 2, developed: 2, developing: 2,
   implement: 2, implemented: 2, implementing: 2,
@@ -344,7 +344,7 @@ export function checkTeamInflation(
   const citedWithTeam = citedLines.find((l) => l.hasTeamFraming);
   if (!citedWithTeam) return null;
 
-  const sentenceHasTeam = /\b(?:team|part of|collaborat[a-z]*|alongside|with a team|working with)\b/i.test(sentence);
+  const sentenceHasTeam = /\b(?:team|part of|collaborat[a-z]*|alongside|with a team|working with|with\s+(?:[a-zA-Z]+\s+)*(?:designers|engineers|managers|teams|developers|stakeholders|clients|peers|partners|colleagues|workers|nurses))\b/i.test(sentence);
   if (!sentenceHasTeam) {
     const verbs = findVerbs(sentence);
     const verb = verbs[0]?.word ?? "Work";
