@@ -439,13 +439,17 @@ export function verifySentence(
   }
 
   const citedMaxVerbLevel = Math.max(0, ...effectiveCitedLines.map((l) => l.strongestVerbLevel));
-  const citedMaxVerbWord = effectiveCitedLines.find((l) => l.strongestVerbLevel === citedMaxVerbLevel)?.strongestVerbWord ?? "source";
+  const citedMaxLine = effectiveCitedLines.find((l) => l.strongestVerbLevel === citedMaxVerbLevel);
+  const citedMaxVerbWord = citedMaxLine?.strongestVerbWord ?? "source";
 
   if (sentenceMaxVerbLevel > citedMaxVerbLevel && citedMaxVerbLevel > 0) {
+    const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+    const sVerb = cap(sentenceMaxVerbWord ?? "Scope");
+    const cVerb = cap(citedMaxVerbWord);
     flags.push({
       kind: "claim",
-      value: sentenceMaxVerbWord ?? "scope",
-      message: `Verify “${sentenceMaxVerbWord}”: '${sentenceMaxVerbWord}' claims more than '${citedMaxVerbWord}' in line ${effectiveCitedLines[0]?.lineNum ?? 1}.`,
+      value: sVerb,
+      message: `Verify “${sVerb}”: '${sVerb}' claims more than '${cVerb}' in your resume.`,
     });
   }
 

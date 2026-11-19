@@ -3,7 +3,119 @@ import type { ChangeFlag } from "@/lib/schemas/tailoring";
 
 // Fast lookup from normalized formKey -> SynonymGroup
 const synonymGroupByKey = new Map<string, SynonymGroup>();
-for (const group of SYNONYM_GROUPS) {
+export const VERB_SYNONYM_GROUPS: readonly SynonymGroup[] = [
+  // Rung 1: Collaboration synonyms
+  {
+    kind: "variant",
+    forms: [
+      "collaborate", "collaborated", "collaborating",
+      "collaborate with", "collaborated with", "collaborating with",
+      "partner", "partnered", "partnering",
+      "partner with", "partnered with", "partnering with",
+      "team with", "teamed with", "teaming with",
+      "team up with", "teamed up with", "teaming up with",
+      "work alongside", "worked alongside", "working alongside",
+      "coordinate with", "coordinated with", "coordinating with",
+      "cooperate", "cooperated", "cooperating",
+      "cooperate with", "cooperated with", "cooperating with",
+      "join forces with", "joined forces with", "joining forces with",
+      "work with", "worked with", "working with",
+    ],
+  },
+  // Rung 1: Assisting & helping synonyms
+  {
+    kind: "variant",
+    forms: [
+      "assist", "assisted", "assisting",
+      "assist with", "assisted with", "assisting with",
+      "help", "helped", "helping",
+      "help with", "helped with", "helping with",
+      "support", "supported", "supporting",
+      "aid", "aided", "aiding",
+    ],
+  },
+  // Rung 1: Participating & contributing synonyms
+  {
+    kind: "variant",
+    forms: [
+      "participate", "participated", "participating",
+      "participate in", "participated in", "participating in",
+      "contribute", "contributed", "contributing",
+      "contribute to", "contributed to", "contributing to",
+    ],
+  },
+  // Rung 2: Operating & executing synonyms
+  {
+    kind: "variant",
+    forms: [
+      "operate", "operated", "operating",
+      "execute", "executed", "executing",
+      "perform", "performed", "performing",
+      "conduct", "conducted", "conducting",
+    ],
+  },
+  // Rung 2: Building & developing synonyms
+  {
+    kind: "variant",
+    forms: [
+      "build", "built", "building",
+      "develop", "developed", "developing",
+      "implement", "implemented", "implementing",
+      "create", "created", "creating",
+      "design", "designed", "designing",
+    ],
+  },
+  // Rung 2: Deploying & shipping synonyms
+  {
+    kind: "variant",
+    forms: [
+      "deploy", "deployed", "deploying",
+      "ship", "shipped", "shipping",
+      "deliver", "delivered", "delivering",
+    ],
+  },
+  // Rung 2: Improving & optimizing synonyms
+  {
+    kind: "variant",
+    forms: [
+      "improve", "improved", "improving",
+      "boost", "boosted", "boosting",
+      "raise", "raised", "raising",
+      "reduce", "reduced", "reducing",
+      "cut",
+      "streamline", "streamlined", "streamlining",
+    ],
+  },
+  // Rung 2: Teaching & mentoring synonyms
+  {
+    kind: "variant",
+    forms: [
+      "teach", "taught", "teaching",
+      "instruct", "instructed", "instructing",
+      "mentor", "mentored", "mentoring",
+      "tutor", "tutored", "tutoring",
+    ],
+  },
+  // Rung 3: Leading & managing synonyms
+  {
+    kind: "variant",
+    forms: [
+      "lead", "led", "leading",
+      "manage", "managed", "managing",
+      "direct", "directed", "directing",
+      "head", "headed", "heading",
+      "spearhead", "spearheaded", "spearheading",
+      "supervise", "supervised", "supervising",
+      "oversee", "oversaw", "overseeing",
+      "govern", "governed", "governing",
+      "steer", "steered", "steering",
+      "guide", "guided", "guiding",
+      "champion", "championed", "championing",
+    ],
+  },
+];
+
+for (const group of [...SYNONYM_GROUPS, ...VERB_SYNONYM_GROUPS]) {
   for (const form of group.forms) {
     synonymGroupByKey.set(formKey(form), group);
     synonymGroupByKey.set(form.toLowerCase(), group);
@@ -28,6 +140,13 @@ export const VERB_LEVELS: Record<string, number> = {
   "work alongside": 1, "worked alongside": 1, "working alongside": 1,
   cooperate: 1, cooperated: 1, cooperating: 1, "cooperate with": 1, "cooperated with": 1, "cooperating with": 1,
   aid: 1, aided: 1, aiding: 1,
+  "coordinate with": 1, "coordinated with": 1, "coordinating with": 1,
+  "join forces": 1, "joined forces": 1, "joining forces": 1,
+  "join forces with": 1, "joined forces with": 1, "joining forces with": 1,
+  "team up with": 1, "teamed up with": 1, "teaming up with": 1,
+  "work with": 1, "worked with": 1, "working with": 1,
+  "liaise with": 1, "liaised with": 1, "liaising with": 1,
+  "pair with": 1, "paired with": 1, "pairing with": 1,
 
   // Level 2: Medium ownership (operating, executing, doing, hands-on)
   "work on": 2, "worked on": 2, "working on": 2,
@@ -124,7 +243,7 @@ export function findVerbs(text: string): Array<{ word: string; level: number }> 
   return matches;
 }
 
-export const TEAM_FRAMING_REGEX = /\b(?:as part of a team|as part of the team|part of a team|part of the team|with a team of \d+|collaborated with|collaborating with|alongside)\b/i;
+export const TEAM_FRAMING_REGEX = /\b(?:as part of a team|as part of the team|part of a team|part of the team|with a team(?: of \d+)?|collaborat[a-z]*(?:\s+with)?|partner[a-z]*(?:\s+with)?|team[a-z]*(?:\s+up)?(?:\s+with)?|work[a-z]*\s+alongside|coordinat[a-z]*\s+with|cooperat[a-z]*(?:\s+with)?|join[a-z]*\s+forces(?:\s+with)?|alongside)\b/i;
 
 export const CAUSAL_JOIN_REGEX = /\b(?:which\s+drove|resulting\s+in|leading\s+to|that\s+(?:raised|cut|reduced|increased|boosted|improved|lowered|saved)|which\s+(?:raised|cut|reduced|increased|boosted|improved|lowered|saved)|helping\s+(?:cut|reduce|raise|boost|improve|lower|save)|thanks\s+to|so\s+that|enabling|causing|thereby)\b/i;
 
@@ -461,7 +580,7 @@ export function checkTeamInflation(
   const citedWithTeam = citedLines.find((l) => l.hasTeamFraming);
   if (!citedWithTeam) return null;
 
-  const sentenceHasTeam = /\b(?:team|part of|collaborat[a-z]*|alongside|with a team|working with|with\s+(?:[a-zA-Z]+\s+)*(?:designers|engineers|managers|teams|developers|stakeholders|clients|peers|partners|colleagues|workers|nurses))\b/i.test(sentence);
+  const sentenceHasTeam = /\b(?:team[a-z]*|part of|collaborat[a-z]*|partner[a-z]*|alongside|with a team|work[a-z]*\s+(?:alongside|with)|coordinat[a-z]*\s+with|cooperat[a-z]*|join[a-z]*\s+forces|pair[a-z]*\s+with|assist[a-z]*|support[a-z]*|with\s+(?:[a-zA-Z]+\s+)*(?:designers|engineers|managers|teams|developers|stakeholders|clients|peers|partners|colleagues|workers|nurses|members|staff|cross-functional|faculty|groups))\b/i.test(sentence);
   if (!sentenceHasTeam) {
     const verbs = findVerbs(sentence);
     const verb = verbs[0]?.word ?? "Work";

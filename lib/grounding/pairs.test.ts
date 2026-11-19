@@ -123,6 +123,9 @@ export const DOMAINS: PersonaDomain[] = [
       "B.Sc. in Computer Science from State University",
     ],
     pairs: [
+            { kind: "legit", label: "pattern3: verb scale same rung partnered with software", before: "Collaborated with 4 engineers to build the core checkout service", after: "Partnered with 4 engineers to build the core checkout service" },
+      { kind: "legit", label: "pattern3: verb scale same rung coordinated with software", before: "Collaborated with 4 engineers to build the core checkout service", after: "Coordinated with 4 engineers to build the core checkout service" },
+      { kind: "invented", label: "pattern3: verb inflation collaborated to spearheaded", before: "Collaborated with 4 engineers to build the core checkout service", after: "Spearheaded 4 engineers to build the core checkout service" },
       { kind: "legit", label: "pattern7: measure preserved latency equivalent to response time", before: "Reduced invoice latency by 38% through query caching", after: "Cut invoice response time by 38% through query caching" },
       { kind: "invented", label: "pattern7: measure moved from latency to hosting spend", before: "Reduced invoice latency by 38% through query caching", after: "Reduced cloud hosting spend by 38% through query caching" },
       { kind: "invented", label: "pattern6: specific flag for swapped employer Google", before: "Software Engineer at Acme Corp, 2021–Present", after: "Software Engineer at Google, 2021–Present" },
@@ -163,6 +166,9 @@ export const DOMAINS: PersonaDomain[] = [
       "Registered Nurse (RN) with BSN degree from City College",
     ],
     pairs: [
+            { kind: "legit", label: "pattern3: verb scale same rung contributed to nursing", before: "Participated in unit quality committee meetings to review infection control protocols", after: "Contributed to unit quality committee meetings to review infection control protocols" },
+      { kind: "legit", label: "pattern3: verb scale same rung joined forces with nursing", before: "Coordinated discharge planning alongside social workers and case managers", after: "Joined forces with social workers and case managers on discharge planning" },
+      { kind: "invented", label: "pattern3: verb inflation participated to supervised", before: "Participated in unit quality committee meetings to review infection control protocols", after: "Supervised unit quality committee meetings to review infection control protocols" },
       { kind: "legit", label: "pattern7: measure preserved clinical safety compliance rating", before: "Maintained 98% patient safety compliance score across quarterly evaluations", after: "Maintained 98% patient safety compliance rating across quarterly evaluations" },
       { kind: "invented", label: "pattern7: measure moved from safety compliance to on-time arrival", before: "Maintained 98% patient safety compliance score across quarterly evaluations", after: "Maintained 98% on-time shift arrival rate across quarterly evaluations" },
       { kind: "invented", label: "pattern6: specific flag for unsupported tool Cerner", before: "Documented patient assessments and medication administration in Epic EHR", after: "Documented patient assessments and medication administration in Cerner EHR" },
@@ -204,6 +210,9 @@ export const DOMAINS: PersonaDomain[] = [
       "B.A. in Communications from State University",
     ],
     pairs: [
+            { kind: "legit", label: "pattern3: verb scale same rung cooperated with sales", before: "Partnered with customer success teams to secure 92% client renewal rate", after: "Cooperated with customer success teams to secure 92% client renewal rate" },
+      { kind: "legit", label: "pattern3: verb scale same rung joined forces with sales", before: "Collaborated with sales engineers to deliver 60 custom product demonstrations", after: "Joined forces with sales engineers to deliver 60 custom product demonstrations" },
+      { kind: "invented", label: "pattern3: verb inflation collaborated to managed sales", before: "Collaborated with sales engineers to deliver 60 custom product demonstrations", after: "Managed sales engineers to deliver 60 custom product demonstrations" },
       { kind: "legit", label: "pattern7: measure preserved account retention rate", before: "Partnered with customer success teams to secure 92% client renewal rate", after: "Partnered with customer success teams to secure 92% client retention rate" },
       { kind: "invented", label: "pattern7: measure moved from client renewal rate to email response rate", before: "Partnered with customer success teams to secure 92% client renewal rate", after: "Partnered with customer success teams to secure 92% email response rate" },
       { kind: "invented", label: "pattern6: specific flag for inflated revenue $5M", before: "Generated $2.4M in new annual recurring revenue against a $2M target", after: "Generated $5M in new annual recurring revenue against a $2M target" },
@@ -245,6 +254,9 @@ export const DOMAINS: PersonaDomain[] = [
       "B.S. in Finance from University of Michigan",
     ],
     pairs: [
+            { kind: "legit", label: "pattern3: verb scale same rung collaborated with finance", before: "Assisted senior portfolio managers with financial due diligence for 8 acquisitions", after: "Collaborated with senior portfolio managers on financial due diligence for 8 acquisitions" },
+      { kind: "legit", label: "pattern3: verb scale same rung worked alongside finance", before: "Supported annual audit preparations with external CPA auditors", after: "Worked alongside external CPA auditors on annual audit preparations" },
+      { kind: "invented", label: "pattern3: verb inflation assisted to directed finance", before: "Assisted senior portfolio managers with financial due diligence for 8 acquisitions", after: "Directed senior portfolio managers on financial due diligence for 8 acquisitions" },
       { kind: "legit", label: "pattern7: measure preserved operating costs equivalent to expenses", before: "Identified $350,000 in redundant operational expenses", after: "Identified $350,000 in redundant operating costs" },
       { kind: "invented", label: "pattern7: measure moved from operating expenses to revenue expansion", before: "Identified $350,000 in redundant operational expenses", after: "Identified $350,000 in revenue expansion opportunities" },
       { kind: "invented", label: "pattern6: specific flag for modified year 2017", before: "Financial Analyst at Summit Capital, 2020–Present", after: "Financial Analyst at Summit Capital, 2017–Present" },
@@ -285,6 +297,9 @@ export const DOMAINS: PersonaDomain[] = [
       "B.A. in Mathematics Education from Central College",
     ],
     pairs: [
+            { kind: "legit", label: "pattern3: verb scale same rung partnered with teaching", before: "Collaborated with 5 department faculty to revamp freshman curriculum", after: "Partnered with 5 department faculty to revamp freshman curriculum" },
+      { kind: "legit", label: "pattern3: verb scale same rung teamed up with teaching", before: "Collaborated with 5 department faculty to revamp freshman curriculum", after: "Teamed up with 5 department faculty to revamp freshman curriculum" },
+      { kind: "invented", label: "pattern3: verb inflation collaborated to governed teaching", before: "Collaborated with 5 department faculty to revamp freshman curriculum", after: "Governed 5 department faculty to revamp freshman curriculum" },
       { kind: "legit", label: "pattern7: measure preserved mathematics exam passing rates", before: "Improved standardized test passing rates from 72% to 86% over two years", after: "Raised mathematics exam passing rates from 72% to 86% over two years" },
       { kind: "invented", label: "pattern7: measure moved from test passing rates to attendance", before: "Improved standardized test passing rates from 72% to 86% over two years", after: "Improved student attendance by 12 percent over two years" },
       { kind: "legit", label: "pattern6: honest title synonym without catch-all flag", before: "High School Math Teacher at Oakridge Academy, 2019–Present", after: "High School Mathematics Teacher at Oakridge Academy, 2019–Present" },
@@ -327,6 +342,9 @@ export const DOMAINS: PersonaDomain[] = [
       "B.S. in Supply Chain Management from Penn State",
     ],
     pairs: [
+            { kind: "legit", label: "pattern3: verb scale same rung worked alongside logistics", before: "Collaborated with warehouse team of 10 to streamline loading docks", after: "Worked alongside warehouse team of 10 to streamline loading docks" },
+      { kind: "legit", label: "pattern3: verb scale same rung partnered with logistics", before: "Collaborated with warehouse team of 10 to streamline loading docks", after: "Partnered with warehouse team of 10 to streamline loading docks" },
+      { kind: "invented", label: "pattern3: verb inflation collaborated to oversaw logistics", before: "Collaborated with warehouse team of 10 to streamline loading docks", after: "Oversaw warehouse team of 10 to streamline loading docks" },
       { kind: "legit", label: "pattern7: measure preserved shipping costs equivalent to spend", before: "Negotiated carrier freight rates reducing annual shipping spend by 12%", after: "Cut annual freight shipping costs by 12% by negotiating carrier rates" },
       { kind: "invented", label: "pattern7: measure moved from shipping spend to transit damages", before: "Negotiated carrier freight rates reducing annual shipping spend by 12%", after: "Negotiated carrier freight rates reducing transit damages by 12%" },
       { kind: "legit", label: "pattern6: honest reword without catch-all flag", before: "Monitored warehouse inventory counts and stock transfers in SAP", after: "Monitored warehouse inventory counts and stock transfers in SAP ERP" },
