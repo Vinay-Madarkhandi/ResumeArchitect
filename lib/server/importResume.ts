@@ -37,7 +37,7 @@ const UNREADABLE: Record<SourceKind, string> = {
 
 /**
  * Reads an uploaded resume file. PDF and Word files are inspected and read
- * inside the budgeted file worker (lib/report/inspectBudget.ts); one that is
+ * inside the isolated child process (lib/report/inspectBudget.ts); one that is
  * over a budget or unreadable is refused before anything else happens.
  * Layout facts are null for a plain-text file.
  */
