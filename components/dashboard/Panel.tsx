@@ -14,7 +14,7 @@ export function Panel({ id, title, count, action, className, children }: {
   children: ReactNode;
 }) {
   return (
-    <section aria-labelledby={id} className={cn("min-w-0 rounded-lg border border-line bg-panel", className)}>
+    <section aria-labelledby={id} className={cn("flex min-w-0 flex-col rounded-lg border border-line bg-panel", className)}>
       <div className="flex items-center justify-between gap-3 border-b border-line px-4 py-2.5">
         <h2 id={id} className="text-body font-semibold text-ink">
           {title}

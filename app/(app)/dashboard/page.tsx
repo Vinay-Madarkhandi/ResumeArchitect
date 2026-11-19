@@ -39,7 +39,7 @@ export default async function DashboardPage() {
         <ActiveApplications jobs={jobs} />
       </div>
 
-      <div className="grid items-start gap-6 lg:grid-cols-2">
+      <div className="grid gap-6 lg:grid-cols-2">
         <Panel id="your-resumes" title="Resumes" count={tailored.length + (master ? 1 : 0)} action={{ href: "/resumes", label: "All resumes" }}>
           {master || tailored.length ? (
             <ul className="divide-y divide-line">
@@ -70,7 +70,7 @@ export default async function DashboardPage() {
               Scans and tailoring start from a master resume. Import a PDF or Word file, or build one step by step.
             </EmptyState>
           )}
-          <div className="border-t border-line px-4 py-2.5">
+          <div className="mt-auto border-t border-line px-4 py-2.5">
             <Link href="/new" className={buttonVariants({ variant: "ghost", size: "sm" })}>
               <Plus aria-hidden /> Tailor a resume to a job
             </Link>

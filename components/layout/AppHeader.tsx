@@ -146,7 +146,7 @@ function MobileMenu({ areas, pathname }: { areas: readonly NavArea[]; pathname: 
             <ul className="flex flex-col gap-0.5">
               {areas.map((area) =>
                 area.children ? (
-                  <li key={area.id} className="mt-1 border-t border-line pt-2">
+                  <li key={area.id} className="my-1 border-y border-line py-2">
                     <p className="px-3 pb-1 text-small font-medium text-ink-3">{area.label}</p>
                     <ul className="flex flex-col gap-0.5">
                       {area.children.map((leaf) => {
@@ -217,7 +217,10 @@ export function AppHeader({ email, admin = false }: { email: string; admin?: boo
         </nav>
         <div className="ml-auto flex items-center gap-1.5">
           <Link href="/scan" className={cn(buttonVariants({ variant: "primary", size: "sm" }), "mr-1.5 hidden sm:inline-flex")}>
-            <ScanSearch aria-hidden /> Scan<span className="hidden xl:inline"> a resume</span>
+            <ScanSearch aria-hidden />
+            <span>
+              Scan<span className="hidden xl:inline"> a resume</span>
+            </span>
           </Link>
           <ThemeToggle />
           <Menu>

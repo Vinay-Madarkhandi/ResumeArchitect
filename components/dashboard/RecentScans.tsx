@@ -34,7 +34,7 @@ export function RecentScans({ scans }: { scans: ScanSummary[] }) {
       ) : (
         <EmptyState
           title="Your match reports will collect here"
-          actions={<Link href="/scan" className={buttonVariants({ variant: "primary", size: "sm" })}><ScanSearch aria-hidden /> Scan a resume</Link>}
+          actions={<Link href="/scan" className={buttonVariants({ size: "sm" })}><ScanSearch aria-hidden /> Scan a resume</Link>}
         >
           Each scan is saved with its match rate, so you can see whether your edits moved the number. A report shows hard
           and soft skills, searchability, formatting and recruiter tips for one job.

@@ -36,7 +36,7 @@ export function ActiveApplications({ jobs }: { jobs: TrackerJob[] }) {
           title="Track the jobs you're going after"
           actions={
             <>
-              <Link href="/tracker" className={buttonVariants({ variant: "primary", size: "sm" })}><Columns3 aria-hidden /> Open the job tracker</Link>
+              <Link href="/tracker" className={buttonVariants({ size: "sm" })}><Columns3 aria-hidden /> Open the job tracker</Link>
               <Link href="/settings" className={buttonVariants({ variant: "ghost", size: "sm" })}><Plug aria-hidden /> Set up the browser clipper</Link>
             </>
           }

@@ -50,7 +50,7 @@ function steps({ keyConnected, hasResume, hasScan }: SetupState): Step[] {
       body: hasScan
         ? "Every scan is saved in your history."
         : `Paste a job post, scan, and read the match report. Aim for ${TARGET_MATCH_RATE}% before you apply.`,
-      action: hasScan ? null : <Link href="/scan" className={buttonVariants({ variant: "primary", size: "sm" })}>Scan a resume <ArrowRight aria-hidden /></Link>,
+      action: hasScan ? null : <Link href="/scan" className={buttonVariants({ size: "sm" })}>Scan a resume <ArrowRight aria-hidden /></Link>,
     },
   ];
 }
