@@ -160,6 +160,7 @@ export const DOMAINS: PersonaDomain[] = [
       "Registered Nurse (RN) with BSN degree from City College",
     ],
     pairs: [
+      { kind: "invented", label: "pattern5: invented percentage 40% not in source", before: "Provided acute inpatient bedside care for up to 6 patients per shift", after: "Delivered 40% improvement in clinical bedside care" },
       { kind: "invented", label: "pattern4: ungrounded duration half-day workshop", before: "Participated in unit quality committee meetings to review infection control protocols", after: "Facilitated a half-day workshop on infection control protocols" },
       { kind: "legit", label: "pattern3: verb scale same rung collaborated with", before: "Coordinated discharge planning alongside social workers and case managers", after: "Collaborated with social workers and case managers to coordinate discharge planning" },
       { kind: "invented", label: "pattern2: invented tool Cerner-based", before: "Documented patient assessments and medication administration in Epic EHR", after: "Documented patient assessments in Cerner-based EHR systems" },
@@ -197,6 +198,7 @@ export const DOMAINS: PersonaDomain[] = [
       "B.A. in Communications from State University",
     ],
     pairs: [
+      { kind: "legit", label: "pattern5: derived currency difference $400k", before: "Generated $2.4M in new annual recurring revenue against a $2M target", after: "Exceeded annual recurring revenue target by $400,000" },
       { kind: "legit", label: "pattern4: hyphenated idiom one-on-one prospecting", before: "Conducted outbound prospecting via email and phone campaigns", after: "Conducted one-on-one outbound prospecting via email and phone campaigns" },
       { kind: "legit", label: "pattern3: verb scale same rung worked alongside", before: "Partnered with customer success teams to secure 92% client renewal rate", after: "Worked alongside customer success teams to secure 92% client renewal rate" },
       { kind: "legit", label: "pattern3: verb scale same rung teamed with", before: "Partnered with customer success teams to secure 92% client renewal rate", after: "Teamed with customer success teams to secure 92% client renewal rate" },
@@ -271,6 +273,8 @@ export const DOMAINS: PersonaDomain[] = [
       "B.A. in Mathematics Education from Central College",
     ],
     pairs: [
+      { kind: "legit", label: "pattern5: derived percentage-point change 14 percentage points", before: "Improved standardized test passing rates from 72% to 86% over two years", after: "Raised standardized test passing rates by 14 percentage points over two years" },
+      { kind: "legit", label: "pattern5: derived percentage points difference 14 points", before: "Improved standardized test passing rates from 72% to 86% over two years", after: "Raised standardized test passing rates by 14 points over two years" },
       { kind: "legit", label: "pattern4: hyphenated idiom one-on-one tutoring", before: "Facilitated weekly after-school tutoring sessions for at-risk students", after: "Facilitated weekly one-on-one after-school tutoring sessions for at-risk students" },
       { kind: "invented", label: "pattern3: verb inflation collaborated to led", before: "Collaborated with 5 department faculty to revamp freshman curriculum", after: "Led 5 department faculty to revamp freshman curriculum" },
       { kind: "invented", label: "pattern2: invented tool Canvas-powered", before: "Integrated Google Classroom and Khan Academy into daily instruction", after: "Integrated Canvas-powered portals into daily instruction" },
@@ -308,6 +312,7 @@ export const DOMAINS: PersonaDomain[] = [
       "B.S. in Supply Chain Management from Penn State",
     ],
     pairs: [
+      { kind: "invented", label: "pattern5: invented derived figure 35% not from source", before: "Negotiated carrier freight rates reducing annual shipping spend by 12%", after: "Negotiated carrier freight rates reducing annual shipping spend by 35%" },
       { kind: "legit", label: "pattern4: hyphenated idiom all-in-one barcode", before: "Implemented barcode scanning procedures for inbound freight", after: "Implemented all-in-one barcode scanning procedures for inbound freight" },
       { kind: "invented", label: "pattern3: verb inflation collaborated to directed", before: "Collaborated with warehouse team of 10 to streamline loading docks", after: "Directed warehouse team of 10 to streamline loading docks" },
       { kind: "legit", label: "pattern2: morphological suffix SAP-driven", before: "Monitored warehouse inventory counts and stock transfers in SAP", after: "Monitored warehouse inventory counts and stock transfers in SAP-driven systems" },
@@ -378,6 +383,7 @@ export const DOMAINS: PersonaDomain[] = [
       "B.F.A. in Graphic Design from Rhode Island School of Design",
     ],
     pairs: [
+      { kind: "legit", label: "pattern5: derived percentage points drop 15 percentage points", before: "Reduced mobile onboarding drop-off rate from 34% to 19%", after: "Cut mobile onboarding drop-off rate by 15 percentage points" },
       { kind: "legit", label: "24 interviews", before: "Conducted 24 usability testing interviews with target enterprise users", after: "Ran 24 usability interviews with target enterprise users" },
       { kind: "legit", label: "drop-off percentage", before: "Reduced mobile onboarding drop-off rate from 34% to 19%", after: "Cut mobile onboarding drop-off from 34% to 19%" },
       { kind: "legit", label: "200+ components", before: "Maintained component design library consisting of 200+ accessible components", after: "Maintained component library of 200+ accessible components" },

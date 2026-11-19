@@ -264,8 +264,8 @@ export function areMeasuresCompatible(figA: FigureMatch, figB: FigureMatch): boo
 }
 
 export function isFigureSupported(target: FigureMatch, sourceFigures: FigureMatch[]): boolean {
-  // Find source figures with the same normalized value or numeric value
-  const candidates = sourceFigures.filter((src) => {
+  // 1. Direct candidate match (same normalized value or numeric value)
+  const directCandidates = sourceFigures.filter((src) => {
     if (src.normalized === target.normalized) return true;
     if (src.isPercent === target.isPercent && src.isCurrency === target.isCurrency) {
       if (src.numValue !== undefined && target.numValue !== undefined && src.numValue === target.numValue) {
@@ -275,10 +275,71 @@ export function isFigureSupported(target: FigureMatch, sourceFigures: FigureMatc
     return false;
   });
 
-  if (candidates.length === 0) return false;
+  if (directCandidates.length > 0 && directCandidates.some((cand) => areMeasuresCompatible(target, cand))) {
+    return true;
+  }
 
-  // Check if any candidate has a compatible measure
-  return candidates.some((cand) => areMeasuresCompatible(target, cand));
+  // 2. Derived figures: arithmetic of figures in the cited line (difference, sum, ratio, percentage points)
+  if (target.numValue !== undefined && sourceFigures.length >= 2) {
+    const tVal = target.numValue;
+    const isPointsChange = target.isPercent || /\b(?:points?|percentage\s+points?|pp)\b/i.test(target.raw) || target.measureWords.some((w) => /point/i.test(w));
+
+    for (let i = 0; i < sourceFigures.length; i++) {
+      for (let j = i + 1; j < sourceFigures.length; j++) {
+        const figA = sourceFigures[i];
+        const figB = sourceFigures[j];
+        if (figA.numValue === undefined || figB.numValue === undefined) continue;
+
+        const aVal = figA.numValue;
+        const bVal = figB.numValue;
+
+        // Check measure compatibility between operands and target
+        const operandsCompatible = areMeasuresCompatible(figA, figB);
+        const targetCompatible = areMeasuresCompatible(target, figA) || areMeasuresCompatible(target, figB);
+
+        if (!operandsCompatible || !targetCompatible) continue;
+
+        const diff = Math.abs(aVal - bVal);
+
+        // Difference / Percentage-point change (e.g. from 30% to 22% -> 8 points or 8 percentage points)
+        if (figA.isPercent && figB.isPercent && (target.isPercent || isPointsChange)) {
+          if (Math.abs(tVal - diff) <= 0.1 || Math.abs(tVal - Math.round(diff)) <= 0.1) {
+            return true;
+          }
+        } else if (figA.isCurrency && figB.isCurrency && target.isCurrency) {
+          if (Math.abs(tVal - diff) <= 0.05 * Math.max(1, diff)) {
+            return true;
+          }
+        } else if (!figA.isPercent && !figB.isPercent && !target.isPercent && figA.isCurrency === target.isCurrency) {
+          if (Math.abs(tVal - diff) <= 0.05 * Math.max(1, diff)) {
+            return true;
+          }
+        }
+
+        // Relative percentage change / growth (e.g. from $2M to $3M -> 50% growth)
+        if (target.isPercent) {
+          for (const base of [aVal, bVal]) {
+            if (base > 0) {
+              const pct = (diff / base) * 100;
+              if (Math.abs(tVal - pct) <= 1.0 || Math.abs(tVal - Math.round(pct)) <= 1.0) {
+                return true;
+              }
+            }
+          }
+        }
+
+        // Sum (e.g. $2M + $3M = $5M)
+        const sum = aVal + bVal;
+        if (figA.isCurrency === target.isCurrency && figA.isPercent === target.isPercent) {
+          if (Math.abs(tVal - sum) <= 0.05 * Math.max(1, sum)) {
+            return true;
+          }
+        }
+      }
+    }
+  }
+
+  return false;
 }
 
 export function figuresIn(text: string): Set<string> {

@@ -378,6 +378,8 @@ export function verifySentence(
 
     if (foundIndex !== -1) {
       usedCited.add(foundIndex);
+    } else if (isFigureSupported(fig, citedFigures)) {
+      // Derived figure supported by combination of figures in cited line
     } else {
       const valCandidate = citedFigures.find((c) => c.normalized === fig.normalized || c.numValue === fig.numValue);
       if (valCandidate) {
