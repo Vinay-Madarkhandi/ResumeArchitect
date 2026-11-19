@@ -17,7 +17,7 @@ You then review a word-level redline of every change with its reason. You keep o
 | Area | Where |
 | --- | --- |
 | Resume model (flat lines), diff, per-change revert | `lib/resume/` |
-| Explainable match score + ATS checks | `lib/scoring/score.ts` |
+| Explainable match score + ATS checks | `lib/report/matchReport.ts` |
 | Gemini structured calls (timeouts, retries, error codes) | `lib/gemini/model.ts`, `lib/gemini/prompts/` |
 | Five-stage pipeline, streamed as NDJSON | `lib/tailoring/pipeline.ts`, `app/api/tailoring/route.ts` |
 | Import (PDF/DOCX/text → structured resume) | `lib/server/importResume.ts` |

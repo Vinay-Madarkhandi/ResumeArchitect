@@ -14,6 +14,7 @@ export async function GET(_request: Request, { params }: RouteContext<"/api/scan
       "Content-Type": "text/plain; charset=utf-8",
       "Content-Disposition": 'attachment; filename="match-report.txt"',
       "Cache-Control": "private, no-store",
+      "X-Content-Type-Options": "nosniff",
     },
   });
 }
