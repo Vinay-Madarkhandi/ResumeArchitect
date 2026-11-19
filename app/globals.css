@@ -14,77 +14,77 @@
 :root,
 [data-theme="dark"] {
   color-scheme: dark;
-  --ground: oklch(16.5% 0.006 75);
-  --sunken: oklch(14% 0.005 75);
-  --panel: oklch(19.5% 0.007 75);
-  --raised: oklch(23% 0.008 75);
-  --hover: oklch(26% 0.009 75);
-  --line: oklch(29% 0.008 75);
-  --line-strong: oklch(38% 0.009 75);
+  --ground: #0c0e12;
+  --sunken: #08090b;
+  --panel: #12151b;
+  --raised: #181c24;
+  --hover: #222733;
+  --line: #262c38;
+  --line-strong: #373f50;
 
-  --ink: oklch(92% 0.012 85);
-  --ink-2: oklch(76% 0.012 80);
-  --ink-3: oklch(63% 0.01 80);
+  --ink: #f3f5f8;
+  --ink-2: #9da7b8;
+  --ink-3: #647087;
 
-  --brass: oklch(80% 0.095 82);
-  --brass-strong: oklch(86% 0.095 85);
-  --brass-soft: oklch(80% 0.095 82 / 0.13);
-  --on-brass: oklch(19% 0.02 75);
+  --brass: #f59e0b;
+  --brass-strong: #fbbf24;
+  --brass-soft: rgba(245, 158, 11, 0.12);
+  --on-brass: #0b0c0e;
 
-  --add: oklch(80% 0.1 165);
-  --add-soft: oklch(80% 0.1 165 / 0.14);
-  --del: oklch(73% 0.13 32);
-  --del-soft: oklch(73% 0.13 32 / 0.13);
-  --query: oklch(77% 0.09 250);
-  --query-soft: oklch(77% 0.09 250 / 0.13);
-  --danger: oklch(70% 0.15 28);
+  --add: #10b981;
+  --add-soft: rgba(16, 185, 129, 0.14);
+  --del: #f43f5e;
+  --del-soft: rgba(244, 63, 94, 0.14);
+  --query: #38bdf8;
+  --query-soft: rgba(56, 189, 248, 0.14);
+  --danger: #ef4444;
 
-  /* Proof paper: warm but dimmed a step so it never glares on a dark desk. */
-  --paper: oklch(94.5% 0.01 85);
-  --paper-ink: oklch(22% 0.01 70);
-  --paper-muted: oklch(44% 0.01 70);
-  --paper-rule: oklch(83% 0.012 80);
-  --paper-shadow: 0 1px 0 oklch(100% 0 0 / 0.04), 0 18px 48px -12px oklch(0% 0 0 / 0.55);
+  /* Executive proof paper: warm ivory that's soothing on eyes, never harsh glare */
+  --paper: #fdfcfb;
+  --paper-ink: #111315;
+  --paper-muted: #525866;
+  --paper-rule: #e5e2da;
+  --paper-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 20px 40px -10px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.08);
 
-  --shadow-pop: 0 12px 32px -8px oklch(0% 0 0 / 0.6), 0 2px 6px oklch(0% 0 0 / 0.35);
-  --focus: oklch(86% 0.095 85);
+  --shadow-pop: 0 12px 32px -8px rgba(0, 0, 0, 0.6), 0 2px 6px rgba(0, 0, 0, 0.35);
+  --focus: #f59e0b;
 }
 
 [data-theme="light"] {
   color-scheme: light;
-  --ground: oklch(96% 0.006 85);
-  --sunken: oklch(93.6% 0.008 85);
-  --panel: oklch(99.2% 0.003 85);
-  --raised: oklch(100% 0 0);
-  --hover: oklch(93.5% 0.008 85);
-  --line: oklch(89.5% 0.008 80);
-  --line-strong: oklch(80% 0.01 80);
+  --ground: #f8fafc;
+  --sunken: #f1f5f9;
+  --panel: #ffffff;
+  --raised: #ffffff;
+  --hover: #f1f5f9;
+  --line: #e2e8f0;
+  --line-strong: #cbd5e1;
 
-  --ink: oklch(21% 0.01 70);
-  --ink-2: oklch(40% 0.01 70);
-  --ink-3: oklch(51% 0.01 70);
+  --ink: #0f172a;
+  --ink-2: #475569;
+  --ink-3: #64748b;
 
-  --brass: oklch(52% 0.1 72);
-  --brass-strong: oklch(45% 0.1 70);
-  --brass-soft: oklch(62% 0.1 75 / 0.14);
-  --on-brass: oklch(98% 0.01 85);
+  --brass: #d97706;
+  --brass-strong: #b45309;
+  --brass-soft: rgba(217, 119, 6, 0.12);
+  --on-brass: #ffffff;
 
-  --add: oklch(47% 0.1 165);
-  --add-soft: oklch(70% 0.11 165 / 0.18);
-  --del: oklch(51% 0.17 30);
-  --del-soft: oklch(70% 0.14 30 / 0.15);
-  --query: oklch(48% 0.13 255);
-  --query-soft: oklch(70% 0.1 250 / 0.16);
-  --danger: oklch(52% 0.18 28);
+  --add: #059669;
+  --add-soft: rgba(5, 150, 105, 0.14);
+  --del: #e11d48;
+  --del-soft: rgba(225, 29, 72, 0.14);
+  --query: #0284c7;
+  --query-soft: rgba(2, 132, 199, 0.14);
+  --danger: #dc2626;
 
-  --paper: oklch(98.6% 0.008 85);
-  --paper-ink: oklch(20% 0.01 70);
-  --paper-muted: oklch(44% 0.01 70);
-  --paper-rule: oklch(86% 0.01 80);
-  --paper-shadow: 0 1px 2px oklch(30% 0.02 70 / 0.08), 0 14px 40px -14px oklch(30% 0.02 70 / 0.22);
+  --paper: #ffffff;
+  --paper-ink: #0f172a;
+  --paper-muted: #475569;
+  --paper-rule: #e2e8f0;
+  --paper-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 0 0 1px rgba(0, 0, 0, 0.06);
 
-  --shadow-pop: 0 12px 32px -10px oklch(30% 0.02 70 / 0.25), 0 2px 6px oklch(30% 0.02 70 / 0.1);
-  --focus: oklch(52% 0.1 72);
+  --shadow-pop: 0 12px 32px -10px rgba(0, 0, 0, 0.15), 0 2px 6px rgba(0, 0, 0, 0.08);
+  --focus: #d97706;
 }
 
 @theme inline {
@@ -324,6 +324,23 @@ a {
   min-height: 100%;
 }
 
+/* Sejda PDF Canvas: interactive block outline on hover & focus */
+.paper .ProseMirror > * {
+  position: relative;
+  border-radius: 3px;
+  transition: outline 0.12s ease-in-out, box-shadow 0.12s ease-in-out;
+}
+
+.paper .ProseMirror > *:hover {
+  outline: 1.5px dashed rgba(245, 158, 11, 0.45);
+  outline-offset: 4px;
+}
+
+.paper .ProseMirror > *:focus-within {
+  outline: 2px solid rgba(245, 158, 11, 0.85);
+  outline-offset: 4px;
+}
+
 .paper .ProseMirror p.is-editor-empty:first-child::before {
   content: attr(data-placeholder);
   color: var(--paper-muted);
@@ -345,7 +362,7 @@ a {
   bottom: 3px;
   width: 2px;
   border-radius: 1px;
-  background: oklch(68% 0.12 78);
+  background: var(--brass);
 }
 
 /* Redline marks: color AND line form, never color alone. */
@@ -367,27 +384,27 @@ a {
 }
 
 .paper .mark-del {
-  color: oklch(48% 0.17 30);
-  background: oklch(70% 0.14 30 / 0.14);
+  color: #e11d48;
+  background: rgba(225, 29, 72, 0.14);
 }
 
 .paper .mark-add {
-  color: oklch(40% 0.1 165);
-  background: oklch(70% 0.11 165 / 0.2);
+  color: #059669;
+  background: rgba(5, 150, 105, 0.16);
 }
 
 /* Ask-AI pending selection */
 .ai-pending {
-  background: oklch(80% 0.1 82 / 0.35);
+  background: rgba(245, 158, 11, 0.3);
   border-radius: 2px;
 }
 
-/* Page-break marker (lib/editor/pageBreakExtension.ts) */
+/* Page-break marker (lib/editor/pageBreaks) */
 .page-break-marker {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin: 10px -46px;
+  gap: 12px;
+  margin: 28px -46px;
   user-select: none;
   pointer-events: none;
 }
@@ -396,14 +413,20 @@ a {
 .page-break-marker::after {
   content: "";
   flex: 1;
-  border-top: 1px dashed var(--paper-rule);
+  border-top: 1.5px dashed var(--paper-rule);
 }
 
 .page-break-marker-label {
   font-family: var(--font-mono);
   font-size: 10px;
-  letter-spacing: 0.06em;
+  font-weight: 600;
+  letter-spacing: 0.08em;
   color: var(--paper-muted);
+  background: var(--paper);
+  padding: 3px 10px;
+  border-radius: 9999px;
+  border: 1px solid var(--paper-rule);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 /* Composing-stick progress: a slug slides into place. */
