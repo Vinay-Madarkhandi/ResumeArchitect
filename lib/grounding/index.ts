@@ -12,6 +12,7 @@ import {
   isTitleSupported,
   isToolSupported,
   checkScopeInflation,
+  checkUnsupportedDomains,
 } from "./entities";
 import { VERIFY_CLAIM } from "./placeholder";
 
@@ -239,6 +240,15 @@ function unsupported(
     }
   }
 
+  // Check unsupported domain nouns or modifiers (Defect 3)
+  const unsupportedDomains = checkUnsupportedDomains(plain, fullSourceText);
+  for (const domain of unsupportedDomains) {
+    flags.push({
+      kind: "claim",
+      value: domain,
+      message: `'${domain}' adds a domain your resume doesn't mention`,
+    });
+  }
 
   // Check scope / ownership inflation
   const scopeFlag = checkScopeInflation(plain, evidenceUnits.map((u) => u.plain));
@@ -362,6 +372,11 @@ export function checkGrounding(sources: readonly string[], output: string) {
           continue;
         }
 
+        // Domain check: plain cannot introduce ungrounded domain
+        if (checkUnsupportedDomains(plain, fullSourceText).length > 0) {
+          continue;
+        }
+
         // Scope check: if unit has scope inflation against plain
         if (checkScopeInflation(plain, [unit.plain])) {
           continue;
@@ -474,7 +489,7 @@ export function checkGrounding(sources: readonly string[], output: string) {
         && extracted.degrees.every((d) => isDegreeSupported(d, fullSourceText))
         && extracted.durations.every((d) => fullSourceText.toLowerCase().includes(d.toLowerCase()))
         && extracted.years.every((y) => fullSourceText.replace(/,(\d{3})/g, "$1").includes(y))
-        && !extracted.hasHighOwnership && !checkScopeInflation(plain, evidenceUnits.map((u) => u.plain))
+        && checkUnsupportedDomains(plain, fullSourceText).length === 0 && !extracted.hasHighOwnership && !checkScopeInflation(plain, evidenceUnits.map((u) => u.plain))
         && !extracted.hasCausalJoin
         && outLinks.every((l) => allSourceLinks.has(l))
       ) {

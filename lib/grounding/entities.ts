@@ -281,3 +281,41 @@ export function checkScopeInflation(
   return null;
 }
 
+export const DOMAIN_TERMS = [
+  "payment", "payments", "billing", "checkout", "payroll", "invoicing",
+  "healthcare", "health", "clinical", "medical", "biotech", "pharma", "pharmaceutical", "hipaa", "ehr", "emr",
+  "fintech", "finance", "financial", "banking", "wealth", "trading", "lending", "insurance", "insurtech",
+  "ecommerce", "e-commerce", "retail", "merchandising", "shopping", "marketplace",
+  "crypto", "cryptocurrency", "blockchain", "web3", "defi",
+  "aerospace", "automotive", "telecom", "telecommunications", "logistics", "supply chain", "supply-chain",
+  "real estate", "real-estate", "proptech", "hospitality", "travel",
+  "edtech", "education", "adtech", "advertising", "gaming", "social media",
+  "cybersecurity", "infosec", "fraud", "hr-tech", "hr tech", "recruiting",
+  "real-time", "realtime", "distributed", "high-scale", "large-scale", "mission-critical", "mission critical",
+  "enterprise", "customer-facing", "client-facing", "user-facing",
+  "low-latency", "high-throughput", "cloud-native", "microservices", "multi-tenant", "fault-tolerant",
+  "concurrent", "high-concurrency", "high-availability", "highly-available", "event-driven", "zero-downtime", "scalable"
+];
+
+function domainRoot(term: string): string {
+  return term.toLowerCase().replace(/(?:ies|es|s)$/, (m) => (m === "ies" ? "y" : ""));
+}
+
+export function checkUnsupportedDomains(plain: string, sourceText: string): string[] {
+  const unsupported: string[] = [];
+  const sourceLower = sourceText.toLowerCase();
+
+  for (const term of DOMAIN_TERMS) {
+    const root = domainRoot(term);
+    const escaped = root.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/\s+/g, "[\\s-]+");
+    const termRegex = new RegExp(`(?<![\\w-])${escaped}(?:s|es|ies)?(?![\\w-])`, "i");
+    const match = plain.match(termRegex);
+    if (match) {
+      if (!termRegex.test(sourceLower)) {
+        unsupported.push(match[0].toLowerCase());
+      }
+    }
+  }
+
+  return [...new Set(unsupported)];
+}
