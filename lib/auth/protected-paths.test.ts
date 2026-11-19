@@ -43,7 +43,7 @@ const request = (path: string, cookie?: string) =>
 describe("protected routes", () => {
   it("finds the app's pages", () => {
     expect(routes.filter((route) => route.guarded).map((route) => route.path)).toEqual(expect.arrayContaining([
-      "/dashboard", "/linkedin", "/interview", "/cover-letter", "/onboarding", "/resumes/sample-id", "/scan", "/scans", "/scan/sample-id",
+      "/dashboard", "/linkedin", "/interview", "/cover-letter", "/onboarding", "/resumes", "/resumes/sample-id", "/scan", "/scans", "/scan/sample-id",
     ]));
     expect(routes.filter((route) => !route.guarded).map((route) => route.path)).toEqual(expect.arrayContaining([
       "/", "/sign-in", "/sign-in/link", "/r/sample-id", "/admin",
