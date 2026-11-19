@@ -1,4 +1,5 @@
-import { checkGrounding } from "@/lib/grounding";
+import { buildSourceIndex, checkGrounding } from "@/lib/grounding";
+import { toUnits } from "@/lib/resume/units";
 import { geminiModel } from "@/lib/gemini/model";
 import { parseResume } from "@/lib/gemini/prompts/parseResume";
 import { markdownToDocument } from "@/lib/documentMarkdown";
@@ -108,7 +109,8 @@ export async function importResume(
       const ai = await parseResume(geminiModel(apiKey, userId), text);
       const content = markdownToDocument(ai.markdown);
       const units = toUnits(content);
-      const grounded = units.every((unit) => !checkGrounding([text], unit.markdown).flags.length);
+      const sourceIndex = buildSourceIndex([text]);
+      const grounded = units.every((unit) => !checkGrounding(sourceIndex, unit.markdown).flags.length);
       if (content.content.length >= 3 && grounded) {
         const name = units[0]?.kind === "heading" ? units[0].text : "";
         return { title: ai.title?.trim() || name || "Master resume", content, usedAi: true, keepsDesign: false };

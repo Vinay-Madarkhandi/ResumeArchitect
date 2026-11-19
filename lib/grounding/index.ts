@@ -13,6 +13,7 @@ import {
   checkTeamInflation,
   checkCausalJoins,
   checkDomainQualifiers,
+  findQualifiers,
   lookupSynonymGroup,
   TEAM_FRAMING_REGEX,
   CAUSAL_JOIN_REGEX,
