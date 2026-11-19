@@ -7,6 +7,7 @@ import { currentUser } from "@/lib/auth/current-user";
 import { NextResponse } from "next/server";
 import { loadGeminiKey } from "@/lib/server/geminiKey";
 import { ImportError, importResume, MAX_RESUME_CHARS, MAX_UPLOAD_FORM_BYTES, readResumeUpload } from "@/lib/server/importResume";
+import { ParseBusyError } from "@/lib/report/inspectBudget";
 import { BodyTooLarge, readFormData } from "@/lib/server/request-body";
 import { RESUME_UPLOADS_BUCKET, originalResumePath } from "@/lib/storage/paths";
 
@@ -85,6 +86,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ resumeId, usedAi: result.usedAi, keepsDesign: result.keepsDesign && !!storagePath });
   } catch (error) {
     if (storagePath) await deleteObjects(user.id, RESUME_UPLOADS_BUCKET, [storagePath]).catch(() => {});
+    if (error instanceof ParseBusyError) {
+      return NextResponse.json(
+        { errorCode: "busy", errorMessage: error.message, error: error.message },
+        { status: 429, headers: { "Retry-After": String(error.retryAfter) } },
+      );
+    }
     if (error instanceof ImportError) return fail(422, "parse_failed", error.message);
     return fail(500, "save_failed", "Couldn't save your resume. Try again.");
   }

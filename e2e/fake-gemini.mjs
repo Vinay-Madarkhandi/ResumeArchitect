@@ -18,6 +18,7 @@ const JOB = {
     { id: "postgres", label: "PostgreSQL", aliases: ["Postgres"], importance: "must", category: "tool" },
     { id: "kafka", label: "Kafka", aliases: [], importance: "must", category: "tool" },
     { id: "incident", label: "Incident response", aliases: ["on-call"], importance: "must", category: "skill" },
+    { id: "degree", label: "Bachelor's degree", aliases: ["B.S.", "BSc"], importance: "must", category: "qualification" },
     { id: "k8s", label: "Kubernetes", aliases: ["K8s"], importance: "nice", category: "tool" },
     { id: "mentoring", label: "Mentoring", aliases: ["mentored"], importance: "nice", category: "soft" },
   ],
@@ -31,11 +32,16 @@ const JOB = {
 const FACTS = {
   title: JOB.title,
   level: "senior",
-  hardSkills: JOB.requirements.filter((r) => r.category !== "soft")
-    .map((r) => ({ term: r.label, importance: r.importance === "must" ? "high" : "low" })),
+  hardSkills: [
+    { term: "Golang", importance: "high" },
+    { term: "PostgreSQL", importance: "high" },
+    { term: "Kafka", importance: "high" },
+    { term: "Incident response", importance: "high" },
+    { term: "Kubernetes", importance: "low" },
+  ],
   softSkills: [{ term: "Mentoring", importance: "low" }],
   otherKeywords: JOB.keywords.map((k) => ({ term: k.term, importance: "medium" })),
-  education: null,
+  education: { degree: "bachelor", fields: ["Computer Science"], equivalentExperience: true },
   yearsRequired: null,
   predictedSkills: [{ term: "Distributed tracing", reason: "Useful for diagnosing latency across services." }],
 };

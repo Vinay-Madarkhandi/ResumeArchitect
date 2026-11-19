@@ -1,10 +1,12 @@
-import { describe, expect, it, vi } from "vitest";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import { describe, expect, it } from "vitest";
 import JSZip from "jszip";
 import { Document, Packer, Paragraph } from "docx";
-import { pdfDoubleFlateBomb, pdfFlateBomb, pdfPages } from "./__fixtures__/bombs";
-import { INSPECTION_BACKSTOP_MS, MAX_DOCX_ENTRIES, MAX_PDF_PAGES, MAX_PDF_STREAMS, MAX_UPLOAD_BYTES, MAX_XML_BYTES } from "./inspectLimits";
+import { MAX_DOCX_ENTRIES, MAX_UPLOAD_BYTES, MAX_XML_BYTES } from "./inspectLimits";
 import { inspectDocx } from "./inspectDocx";
 import { inspectPdf } from "./inspectPdf";
+import { parseSemaphore, ParseBusyError, readWithinBudget } from "./inspectBudget";
 
 describe("file inspection budget", () => {
   it("inspects an ordinary Word file", async () => {
@@ -40,46 +42,85 @@ describe("file inspection budget", () => {
     await expect(inspectDocx(bytes)).resolves.toMatchObject({ format: "invalid", reason: "too-large" });
   });
 
-  it("counts the bytes a PDF's streams inflate to before pdf.js reads them", async () => {
-    await expect(inspectPdf(await pdfFlateBomb(64))).resolves.toMatchObject({ format: "invalid", reason: "too-large" });
-    await expect(inspectPdf(pdfPages(2))).resolves.toMatchObject({ format: "pdf", hasTextLayer: true });
-  }, 30_000);
-
-  it("refuses PDF streams it can't measure: encrypted, or behind a legacy filter", async () => {
-    const encrypted = Buffer.from(pdfPages(1).toString("latin1").replace("/Root 1 0 R", "/Root 1 0 R /Encr#79pt 9 0 R"), "latin1");
-    const legacy = Buffer.from(pdfPages(1).toString("latin1").replace("<< /Length", "<< /Filter /ASCIIHexDecode /Length"), "latin1");
-    for (const file of [encrypted, legacy]) {
-      await expect(inspectPdf(file)).resolves.toMatchObject({ format: "invalid", reason: "unreadable" });
-    }
-  }, 30_000);
-
-  it("budgets the work, not the clock: operators count across every page", async () => {
-    const busyPage = "1 w ".repeat(15_000);
-    const file = pdfPages(MAX_PDF_PAGES, () => "x").toString("latin1").replaceAll("BT /F1 12 Tf 72 720 Td (x) Tj ET", busyPage);
-    await expect(inspectPdf(Buffer.from(file, "latin1"))).resolves.toMatchObject({ format: "invalid", reason: "too-large" });
-  }, 30_000);
-
-  it("rejects stream-keyword spam before burning CPU", async () => {
-    const spam = Buffer.from("%PDF-1.4\n" + "stream\nendstream\n".repeat(MAX_PDF_STREAMS + 1) + "%%EOF", "latin1");
-    await expect(inspectPdf(spam)).resolves.toMatchObject({ format: "invalid", reason: "too-large" });
+  it("proves the limit, not luck, stopped it: a child that allocates 1 GB of Buffer gets killed and reported as too-large", async () => {
+    const before = process.memoryUsage().rss;
+    const result = await readWithinBudget("pdf", Buffer.from("RA_ALLOC_TEST"));
+    const after = process.memoryUsage().rss;
+    const growthMb = (after - before) / (1024 * 1024);
+    expect(result.facts).toEqual({ format: "invalid", extension: "pdf", reason: "too-large" });
+    expect(growthMb).toBeLessThan(50);
   });
 
-  it("rejects a double-compressed PDF stream bomb", async () => {
-    const bomb = await pdfDoubleFlateBomb(64);
-    await expect(inspectPdf(bomb)).resolves.toMatchObject({ format: "invalid", reason: "too-large" });
+  const HOSTILE_FILES = [
+    "e_single.pdf",
+    "e_double.pdf",
+    "e_triple.pdf",
+    "e_parms_after.pdf",
+    "e_parms_before.pdf",
+    "e_arr_parms.pdf",
+    "e_indirect_len.pdf",
+    "e_lying_len.pdf",
+    "e_lzw.pdf",
+    "e_ahx_flate.pdf",
+    "e_escaped_name.pdf",
+    "e_flate_abbr.pdf",
+    "e_newline_filter.pdf",
+    "e_form_xobject.pdf",
+  ];
+
+  it.each(HOSTILE_FILES)("rejects hostile fixture %s within the memory limit with parent RSS growth < 50 MB", async (filename) => {
+    const filePath = join(__dirname, "__fixtures__/hostile_pdfs", filename);
+    const bytes = readFileSync(filePath);
+    const before = process.memoryUsage().rss;
+    const result = await readWithinBudget("pdf", bytes);
+    const after = process.memoryUsage().rss;
+    const growthMb = (after - before) / (1024 * 1024);
+    expect(growthMb).toBeLessThan(50);
+    expect(result.facts.format).toBe("invalid");
+    if (result.facts.format === "invalid") {
+      expect(["too-large", "unreadable"]).toContain(result.facts.reason);
+    }
   }, 30_000);
 
-  it("gives a slow inspection well past 4 seconds before its wall-clock backstop", async () => {
-    vi.useFakeTimers();
-    try {
-      let settled = false;
-      const inspection = inspectPdf(new Uint8Array()).finally(() => { settled = true; });
-      await vi.advanceTimersByTimeAsync(5_000);
-      expect(settled).toBe(false);
-      await vi.advanceTimersByTimeAsync(INSPECTION_BACKSTOP_MS);
-      await expect(inspection).resolves.toMatchObject({ format: "invalid", reason: "too-large" });
-    } finally {
-      vi.useRealTimers();
+  const REAL_FILES = [
+    ["chrome_jpeg_photo.pdf", 1],
+    ["chrome_png_photo.pdf", 1],
+    ["chrome_text.pdf", 0],
+  ] as const;
+
+  it.each(REAL_FILES)("accepts real PDF fixture %s with text and layout facts", async (filename, expectedImages) => {
+    const filePath = join(__dirname, "__fixtures__/real_pdfs", filename);
+    const bytes = readFileSync(filePath);
+    const result = await readWithinBudget("pdf", bytes);
+    expect(result.facts).toMatchObject({
+      format: "pdf",
+      hasTextLayer: true,
+      images: expectedImages,
+    });
+    if (result.resume && result.resume.source === "word") {
+      expect(JSON.stringify(result.resume.content)).toContain("Ada Lovelace");
+    } else if (result.resume && result.resume.source === "text") {
+      expect(result.resume.text).toContain("Ada Lovelace");
     }
+  }, 30_000);
+
+  it("limits concurrency to 2 parses and returns ParseBusyError when queue is full", async () => {
+    parseSemaphore.reset();
+    const release1 = await parseSemaphore.acquire();
+    const release2 = await parseSemaphore.acquire();
+
+    // 2 are active. Now queue 2 tasks.
+    const queued1 = parseSemaphore.acquire();
+    const queued2 = parseSemaphore.acquire();
+
+    // 5th task should be refused immediately with ParseBusyError
+    await expect(parseSemaphore.acquire()).rejects.toThrow(ParseBusyError);
+
+    release1();
+    const release3 = await queued1;
+    release2();
+    const release4 = await queued2;
+    release3();
+    release4();
   });
 });

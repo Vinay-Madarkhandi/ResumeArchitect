@@ -30,14 +30,14 @@ export function detectKind(file: File): SourceKind | null {
 }
 
 const UNREADABLE: Record<SourceKind, string> = {
-  pdf: "This PDF couldn't be read. It may be password-protected or damaged.",
+  pdf: "This PDF uses an unusual format we can't read. Export it again or paste the text.",
   docx: "This file couldn't be read. Try exporting it again, or paste the text instead.",
   text: "This file couldn't be read. Try exporting it again, or paste the text instead.",
 };
 
 /**
  * Reads an uploaded resume file. PDF and Word files are inspected and read
- * inside the budgeted file worker (lib/report/inspectBudget.ts); one that is
+ * inside the isolated child process (lib/report/inspectBudget.ts); one that is
  * over a budget or unreadable is refused before anything else happens.
  * Layout facts are null for a plain-text file.
  */
@@ -51,11 +51,16 @@ export async function readResumeUpload(file: File): Promise<{ kind: SourceKind; 
     if (text.length > MAX_RESUME_CHARS) throw new ImportError("That's longer than a resume. Upload just your resume.");
     return { kind, facts: null, resume: { source: "text", text, parsed: null } };
   }
-  const { facts, resume } = await readWithinBudget(kind, bytes);
+  const { facts, resume, encrypted } = await readWithinBudget(kind, bytes);
   if (facts.format === "invalid" && facts.reason === "too-large") {
     throw new ImportError("That file is too large or complex to read. Save a simpler copy, or paste the text instead.");
   }
-  if (facts.format === "invalid" || !resume) throw new ImportError(UNREADABLE[kind]);
+  if (facts.format === "invalid" || !resume) {
+    if (kind === "pdf" && encrypted) {
+      throw new ImportError("This PDF couldn't be read. It is password-protected.");
+    }
+    throw new ImportError(UNREADABLE[kind]);
+  }
   return { kind, facts, resume };
 }
 
@@ -91,7 +96,7 @@ export async function importResume(
   }
 
   const { text, parsed } = resume;
-  if (text.replace(/\s+/g, "").length < 30) {
+  if (text.replace(/\s+/g, "").length < 80) {
     throw new ImportError(
       "We found almost no text in that resume. If it's a scanned image, paste the text instead.",
     );

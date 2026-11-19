@@ -8,6 +8,7 @@ import type { PipelineEvent, PipelineStage, TailoredChange, TailoringErrorCodeT 
 import { buildMatchReport } from "@/lib/report/matchReport";
 import { extractJobFacts } from "@/lib/gemini/prompts/extractJobFacts";
 import type { JobFacts, JobSkill } from "@/lib/schemas/jobFacts";
+import { buildLexicon, formKey } from "@/lib/report/synonyms";
 import { documentText, fromUnits, toUnits } from "@/lib/resume/units";
 import { applyEdits } from "./applyEdits";
 import { verifyChange } from "./verify";
@@ -64,24 +65,78 @@ export interface PipelineInput {
   company?: string | null;
 }
 
+const lexicon = buildLexicon();
+
+function requirementAliases(label: string, existingAliases: string[] = []): string[] {
+  const aliases = new Set<string>();
+  for (const a of existingAliases) {
+    if (a.trim() && a.toLowerCase() !== label.toLowerCase()) aliases.add(a.trim());
+  }
+  const group = lexicon(label);
+  if (group) {
+    for (const form of group.forms) {
+      if (form.toLowerCase() !== label.toLowerCase()) aliases.add(form);
+    }
+  }
+  for (const a of existingAliases) {
+    const ag = lexicon(a);
+    if (ag) {
+      for (const form of ag.forms) {
+        if (form.toLowerCase() !== label.toLowerCase()) aliases.add(form);
+      }
+    }
+  }
+  return [...aliases];
+}
+
 function requirementsFromFacts(facts: JobFacts, existingRequirements: Requirement[] = []): Requirement[] {
-  const existingByLabel = new Map(existingRequirements.map((r) => [r.label.toLowerCase(), r]));
-  const toReq = (skill: JobSkill, category: Requirement["category"]): Requirement => {
-    const existing = existingByLabel.get(skill.term.toLowerCase());
+  const matchedExistingIds = new Set<string>();
+
+  const findExisting = (term: string) => {
+    const termKey = formKey(term);
+    const termLex = lexicon(term);
+    for (const r of existingRequirements) {
+      if (matchedExistingIds.has(r.id)) continue;
+      if (r.label.toLowerCase() === term.toLowerCase() || formKey(r.label) === termKey) return r;
+      if (r.aliases.some((a) => a.toLowerCase() === term.toLowerCase() || formKey(a) === termKey)) return r;
+      if (termLex && lexicon(r.label) === termLex) return r;
+      if (termLex && r.aliases.some((a) => lexicon(a) === termLex)) return r;
+    }
+    return null;
+  };
+
+  const toReq = (skill: JobSkill, defaultCategory: Requirement["category"]): Requirement => {
+    const existing = findExisting(skill.term);
+    if (existing) matchedExistingIds.add(existing.id);
     const slug = skill.term.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "skill";
+    const label = existing?.label ?? skill.term;
+    const allAliases = requirementAliases(label, [
+      ...(existing?.aliases ?? []),
+      ...(existing ? [skill.term] : []),
+    ]);
     return {
       id: existing?.id || slug,
-      label: skill.term,
-      aliases: existing?.aliases ?? [],
-      importance: skill.importance === "high" ? "must" : "nice",
-      category: existing?.category ?? category,
+      label,
+      aliases: allAliases,
+      importance: skill.importance === "high" ? "must" : (existing?.importance ?? "nice"),
+      category: existing?.category ?? defaultCategory,
     };
   };
-  const reqs = [
+
+  const skillReqs = [
     ...facts.hardSkills.map((s) => toReq(s, "skill")),
     ...facts.softSkills.map((s) => toReq(s, "soft")),
   ];
-  return uniqueIds(reqs, "req");
+
+  // Retain education, qualifications, and other requirements from job analysis
+  const remainingReqs = existingRequirements
+    .filter((r) => !matchedExistingIds.has(r.id))
+    .map((r) => ({
+      ...r,
+      aliases: requirementAliases(r.label, r.aliases),
+    }));
+
+  return uniqueIds([...skillReqs, ...remainingReqs], "req");
 }
 
 function plural(n: number, word: string): string {

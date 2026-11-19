@@ -107,7 +107,7 @@ describe("POST /api/resumes/parse", () => {
     const form = fileForm(await build(), name, type);
     const { result: response, growthMb } = await peakGrowth(() => post(form));
     expect(response.status).toBe(422);
-    expect(growthMb).toBeLessThan(256);
+    expect(growthMb).toBeLessThan(50);
     expect(putObject).not.toHaveBeenCalled();
     expect(await savedResumes()).toHaveLength(0);
   }, 60_000);
@@ -130,4 +130,45 @@ describe("POST /api/resumes/parse", () => {
     expect(growthMb).toBeLessThan(64);
     expect(putObject).not.toHaveBeenCalled();
   }, 30_000);
+
+  it.each([
+    ["chrome_jpeg_photo.pdf", "Ada Lovelace"],
+    ["chrome_png_photo.pdf", "Ada Lovelace"],
+    ["chrome_text.pdf", "Ada Lovelace"],
+  ] as const)("parses real PDF fixture %s and extracts its text", async (filename, expectedText) => {
+    await signIn();
+    const filePath = join(process.cwd(), "lib/report/__fixtures__/real_pdfs", filename);
+    const buffer = readFileSync(filePath);
+    const form = fileForm(buffer, filename, "application/pdf");
+    const response = await post(form);
+    expect(response.status).toBe(200);
+    const saved = await savedResumes();
+    expect(saved).toHaveLength(1);
+    expect(JSON.stringify(saved[0].content)).toContain(expectedText);
+  }, 30_000);
+
+  it("returns 429 with Retry-After when the parser queue is busy", async () => {
+    const { parseSemaphore } = await import("@/lib/report/inspectBudget");
+    parseSemaphore.reset();
+    const rel1 = await parseSemaphore.acquire();
+    const rel2 = await parseSemaphore.acquire();
+    const q1 = parseSemaphore.acquire();
+    const q2 = parseSemaphore.acquire();
+    try {
+      await signIn();
+      const filePath = join(process.cwd(), "lib/report/__fixtures__/real_pdfs/chrome_text.pdf");
+      const buffer = readFileSync(filePath);
+      const form = fileForm(buffer, "chrome_text.pdf", "application/pdf");
+      const response = await post(form);
+      expect(response.status).toBe(429);
+      expect(response.headers.get("retry-after")).toBe("2");
+      const json = await response.json();
+      expect(json.errorMessage).toBe("Busy, try again in a moment");
+    } finally {
+      rel1();
+      rel2();
+      (await q1)();
+      (await q2)();
+    }
+  });
 });

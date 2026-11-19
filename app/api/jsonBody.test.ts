@@ -3,12 +3,12 @@ import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { readJson } from "@/lib/server/request-body";
 
-function getRouteFiles(dir: string): string[] {
+function getSourceFiles(dir: string): string[] {
   const files: string[] = [];
   for (const entry of readdirSync(dir)) {
     const full = join(dir, entry);
     if (statSync(full).isDirectory()) {
-      files.push(...getRouteFiles(full));
+      files.push(...getSourceFiles(full));
     } else if (full.endsWith(".ts") || full.endsWith(".tsx")) {
       if (!full.includes(".test.")) files.push(full);
     }
@@ -17,12 +17,16 @@ function getRouteFiles(dir: string): string[] {
 }
 
 describe("request JSON body limits", () => {
-  it("never calls request.json() directly in any route handler", () => {
-    const files = getRouteFiles(join(__dirname));
+  it("never calls request.json() directly in route handlers or server helpers", () => {
+    const files = [
+      ...getSourceFiles(join(process.cwd(), "app")),
+      ...getSourceFiles(join(process.cwd(), "lib/server")),
+    ];
     const violations: string[] = [];
+    const pattern = /\brequest\.json\s*\(/;
     for (const file of files) {
       const content = readFileSync(file, "utf8");
-      if (/\brequest\.json\s*\(/.test(content)) {
+      if (pattern.test(content)) {
         violations.push(file);
       }
     }
