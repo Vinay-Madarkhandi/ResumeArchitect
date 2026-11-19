@@ -70,14 +70,14 @@ function getWorkerScript(): { scriptPath: string; useDist: boolean } {
     path.resolve(__dirname, "../../dist/inspectWorker.js"),
   ];
   for (const c of distCandidates) {
-    if (fs.existsSync(c)) return { scriptPath: c, useDist: true };
+    if (fs.existsSync(/*turbopackIgnore: true*/ c)) return { scriptPath: c, useDist: true };
   }
   const srcCandidates = [
     path.resolve(process.cwd(), "lib/report/inspectWorker.ts"),
     path.resolve(__dirname, "inspectWorker.ts"),
   ];
   for (const c of srcCandidates) {
-    if (fs.existsSync(c)) return { scriptPath: c, useDist: false };
+    if (fs.existsSync(/*turbopackIgnore: true*/ c)) return { scriptPath: c, useDist: false };
   }
   return { scriptPath: srcCandidates[0], useDist: false };
 }
@@ -247,8 +247,12 @@ async function executeChildParse<F extends FileFormat>(
           }
         }
         if (parsed) {
-          if (parsed.ok) {
-            done({ facts: parsed.facts, resume: parsed.resume, encrypted: parsed.encrypted });
+          if (parsed.ok && parsed.facts) {
+            done({
+              facts: parsed.facts as InspectionResult<F>,
+              resume: parsed.resume ?? null,
+              encrypted: parsed.encrypted,
+            });
             return;
           }
           if (parsed.errorType === "too-large") {
