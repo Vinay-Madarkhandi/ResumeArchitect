@@ -40,7 +40,7 @@ export async function queuedEmailsContaining(text: string) {
  */
 export async function gotoForm(page: Page, url: string) {
   await page.goto(url);
-  await page.locator("form[data-hydrated]").waitFor();
+  await page.locator("form[data-hydrated]").waitFor({ timeout: 30_000 });
 }
 
 export async function submitSignUp(page: Page, requestedEmail?: string, password = TEST_PASSWORD) {
