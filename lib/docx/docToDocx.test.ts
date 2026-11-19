@@ -33,7 +33,13 @@ describe("the Standard template", () => {
     const JSZip = (await import("jszip")).default;
     const doc = markdownToDocument("# Ada Lovelace\n\nada@example.com · London\n\n## Work Experience\n\n- Built Go services");
     const buffer = await documentToDocx(doc, TEMPLATES.standard, "Ada");
-    const xml = await (await JSZip.loadAsync(buffer)).file("word/document.xml")!.async("string");
+    const zip = await JSZip.loadAsync(buffer);
+    const fontTable = await zip.file("word/fontTable.xml")!.async("string");
+    expect(fontTable).toContain('w:name="Hanken Grotesk"');
+    expect(fontTable).toContain("w:embedRegular");
+    expect(fontTable).toContain("w:embedBoldItalic");
+    const xml = await zip.file("word/document.xml")!.async("string");
+    expect(xml).toMatch(/<w:pgSz[^>]*w:w="11906"[^>]*w:h="16838"/);
     const paragraphs = xml.match(/<w:p[ >][\s\S]*?<\/w:p>/g)!;
     expect(paragraphs.find((p) => p.includes("Ada Lovelace"))).toContain('<w:jc w:val="center"/>');
     expect(paragraphs.find((p) => p.includes("ada@example.com"))).toContain('<w:jc w:val="center"/>');

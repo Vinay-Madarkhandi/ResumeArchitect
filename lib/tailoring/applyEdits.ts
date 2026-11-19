@@ -12,6 +12,9 @@ function insertKind(anchor: Unit, next: Unit | undefined): UnitKind {
   return next && (next.kind === "bullet" || next.kind === "numbered") ? next.kind : "paragraph";
 }
 
+type ProposedChange = Omit<TailoredChange, "flags">;
+type Proof = (change: ProposedChange, anchor: number) => TailoredChange;
+
 /**
  * Applies line edits to the source lines. Edits pointing at lines that don't
  * exist, empty rewrites, and no-op rewrites are dropped; only the first
@@ -22,7 +25,8 @@ function insertKind(anchor: Unit, next: Unit | undefined): UnitKind {
 export function applyEdits(
   units: Unit[],
   edits: LineEdit[],
-): { units: Unit[]; changes: Omit<TailoredChange, "flags">[] } {
+  proof: Proof = (change) => ({ ...change, flags: [] }),
+): { units: Unit[]; changes: TailoredChange[] } {
   const byLine = new Map<number, LineEdit[]>();
   for (const edit of edits) {
     if (!Number.isInteger(edit.line) || edit.line < 1 || edit.line > units.length) continue;
@@ -32,34 +36,39 @@ export function applyEdits(
   }
 
   const out: Unit[] = [];
-  const changes: Omit<TailoredChange, "flags">[] = [];
+  const changes: TailoredChange[] = [];
   let seq = 0;
-  const record = (c: Omit<TailoredChange, "flags" | "id">) => changes.push({ id: `c${++seq}`, ...c });
-
   units.forEach((unit, index) => {
+    function record(proposal: Omit<ProposedChange, "id">) {
+      const change = proof({ id: `c${++seq}`, ...proposal }, index);
+      changes.push(change);
+      return change;
+    }
+
     const lineEdits = byLine.get(index + 1) ?? [];
     const primary = isLocked(unit) ? undefined : lineEdits.find((e) => e.op === "rewrite" || e.op === "remove");
 
     if (primary?.op === "remove") {
-      record({ op: "remove", before: unit.markdown, after: null, reason: primary.reason, requirementIds: primary.requirementIds });
+      record({ op: "remove", before: unit.markdown, after: null, reason: primary.reason, requirementIds: primary.requirementIds, cites: primary.cites ?? [index + 1] });
     } else if (primary?.op === "rewrite" && primary.text.trim() && !same(primary.text, unit.markdown)) {
       const rewritten = withMarkdown(unit, primary.text);
-      out.push(rewritten);
-      record({
+      const change = record({
         op: "rewrite",
         before: unit.markdown,
         after: rewritten.markdown,
         reason: primary.reason,
         requirementIds: primary.requirementIds,
+        cites: primary.cites?.length ? primary.cites : [index + 1],
       });
+      out.push(change.after === rewritten.markdown ? rewritten : withMarkdown(unit, change.after ?? unit.markdown));
     } else {
       out.push(unit);
     }
 
     for (const insert of lineEdits.filter((e) => e.op === "insert_after" && e.text.trim())) {
       const added = unitFromMarkdown(insertKind(unit, units[index + 1]), insert.text);
-      out.push(added);
-      record({ op: "insert_after", before: null, after: added.markdown, reason: insert.reason, requirementIds: insert.requirementIds });
+      const change = record({ op: "insert_after", before: null, after: added.markdown, reason: insert.reason, requirementIds: insert.requirementIds, cites: insert.cites ?? [] });
+      if (change.after) out.push(change.after === added.markdown ? added : withMarkdown(added, change.after));
     }
   });
 

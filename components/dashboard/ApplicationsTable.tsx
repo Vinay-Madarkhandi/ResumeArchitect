@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/Badge";
 import { ScoreDelta } from "@/components/dashboard/ScoreDelta";
 import { ResumeActions } from "@/components/dashboard/ResumeActions";
 import { STATUSES, StatusSelect } from "@/components/tracker/StatusSelect";
-import type { ApplicationStatus } from "@/lib/supabase/database.types";
+import type { ApplicationStatus } from "@/lib/db/schema";
 import { cn } from "@/lib/cn";
 
 export interface ApplicationRow {

@@ -1,61 +1,48 @@
 "use server";
 
-import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { createClient } from "@/utils/supabase/server";
-import { RESUME_EXPORTS_BUCKET, RESUME_UPLOADS_BUCKET } from "@/lib/storage/paths";
+import { currentUser, clearSessionCookie } from "@/lib/auth/current-user";
+import { confirmCredentials, lockAccount } from "@/lib/auth/accounts";
+import { rateLimit } from "@/lib/cache/rateLimit";
+import { countOtherActiveAdmins, lockAdminMembership } from "@/lib/auth/admin-membership";
+import { clearAccountData, deleteAccountRows, finishAccountDeletion } from "@/lib/data/account";
+import { db } from "@/lib/db";
+import { deleteUserObjects } from "@/lib/storage";
+import { logger } from "@/lib/logger";
 import type { ActionResult } from "./onboarding";
 
-/**
- * Wipes every resume, job description, tailoring session, and profile field
- * belonging to the user, then sends them back through onboarding — this app
- * always expects a signed-in user to either be pre-onboarding or have a
- * master resume, so a full data wipe has to reset onboarding status too
- * rather than leaving the account in a state neither flow expects.
- * Deliberately does NOT delete the auth.users row itself (see the plan's
- * scope note on account deletion) — only owned application data.
- */
 export async function deleteAllMyData(): Promise<ActionResult> {
-  const supabase = createClient(await cookies());
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await currentUser();
   if (!user) return { ok: false, error: "Not signed in." };
-
-  const { data: resumes } = await supabase
-    .from("resumes")
-    .select("original_file_storage_path, pdf_storage_path")
-    .eq("user_id", user.id);
-
-  const uploadPaths = (resumes ?? []).map((r) => r.original_file_storage_path).filter((p): p is string => Boolean(p));
-  const exportPaths = (resumes ?? []).map((r) => r.pdf_storage_path).filter((p): p is string => Boolean(p));
-
-  if (uploadPaths.length > 0) await supabase.storage.from(RESUME_UPLOADS_BUCKET).remove(uploadPaths);
-  if (exportPaths.length > 0) await supabase.storage.from(RESUME_EXPORTS_BUCKET).remove(exportPaths);
-
-  await supabase.from("resumes").delete().eq("user_id", user.id);
-  await supabase.from("tailoring_sessions").delete().eq("user_id", user.id);
-  await supabase.from("job_descriptions").delete().eq("user_id", user.id);
-
-  const { error } = await supabase
-    .from("profiles")
-    .update({
-      full_name: null,
-      headline: null,
-      phone: null,
-      location: null,
-      links: [],
-      default_resume_id: null,
-      onboarding_completed_at: null,
-      gemini_key_ciphertext: null,
-      gemini_key_last4: null,
-      gemini_key_status: "not_configured",
-      gemini_key_updated_at: null,
-      gemini_key_validated_at: null,
-      preferences: {},
-    })
-    .eq("id", user.id);
-
-  if (error) return { ok: false, error: error.message };
+  try {
+    await clearAccountData(user.id);
+    await deleteUserObjects(user.id);
+  } catch {
+    logger.error({ userId: user.id }, "Could not finish clearing account data");
+    return { ok: false, error: "Couldn't finish removing your data. Try again." };
+  }
   redirect("/onboarding");
+}
+
+export async function deleteMyAccount(password: string, code: string): Promise<ActionResult> {
+  const user = await currentUser();
+  if (!user) return { ok: false, error: "Not signed in." };
+  if (await rateLimit("credentials", user.id, 5, 900_000)) return { ok: false, error: "Too many attempts. Try again later." };
+  try {
+    const removed = await db.transaction(async (tx) => {
+      await lockAdminMembership(tx);
+      const row = await lockAccount(tx, user.id);
+      if (!row || !await confirmCredentials(tx, row, password, code)) return;
+      if (row.role === "admin" && !await countOtherActiveAdmins(tx, user.id)) return "last-admin" as const;
+      return deleteAccountRows(tx, user.id);
+    });
+    if (!removed) return { ok: false, error: "Check your password and authentication code." };
+    if (removed === "last-admin") return { ok: false, error: "Assign another active administrator before deleting your account." };
+    await clearSessionCookie();
+    await finishAccountDeletion(user.id, removed);
+  } catch {
+    logger.error({ userId: user.id }, "Could not finish deleting account");
+    return { ok: false, error: "Couldn't finish deleting your account. Try again." };
+  }
+  redirect("/");
 }

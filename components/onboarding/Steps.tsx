@@ -12,7 +12,7 @@ const STEPS = [
 
 export function Steps() {
   const pathname = usePathname();
-  const current = Math.max(0, STEPS.findIndex((s) => s.path === pathname));
+  const current = Math.max(0, STEPS.findIndex((s) => s.path === (pathname === "/onboarding/build" ? "/onboarding/resume" : pathname)));
   return (
     <ol className="flex items-center gap-3 text-small" aria-label="Setup progress">
       {STEPS.map((s, i) => {

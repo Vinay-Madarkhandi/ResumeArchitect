@@ -1,33 +1,30 @@
+import { AnnouncementBanner } from "@/components/layout/AnnouncementBanner";
+import { getResume } from "@/lib/data/resumes";
+import { currentUser } from "@/lib/auth/current-user";
+import { RefreshSession } from "@/components/auth/RefreshSession";
+import { getJobDescription, listScanTargets } from "@/lib/data/job-descriptions";
+import { getTailoringSession } from "@/lib/data/tailoring";
+import { requireOnboardedUser } from "@/lib/auth/onboarding";
 import type { Metadata } from "next";
-import { cookies } from "next/headers";
-import { notFound, redirect } from "next/navigation";
-import { createClient } from "@/utils/supabase/server";
+import { notFound } from "next/navigation";
 import { resolveDocument } from "@/lib/documentConversion";
+import { JobFactsSchema } from "@/lib/schemas/jobFacts";
 import { SessionArtifactsSchema } from "@/lib/schemas/tailoring";
 import { Workspace } from "@/components/workspace/Workspace";
 
 export async function generateMetadata({ params }: PageProps<"/resumes/[id]">): Promise<Metadata> {
   const { id } = await params;
-  const supabase = createClient(await cookies());
-  const { data } = await supabase.from("resumes").select("title").eq("id", id).maybeSingle();
+  const user = await currentUser();
+  const data = user ? await getResume(user.id, id) : null;
   return { title: data?.title ?? "Resume" };
 }
 
 export default async function ResumePage({ params, searchParams }: PageProps<"/resumes/[id]">) {
   const { id } = await params;
-  const { view } = await searchParams;
-  const supabase = createClient(await cookies());
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect(`/sign-in?redirect=/resumes/${id}`);
+  const { view, job } = await searchParams;
+  const user = await requireOnboardedUser();
 
-  const { data: resume } = await supabase
-    .from("resumes")
-    .select("id, title, kind, content, template, reviewed_change_ids, tailoring_session_id, application_status, cover_letter, job_description_id, design_source_path")
-    .eq("id", id)
-    .eq("user_id", user.id)
-    .maybeSingle();
+  const resume = await getResume(user.id, id);
   if (!resume) notFound();
 
   const content = resolveDocument(resume.content);
@@ -35,11 +32,7 @@ export default async function ResumePage({ params, searchParams }: PageProps<"/r
 
   let session = null;
   if (resume.tailoring_session_id) {
-    const { data } = await supabase
-      .from("tailoring_sessions")
-      .select("job_analysis, source_snapshot, changes, summary, score_before")
-      .eq("id", resume.tailoring_session_id)
-      .maybeSingle();
+    const data = await getTailoringSession(user.id, resume.tailoring_session_id);
     // v1 sessions lack the analysis/snapshot; they open as plain documents.
     const parsed = SessionArtifactsSchema.safeParse({
       jobAnalysis: data?.job_analysis,
@@ -51,16 +44,32 @@ export default async function ResumePage({ params, searchParams }: PageProps<"/r
     if (parsed.success) session = parsed.data;
   }
 
-  let jobText: string | null = null;
-  if (resume.job_description_id) {
-    const { data } = await supabase.from("job_descriptions").select("raw_text").eq("id", resume.job_description_id).maybeSingle();
-    jobText = data?.raw_text ?? null;
+  const requestedJob = typeof job === "string" ? job : null;
+  const [posting, targets, chosenPosting] = await Promise.all([
+    resume.job_description_id ? getJobDescription(user.id, resume.job_description_id) : null,
+    listScanTargets(user.id),
+    requestedJob && requestedJob !== resume.job_description_id ? getJobDescription(user.id, requestedJob) : null,
+  ]);
+  if (requestedJob && !(chosenPosting || posting?.id === requestedJob)) notFound();
+  const targetPosting = chosenPosting ?? posting;
+  const targetFacts = JobFactsSchema.safeParse(targetPosting?.job_facts).data;
+  const initialTarget = targetPosting && targetFacts ? {
+    id: targetPosting.id, title: targetPosting.job_title || targetFacts.title, company: targetPosting.company,
+    text: targetPosting.raw_text, url: targetPosting.source_url, facts: targetFacts,
+  } : null;
+  if (targetPosting && !targets.some((target) => target.id === targetPosting.id)) {
+    targets.unshift({ id: targetPosting.id, title: targetPosting.job_title || "Untitled job", company: targetPosting.company, hasFacts: !!targetFacts });
   }
+  const jobFacts = JobFactsSchema.safeParse(posting?.job_facts);
 
   const initialView = view === "review" || view === "edit" || view === "compare" || view === "letter" ? view : null;
 
   return (
-    <Workspace
+    <>
+      <RefreshSession />
+      <AnnouncementBanner />
+      <Workspace
+      key={`${id}:${requestedJob ?? ""}`}
       resume={{
         id: resume.id,
         title: resume.title,
@@ -73,8 +82,14 @@ export default async function ResumePage({ params, searchParams }: PageProps<"/r
         keepsWordDesign: !!resume.design_source_path,
       }}
       session={session}
-      jobText={jobText}
+      jobText={posting?.raw_text ?? null}
+      jobFacts={jobFacts.data ?? null}
+      scanTargets={targets}
+      initialJobId={targetPosting?.id ?? null}
+      initialTarget={initialTarget}
+      asOf={new Date().toISOString()}
       initialView={initialView}
-    />
+      />
+    </>
   );
 }

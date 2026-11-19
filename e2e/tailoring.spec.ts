@@ -1,54 +1,18 @@
-import { expect, test, type Page } from "@playwright/test";
-
-const RESUME = `Ada Lovelace
-ada@example.com · +44 20 7946 0958 · London
-Summary
-Backend engineer who builds dependable systems and enjoys teaching.
-Experience
-Senior Engineer — Analytical Engines Ltd
-2020 – Present
-- Worked on services in Go backed by PostgreSQL
-- Built a Kafka pipeline that cut invoice latency by 38%
-- Ran the on-call rotation and incident reviews
-Education
-BSc Mathematics, University of London
-Skills
-Go, PostgreSQL, Kafka, Docker`;
+import { expect, test } from "@playwright/test";
+import { goTo } from "./nav";
+import { onboard } from "./onboard";
+import { signUp } from "./auth-helpers";
 
 const JOB = `Senior Backend Engineer at Northwind Payments.
 You'll own the payments platform end to end. Requirements: Go, PostgreSQL, Kafka, and experience with incident response.
 Nice to have: Kubernetes and mentoring experience. We care about reliability and latency.`;
 
-async function signUp(page: Page) {
-  const email = `e2e-${Date.now()}-${Math.floor(Math.random() * 1e6)}@example.com`;
-  await page.goto("/sign-up");
-  await page.getByLabel("Email").fill(email);
-  await page.getByLabel("Password").fill("correct-horse-battery");
-  await page.getByRole("button", { name: "Create account" }).click();
-  await expect(page).toHaveURL(/\/onboarding$/);
-  return email;
-}
-
-async function onboard(page: Page) {
-  await page.getByLabel("API key").fill("AIzaTESTKEY0000wxyz");
-  await page.getByRole("button", { name: "Connect key" }).click();
-  await expect(page).toHaveURL(/\/onboarding\/resume/);
-
-  await page.getByRole("tab", { name: "Paste text" }).click();
-  await page.getByLabel("Resume text").fill(RESUME);
-  await page.getByRole("button", { name: "Import text" }).click();
-  await expect(page).toHaveURL(/\/onboarding\/review\?resumeId=/);
-  await expect(page.getByRole("textbox", { name: "Resume document" })).toContainText("Ada Lovelace");
-  await expect(page.getByRole("toolbar", { name: "Formatting" }).getByRole("button", { name: "Bold" })).toBeVisible();
-  await page.getByRole("button", { name: "Save as my master resume" }).click();
-  await expect(page).toHaveURL(/\/dashboard/);
-}
-
 test("sign up, tailor a resume, review every change, edit, and download", async ({ page }) => {
   await signUp(page);
   await onboard(page);
 
-  await expect(page.getByRole("heading", { name: "Applications" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Scan a resume against a job" })).toBeVisible();
+  await goTo(page, "Resumes");
   await expect(page.getByText("Tailor your first application")).toBeVisible();
 
   await page.getByRole("link", { name: "New application" }).first().click();
@@ -59,18 +23,27 @@ test("sign up, tailor a resume, review every change, edit, and download", async 
   // Lands in the review once all five stages finish.
   await expect(page).toHaveURL(/\/resumes\/[0-9a-f-]+\?view=review/, { timeout: 60_000 });
   const rail = page.getByRole("complementary");
-  await expect(rail.getByText(/to review/)).toBeVisible();
+  await expect(rail.getByText(/need checking/)).toBeVisible();
   await expect(page.locator(".rl-hunk")).toHaveCount(4);
 
   // The new number, the unbacked Kubernetes skill, and the new mentoring claim are all flagged.
-  await expect(rail.getByText("Verify")).toHaveCount(3);
+  await expect(rail.getByText("Verify", { exact: true })).toHaveCount(3);
 
-  // Focus a flagged change, read its reason and flag, then revert it.
-  await rail.getByText(/2M daily transactions/).click();
-  await expect(rail.getByText("Ties the work to reliability, a stated priority.")).toBeVisible();
-  await expect(rail.getByText(/"2M"|2M/).first()).toBeVisible();
-  await rail.getByRole("button", { name: "Revert to original" }).click();
-  await expect(page.locator(".rl-hunk")).toHaveCount(3);
+  // Server-produced placeholders require review before export.
+  await page.getByRole("button", { name: "Download" }).click();
+  await expect(page.getByRole("menuitem", { name: "PDF" })).toBeDisabled();
+  await page.keyboard.press("Escape");
+  const savedExport = await page.request.get(`/api${new URL(page.url()).pathname}/export?format=pdf`);
+  expect(savedExport.status()).toBe(422);
+  for (const id of [2, 3, 4]) {
+    await expect(rail.getByText(`[Verify claim ${id}]`, { exact: true })).toBeVisible();
+    await rail.getByText(`[Verify claim ${id}]`, { exact: true }).click();
+    await expect(rail.getByText("Replace this placeholder with details you can verify, or revert the change.")).toBeVisible();
+    if (id === 2) await expect(rail.getByText(/Verify “2M”/)).toBeVisible();
+    await rail.getByRole("button", { name: "Revert to original" }).click();
+    await expect(rail.getByText(`[Verify claim ${id}]`, { exact: true })).toHaveCount(0);
+  }
+  await expect(page.locator(".rl-hunk")).toHaveCount(1);
 
   // Keep everything else.
   await rail.getByRole("button", { name: "Keep all" }).click();
@@ -78,7 +51,7 @@ test("sign up, tailor a resume, review every change, edit, and download", async 
 
   // The score tab explains the number.
   await rail.getByRole("tab", { name: "Score" }).click();
-  await expect(rail.getByText("Must-have requirements")).toBeVisible();
+  await expect(rail.getByRole("heading", { name: /^Hard skills\s*\d+\/\d+$/ })).toBeVisible();
 
   // Each change shows what it's worth.
   await rail.getByRole("tab", { name: "Changes" }).click();
@@ -97,11 +70,23 @@ test("sign up, tailor a resume, review every change, edit, and download", async 
   // Write and download a cover letter.
   await page.getByRole("tab", { name: "Cover letter" }).click();
   await page.getByRole("button", { name: "Write cover letter" }).click();
-  await expect(page.getByLabel("Cover letter")).toHaveValue(/Dear Hiring Manager/);
+  const letter = page.getByLabel("Cover letter");
+  await expect(letter).toHaveValue(/Dear Hiring Manager/);
+  await expect(letter).toHaveValue(/\[Verify claim\]/);
+  await expect(page.getByRole("button", { name: "Download" }).last()).toBeDisabled();
+  await letter.fill((await letter.inputValue()).replace(/\[Verify claim\]\.?/g, ""));
   await page.getByRole("button", { name: "Download" }).last().click();
   const letterDownload = page.waitForEvent("download");
   await page.getByRole("menuitem", { name: "Word (.docx)" }).click();
   expect((await letterDownload).suggestedFilename()).toMatch(/Cover letter\.docx$/);
+
+  const resumeUrl = new URL(page.url());
+  const selection = await page.request.post(`/api${resumeUrl.pathname}/ai-edit`, {
+    headers: { origin: resumeUrl.origin },
+    data: { selectedText: "Worked on services in Go", instruction: "Lead with a strong verb" },
+  });
+  expect(selection.ok()).toBe(true);
+  expect(await selection.json()).toMatchObject({ flagged: true, replacementText: "[Verify claim]" });
 
   // Edit in place; the change autosaves.
   await page.getByRole("tab", { name: "Edit" }).click();
@@ -127,11 +112,17 @@ test("sign up, tailor a resume, review every change, edit, and download", async 
     expect((await download).suggestedFilename()).toMatch(new RegExp(`\\.${ext}$`));
   }
 
-  // The application shows up on the dashboard with its score change.
-  await page.goto("/dashboard");
+  // The application shows up under Resumes with its score change.
+  await page.goto("/resumes");
   await expect(page.getByRole("link", { name: "Senior Backend Engineer" })).toBeVisible();
   await expect(page.getByLabel(/Match score \d+ to \d+/)).toBeVisible();
-  await expect(page.getByText("Average score lift")).toBeVisible();
+  await expect(page.getByRole("button", { name: /Application status: Applied/ })).toBeVisible();
+
+  // The tracker and the workspace share the application stage.
+  await goTo(page, "Jobs");
+  const trackedJob = page.getByRole("region", { name: "Applied", exact: true }).getByRole("button", { name: "Senior Backend Engineer" });
+  await trackedJob.click();
+  await page.getByRole("link", { name: "Tailored resume" }).click();
   await expect(page.getByRole("button", { name: /Application status: Applied/ })).toBeVisible();
 
   // Job import refuses private network addresses.
@@ -170,7 +161,7 @@ async function adaWordFile(): Promise<Buffer> {
             new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "Ada Lovelace", bold: true, size: 36 })] }),
             new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun("ada@example.com | +44 20 7946 0958 | London")] }),
             section("Professional Summary"),
-            new Paragraph({ children: [new TextRun("Backend engineer who builds dependable systems and enjoys teaching.")] }),
+            new Paragraph({ children: [new TextRun("Backend engineer who builds dependable payment systems and enjoys teaching.")] }),
             section("Work Experience"),
             new Paragraph({
               tabStops: [{ type: TabStopType.RIGHT, position: 10000 }],
@@ -211,11 +202,18 @@ test("a Word resume comes back as the same file with only the wording changed", 
   await page.getByRole("button", { name: "Save as my master resume" }).click();
   await expect(page).toHaveURL(/\/dashboard/);
 
+  await goTo(page, "Resumes");
   await page.getByRole("link", { name: "New application" }).first().click();
   await page.getByLabel("Job post").fill(JOB);
   await page.getByRole("button", { name: "Tailor resume" }).click();
   await expect(page).toHaveURL(/\/resumes\/[0-9a-f-]+\?view=review/, { timeout: 60_000 });
 
+  const rail = page.getByRole("complementary");
+  for (const id of [2, 3, 4]) {
+    await rail.getByText(`[Verify claim ${id}]`, { exact: true }).click();
+    await rail.getByRole("button", { name: "Revert to original" }).click();
+    await expect(rail.getByText(`[Verify claim ${id}]`, { exact: true })).toHaveCount(0);
+  }
   await page.getByRole("button", { name: "Download" }).click();
   await expect(page.getByText("Same fonts and layout, new wording.")).toBeVisible();
   const download = page.waitForEvent("download");
@@ -228,15 +226,11 @@ test("a Word resume comes back as the same file with only the wording changed", 
   const before = await paragraphs(original);
   const after = await paragraphs(tailored);
   const xml = after.join("\n");
-  // The fake model rewrote two bullets, extended the skills line, and added one bullet.
-  expect(xml).toContain("Led payment services in Go backed by PostgreSQL");
-  expect(xml).toContain("2M daily transactions");
-  expect(xml).toContain("Mentored engineers through on-call rotations");
-  expect(after).toHaveLength(before.length + 1);
-  // The design is untouched: the centered header and the tab-aligned dates are the original paragraphs, byte for byte.
+  expect(xml).toContain("Worked on services in Go backed by PostgreSQL for the payments team");
+  expect(xml).not.toMatch(/2M daily transactions|Mentored engineers through on-call rotations/);
+  expect(after).toHaveLength(before.length);
+  // The centered header and tab-aligned dates are the original paragraphs, byte for byte.
   expect(after[0]).toBe(before[0]);
   expect(after[0]).toContain('<w:jc w:val="center"/>');
   expect(after.find((p) => p.includes("2020 – Present"))).toBe(before.find((p) => p.includes("2020 – Present")));
-  // The new bullet is a real Word bullet, like its neighbours.
-  expect(after.find((p) => p.includes("Mentored engineers"))).toContain("<w:numPr>");
 });

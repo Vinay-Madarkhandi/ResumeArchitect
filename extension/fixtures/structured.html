@@ -1,0 +1,15 @@
+<!doctype html>
+<html><head>
+<title>Incorrect generic title</title>
+<script type="application/ld+json">bad markup</script>
+<script type="application/ld+json">
+{"@graph":[
+  {"@type":"JobPosting","title":"Recommended role","url":"https://example.test/jobs/recommended"},
+  {"@type":["Thing","https://schema.org/JobPosting"],"url":"/jobs/42","title":"Systems Engineer",
+   "hiringOrganization":{"name":"Northwind"},
+   "jobLocationType":"TELECOMMUTE","applicantLocationRequirements":[{"@type":"Country","name":"Germany"}],
+   "baseSalary":{"currency":"EUR","value":{"minValue":80000,"maxValue":100000,"unitText":"YEAR"}},
+   "description":"<p>Build systems &amp; write tests.</p><ul><li>Incident response</li><li>Go</li></ul><script>ignore()<\/script>"}
+]}
+</script>
+</head><body><main><h1>Incorrect on-page heading</h1><p>Generic fallback text.</p></main></body></html>

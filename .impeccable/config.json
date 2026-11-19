@@ -1,0 +1,20 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "design-system-font",
+        "value": "times-roman",
+        "createdAt": "2026-11-18T06:36:50.296Z",
+        "reason": "agent decision: standard-14 PDF font in lib/report/inspectPdf.test.ts fixture that proves font extraction; not UI"
+      },
+      {
+        "rule": "design-system-font",
+        "value": "helvetica-bold",
+        "createdAt": "2026-11-18T06:36:50.438Z",
+        "reason": "agent decision: standard-14 PDF font in lib/report/inspectPdf.test.ts fixture that proves font extraction; not UI"
+      }
+    ]
+  }
+}

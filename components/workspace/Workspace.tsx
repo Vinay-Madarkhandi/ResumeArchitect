@@ -3,40 +3,52 @@
 import { useCallback, useDeferredValue, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import type { Editor } from "@tiptap/react";
-import { ArrowLeft, Check, CircleAlert, Columns2, FileCheck2, LoaderCircle, Mail, PenLine, RotateCcw } from "lucide-react";
+import { ArrowLeft, Check, CircleAlert, Columns2, FileCheck2, LayoutTemplate, LoaderCircle, Mail, PenLine, RotateCcw } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/Tabs";
 import { Button } from "@/components/ui/Button";
-import { Select } from "@/components/ui/Field";
+import { Dialog, DialogContent } from "@/components/ui/Dialog";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { useToast } from "@/components/ui/Toast";
 import { DocumentView, Paper } from "@/components/paper/Paper";
 import { PaperEditor } from "@/components/paper/PaperEditor";
 import { FormatBar } from "@/components/paper/FormatBar";
 import { AskAi } from "@/components/paper/AskAi";
+import { TemplateGallery } from "@/components/paper/TemplateGallery";
 import { Redline } from "@/components/workspace/Redline";
 import { ChangeList, type ChangeEntry } from "@/components/workspace/ChangeList";
-import { AtsList, ScoreLockup, ScorePanel } from "@/components/workspace/ScorePanel";
+import { ScoreLockup, ScorePanel } from "@/components/workspace/ScorePanel";
+import { ShareDialog } from "@/components/workspace/ShareDialog";
 import { ExportMenu } from "@/components/workspace/ExportMenu";
 import { CoverLetter } from "@/components/workspace/CoverLetter";
 import { JobPostPanel } from "@/components/workspace/JobPostPanel";
+import { PowerEdit } from "@/components/workspace/PowerEdit";
+import { BulletBank } from "@/components/workspace/BulletBank";
 import { StatusSelect } from "@/components/tracker/StatusSelect";
 import { changeImpact } from "@/lib/resume/impact";
-import type { ApplicationStatus } from "@/lib/supabase/database.types";
+import type { ApplicationStatus } from "@/lib/db/schema";
 import { setOriginalLines, setPageBreaks } from "@/lib/editor/extensions";
 import { useAutosave, type SaveStatus } from "@/lib/editor/useAutosave";
 import { usePageCount } from "@/lib/editor/usePageCount";
 import { diffUnits, revertHunk, type Hunk } from "@/lib/resume/diff";
+import { hasUnverifiedClaim } from "@/lib/grounding/placeholder";
 import { buildRedline, matchChange } from "@/lib/resume/review";
 import { addSkill } from "@/lib/resume/addSkill";
 import { documentText, fromUnits, toUnits } from "@/lib/resume/units";
 import { TEMPLATES, type TemplateId } from "@/lib/resume/templates";
-import { atsChecks, scoreResume } from "@/lib/scoring/score";
+import { buildMatchReport } from "@/lib/report/matchReport";
+import { legacyJobFacts } from "@/lib/report/legacyJobFacts";
+import { readResume } from "@/lib/report/resume";
+import { resumeSearchabilityChecks } from "@/lib/report/searchability";
+import { CheckList } from "@/components/scan/reportParts";
+import type { ScanTarget } from "@/lib/data/job-descriptions";
+import type { ReportTarget } from "@/lib/report/target";
+import type { JobFacts } from "@/lib/schemas/jobFacts";
 import type { DocumentContent } from "@/lib/schemas/document";
 import type { SessionArtifacts } from "@/lib/schemas/tailoring";
 import { cn } from "@/lib/cn";
 
 type View = "review" | "edit" | "compare" | "letter";
-type Rail = "changes" | "score" | "job";
+type Rail = "changes" | "score" | "job" | "history";
 
 export interface WorkspaceProps {
   resume: {
@@ -54,6 +66,11 @@ export interface WorkspaceProps {
   session: SessionArtifacts | null;
   /** The original job post text, for the keyword panel. */
   jobText: string | null;
+  jobFacts: JobFacts | null;
+  asOf: string;
+  scanTargets: ScanTarget[];
+  initialJobId: string | null;
+  initialTarget: ReportTarget | null;
   initialView: View | null;
 }
 
@@ -90,7 +107,7 @@ function SaveIndicator({ status, onRetry }: { status: SaveStatus; onRetry: () =>
   );
 }
 
-export function Workspace({ resume, session, jobText, initialView }: WorkspaceProps) {
+export function Workspace({ resume, session, jobText, jobFacts, asOf, initialView, scanTargets, initialJobId, initialTarget }: WorkspaceProps) {
   const toast = useToast();
   const tailored = !!session;
   const original = session?.sourceSnapshot ?? null;
@@ -103,6 +120,8 @@ export function Workspace({ resume, session, jobText, initialView }: WorkspacePr
   const [focusedId, setFocusedId] = useState<string | null>(null);
   const [editor, setEditor] = useState<Editor | null>(null);
   const [rail, setRail] = useState<Rail>("changes");
+  const [choosingTemplate, setChoosingTemplate] = useState(false);
+  const [masterRail, setMasterRail] = useState<"checks" | "history">("checks");
 
   const { status, flush } = useAutosave(doc, (content) => patch(resume.id, { content }));
   const deferredDoc = useDeferredValue(doc);
@@ -110,20 +129,23 @@ export function Workspace({ resume, session, jobText, initialView }: WorkspacePr
   const originalUnits = useMemo(() => (original ? toUnits(original) : null), [original]);
   const units = useMemo(() => toUnits(deferredDoc), [deferredDoc]);
   const hunks = useMemo(() => (originalUnits ? diffUnits(originalUnits, units) : []), [originalUnits, units]);
-  const scoreNowEarly = useMemo(() => (job ? scoreResume(deferredDoc, job) : null), [deferredDoc, job]);
+  const scoring = useMemo(() => job ? {
+    job: jobFacts ?? legacyJobFacts(job), jobText: jobText ?? "", file: null, asOf: new Date(asOf),
+  } : null, [job, jobFacts, jobText, asOf]);
+  const scoreNow = useMemo(() => scoring ? buildMatchReport({ ...scoring, resume: deferredDoc }) : null, [scoring, deferredDoc]);
+  const scoreBefore = useMemo(() => original && scoring ? buildMatchReport({ ...scoring, resume: original }) : null, [original, scoring]);
+  const showImpact = view !== "edit" && rail === "changes";
   const entries: ChangeEntry[] = useMemo(
     () =>
       hunks.map((hunk) => ({
         hunk,
         change: matchChange(hunk, session?.changes ?? []),
-        impact: job && scoreNowEarly ? changeImpact(units, hunk, job, scoreNowEarly) : null,
+        impact: showImpact && scoring && scoreNow ? changeImpact(units, hunk, scoring, scoreNow) : null,
       })),
-    [hunks, session, job, units, scoreNowEarly],
+    [hunks, session, scoring, units, scoreNow, showImpact],
   );
   const redline = useMemo(() => buildRedline(units, hunks), [units, hunks]);
-  const scoreBefore = useMemo(() => (original && job ? scoreResume(original, job) : null), [original, job]);
-  const scoreNow = scoreNowEarly;
-  const ats = useMemo(() => atsChecks(units), [units]);
+  const ats = useMemo(() => resumeSearchabilityChecks({ resume: readResume(deferredDoc), file: null }), [deferredDoc]);
   const pages = usePageCount(resume.id, deferredDoc, template);
 
   const unreviewed = entries.filter((e) => !reviewed.has(e.hunk.id)).length;
@@ -180,9 +202,10 @@ export function Workspace({ resume, session, jobText, initialView }: WorkspacePr
   );
 
   function keepAll() {
-    persistReviewed(new Set([...reviewed, ...entries.map((e) => e.hunk.id)]));
+    const ready = entries.filter(({ hunk }) => !hunk.after.some((line) => hasUnverifiedClaim(line.text)));
+    persistReviewed(new Set([...reviewed, ...ready.map((e) => e.hunk.id)]));
     setFocusedId(null);
-    toast("All changes kept.", "success");
+    toast(ready.length === entries.length ? "All changes kept." : "Verification placeholders still need review.", "info");
   }
 
   function revertAll() {
@@ -197,8 +220,14 @@ export function Workspace({ resume, session, jobText, initialView }: WorkspacePr
     toast(`Added ${label} to your skills.`, "success");
   }
 
+  function insertAtCursor(text: string) {
+    if (!editor || editor.isDestroyed) return;
+    editor.chain().focus().insertContent({ type: "text", text }).run();
+  }
+
   function changeTemplate(next: TemplateId) {
     setTemplate(next);
+    setChoosingTemplate(false);
     patch(resume.id, { template: next }).catch(() => toast("Couldn't save the template choice.", "error"));
   }
 
@@ -234,12 +263,12 @@ export function Workspace({ resume, session, jobText, initialView }: WorkspacePr
     <div className="flex min-h-dvh flex-col">
       <header className="sticky top-0 z-30 border-b border-line bg-ground/92 backdrop-blur-md">
         <div className="flex h-14 items-center gap-3 px-3 sm:px-5">
-          <Link href="/dashboard" className="rounded-md p-2 text-ink-3 transition-colors hover:bg-hover hover:text-ink" aria-label="Back to applications">
+          <Link href="/resumes" className="rounded-md p-2 text-ink-3 transition-colors hover:bg-hover hover:text-ink" aria-label="Back to resumes">
             <ArrowLeft className="size-4" />
           </Link>
           <div className="min-w-0">
             <h1 className="truncate text-body font-semibold text-ink">{resume.title}</h1>
-            <p className="truncate text-label text-ink-3">{tailored ? "Tailored application" : "Master resume"}</p>
+            <p className="truncate text-label text-ink-3">{tailored ? "Tailored application" : resume.kind === "master" ? "Master resume" : "Resume draft"}</p>
           </div>
           {tailored && (
             <span className="ml-1 hidden sm:block">
@@ -255,17 +284,20 @@ export function Workspace({ resume, session, jobText, initialView }: WorkspacePr
                 {pages.pageCount} {pages.pageCount === 1 ? "page" : "pages"}
               </span>
             )}
-            <label className="hidden items-center gap-2 text-small text-ink-3 md:flex">
-              <span className="sr-only">Template</span>
-              <Select value={template} onChange={(e) => changeTemplate(e.target.value as TemplateId)} className="h-8 w-32 text-small">
-                {Object.values(TEMPLATES).map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.label}
-                  </option>
-                ))}
-              </Select>
-            </label>
+            <Button size="sm" variant="ghost" onClick={() => setChoosingTemplate(true)} aria-label={`Template: ${TEMPLATES[template].label}`}>
+              <LayoutTemplate aria-hidden /> <span className="hidden md:inline">{TEMPLATES[template].label}</span>
+            </Button>
+            <Dialog open={choosingTemplate} onOpenChange={setChoosingTemplate}>
+              <DialogContent
+                title="Templates"
+                description="Every template is a single column of real text with standard headings, so it reads cleanly in any applicant tracking system. Switching never changes your wording."
+                className="max-h-[calc(100dvh-2rem)] max-w-5xl overflow-y-auto"
+              >
+                <TemplateGallery doc={deferredDoc} value={template} onChange={changeTemplate} />
+              </DialogContent>
+            </Dialog>
             <ThemeToggle />
+            <ShareDialog resumeId={resume.id} doc={doc} template={template} />
             <ExportMenu
               resumeId={resume.id}
               doc={doc}
@@ -307,11 +339,11 @@ export function Workspace({ resume, session, jobText, initialView }: WorkspacePr
                 href="#score-rail"
                 onClick={() => setRail("score")}
                 className="flex items-baseline gap-1.5 rounded-md border border-line px-2.5 py-1 font-mono text-small tabular lg:hidden"
-                aria-label={`Match score ${scoreBefore.total} to ${scoreNow.total}`}
+                aria-label={`Match score ${scoreBefore.matchRate} to ${scoreNow.matchRate}`}
               >
-                <span className="text-ink-3">{scoreBefore.total}</span>
+                <span className="text-ink-3">{scoreBefore.matchRate}</span>
                 <span className="text-ink-3">→</span>
-                <span className="font-medium text-ink">{scoreNow.total}</span>
+                <span className="font-medium text-ink">{scoreNow.matchRate}</span>
               </a>
             )}
             {view === "edit" && <FormatBar editor={editor} />}
@@ -359,10 +391,12 @@ export function Workspace({ resume, session, jobText, initialView }: WorkspacePr
         </main>
 
         <aside id="score-rail" className="border-t border-line bg-panel/40 lg:sticky lg:top-14 lg:h-[calc(100dvh-3.5rem)] lg:overflow-y-auto lg:border-l lg:border-t-0">
-          {tailored && scoreBefore && scoreNow && job ? (
+          <PowerEdit active={view === "edit"} doc={doc} resumeId={resume.id} jobs={scanTargets} initialJobId={initialJobId}
+            initialTarget={initialTarget} asOf={asOf} onAddSkill={onAddSkill} onInsert={insertAtCursor} flush={flush} />
+          {view === "edit" && tailored ? null : tailored && scoreBefore && scoreNow && job ? (
             <div className="flex flex-col">
               <div className="border-b border-line px-4 py-4">
-                <ScoreLockup job={job} before={scoreBefore.total} now={scoreNow.total} />
+                <ScoreLockup job={job} before={scoreBefore.matchRate} now={scoreNow.matchRate} />
               </div>
               <div className="flex items-center gap-1 border-b border-line px-4 py-2.5">
                 <Tabs value={rail} onValueChange={(v) => setRail(v as Rail)}>
@@ -372,6 +406,7 @@ export function Workspace({ resume, session, jobText, initialView }: WorkspacePr
                     </TabsTrigger>
                     <TabsTrigger value="score">Score</TabsTrigger>
                     <TabsTrigger value="job">Job post</TabsTrigger>
+                    <TabsTrigger value="history">History</TabsTrigger>
                   </TabsList>
                 </Tabs>
               </div>
@@ -414,24 +449,38 @@ export function Workspace({ resume, session, jobText, initialView }: WorkspacePr
                 <div className="p-4">
                   <ScorePanel before={scoreBefore} now={scoreNow} onAddSkill={onAddSkill} />
                 </div>
+              ) : rail === "job" ? (
+                <div className="p-4">
+                  <JobPostPanel text={jobText} summary={job.summary} report={scoreNow} />
+                </div>
               ) : (
                 <div className="p-4">
-                  <JobPostPanel text={jobText} job={job} report={scoreNow} />
+                  <BulletBank doc={doc} resumeId={resume.id} onChange={replaceDoc} />
                 </div>
               )}
             </div>
           ) : (
             <div className="flex flex-col gap-6 p-4">
               <div>
-                <h2 className="text-lead font-semibold text-ink">Your master resume</h2>
-                <p className="mt-1 text-small text-ink-2">
+                <h2 className="text-lead font-semibold text-ink">{resume.kind === "master" ? "Your master resume" : "Resume checks"}</h2>
+                {resume.kind === "master" && <p className="mt-1 text-small text-ink-2">
                   Every application starts from this copy. Tailoring never changes it; edits here apply to future applications.
-                </p>
-                <Link href="/new" className="mt-3 inline-flex text-small text-brass hover:underline">
+                </p>}
+                <Link href={`/new?resume=${resume.id}`} className="mt-3 inline-flex text-small text-brass hover:underline">
                   Tailor it for a job →
                 </Link>
               </div>
-              <AtsList report={{ ats }} />
+              <Tabs value={masterRail} onValueChange={(v) => setMasterRail(v as "checks" | "history")}>
+                <TabsList>
+                  <TabsTrigger value="checks">ATS checks</TabsTrigger>
+                  <TabsTrigger value="history">Career history</TabsTrigger>
+                </TabsList>
+              </Tabs>
+              {masterRail === "checks" ? (
+                <CheckList checks={ats} />
+              ) : (
+                <BulletBank doc={doc} resumeId={resume.id} onChange={replaceDoc} />
+              )}
             </div>
           )}
         </aside>

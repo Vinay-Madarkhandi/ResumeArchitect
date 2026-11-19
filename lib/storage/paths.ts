@@ -6,4 +6,3 @@ export function originalResumePath(userId: string, resumeId: string, extension: 
   return `${userId}/${resumeId}/source.${extension}`;
 }
 
-export const MAX_RESUME_UPLOAD_BYTES = 10 * 1024 * 1024; // 10MB

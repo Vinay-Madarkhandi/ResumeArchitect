@@ -32,8 +32,8 @@ describe("applyEdits with nested bullets", () => {
     const units = toUnits(nested);
     expect(numberedResume(units)).toContain("[2] (bullet, locked)");
     const { units: out, changes } = applyEdits(units, [
-      { op: "rewrite", line: 2, text: "Led the platform team", reason: "r", requirementIds: [] },
-      { op: "rewrite", line: 3, text: "Wrote onboarding docs", reason: "r", requirementIds: [] },
+      { op: "rewrite", line: 2, text: "Led the platform team", reason: "r", requirementIds: [], cites: [] },
+      { op: "rewrite", line: 3, text: "Wrote onboarding docs", reason: "r", requirementIds: [], cites: [] },
     ]);
     expect(changes.map((c) => c.after)).toEqual(["Wrote onboarding docs"]);
     expect(fromUnits(out).content[1]).toMatchObject({ content: [nested.content[1].type === "bulletList" ? nested.content[1].content[0] : null, expect.anything()] });

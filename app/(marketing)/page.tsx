@@ -1,20 +1,18 @@
 import type { Metadata } from "next";
 import { ClosingCta, SiteFooter } from "@/components/marketing/Closing";
-import { Comparison } from "@/components/marketing/Comparison";
 import { Faq } from "@/components/marketing/Faq";
-import { Features } from "@/components/marketing/Features";
+import { FeatureRows, FeaturesIntro } from "@/components/marketing/FeatureRows";
 import { Hero } from "@/components/marketing/Hero";
 import { HowItWorks } from "@/components/marketing/HowItWorks";
-import { Privacy } from "@/components/marketing/Privacy";
-import { Problem } from "@/components/marketing/Problem";
 import { RedlineCloseUp } from "@/components/marketing/RedlineCloseUp";
-import { ScoreExplained } from "@/components/marketing/ScoreExplained";
+import { ReportAnatomy } from "@/components/marketing/ReportAnatomy";
+import { SelfHosted } from "@/components/marketing/SelfHosted";
 import { SiteHeader } from "@/components/marketing/SiteHeader";
 
 export const metadata: Metadata = {
-  title: { absolute: "ResumeArchitect · See every change before it's yours" },
+  title: { absolute: "ResumeArchitect · A free resume scanner on your own Gemini key" },
   description:
-    "Tailor your resume to one job with your own Gemini key. Every change is a redline with a reason, every score is explained, and nothing is kept until you keep it.",
+    "Scan your resume against any job and read a match report. Free, self-hosted and bring-your-own-key, with tailoring, a job tracker, a browser clipper, LinkedIn review, interview prep and a cover letter scanner.",
 };
 
 export default function LandingPage() {
@@ -29,13 +27,13 @@ export default function LandingPage() {
       <SiteHeader />
       <main id="main">
         <Hero />
-        <Problem />
         <HowItWorks />
+        <ReportAnatomy />
+        <FeaturesIntro />
+        <FeatureRows keys={["ats", "powerEdit"]} />
         <RedlineCloseUp />
-        <ScoreExplained />
-        <Features />
-        <Privacy />
-        <Comparison />
+        <FeatureRows keys={["builder", "tracker", "clipper", "linkedin", "interview", "coverLetter"]} last />
+        <SelfHosted />
         <Faq />
         <ClosingCta />
       </main>

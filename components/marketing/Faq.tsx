@@ -1,55 +1,59 @@
 import { Plus } from "lucide-react";
 import type { ReactNode } from "react";
+import { RUNS_PER_HOUR, SCANS_PER_HOUR } from "@/lib/server/limits";
 import { Container, DisplayHeading } from "./Section";
 
 const QUESTIONS: { q: string; a: ReactNode }[] = [
   {
-    q: "How do I get a Gemini API key?",
-    a: (
-      <>
-        Sign in to Google AI Studio with a Google account, choose <em>Get API key</em>, create one and copy it. Paste it
-        into ResumeArchitect once during setup. It takes about a minute, and the free tier is enough to tailor resumes.
-      </>
-    ),
+    q: "What does it cost? Is there a catch?",
+    a: "It is free, with no pricing tiers. You host it yourself and bring your own Gemini key, so the only money involved is what Google charges for your key, and its free tier works. If you choose a paid Gemini plan, Google bills you directly.",
   },
   {
-    q: "What does it cost?",
-    a: "ResumeArchitect is free to use with your own key. There’s no subscription and no AI credits to buy: requests run on your Gemini quota, and Google’s free tier works. If you use a paid Gemini plan, Google bills you directly.",
+    q: "Is there a limit on scans?",
+    a: <>There is no monthly or lifetime cap. To stop a runaway client from hammering your server, each account is rate-limited to {SCANS_PER_HOUR} scans an hour, and to {RUNS_PER_HOUR} tailoring runs an hour.</>,
   },
   {
-    q: "Who can see my key and my resumes?",
-    a: "Your key is encrypted at rest with AES-256-GCM and never sent back to the browser after you save it. Your resumes, job posts and applications are private to your account. Text you tailor is sent to Gemini under your own key to do the work.",
+    q: "Where is my data stored?",
+    a: "On the server that runs this app. Resumes, job posts, scans and applications are rows in its Postgres database, and uploaded files sit in its S3-compatible storage bucket. Your records are private to your account. The text sent to Gemini when an AI step runs is the only thing that leaves.",
   },
   {
-    q: "Will it invent experience I don’t have?",
-    a: "It’s instructed not to, and you don’t have to take that on trust. Every change is shown as a redline with its reason, and any number, name or skill the original resume doesn’t back up is flagged Verify. Missing requirements are only added when you say “I have this”.",
+    q: "How is my Gemini key stored?",
+    a: "It is tested against Google when you save it, then encrypted with AES-256-GCM under a secret held in your server's environment. The browser only ever sees its last four characters. It is decrypted on the server to make your requests, and you can replace or remove it in Settings at any time.",
   },
   {
-    q: "Which AI model does it use?",
-    a: "Google’s Gemini 2.5 Flash, called with your key. The match score is not produced by the model: it’s computed in code, so the same resume and job always give the same score.",
+    q: "What does Gemini see?",
+    a: "Only what an AI step needs: the job post when it is read, an uploaded file when it is rebuilt into a resume, the lines being rewritten, or the text you give a career tool. Scoring a resume against a job you have already read sends nothing to Google.",
   },
   {
-    q: "What can I download?",
-    a: "If you upload your resume as a Word file, you get that same file back with only the wording changed: your fonts, layout, and spacing stay exactly as you made them. You can also download a PDF or Word file in the Classic, Modern, or Standard template, built from exactly what’s on screen, or copy the resume as plain text.",
+    q: "How is the match rate calculated?",
+    a: "Gemini reads the job post once into skills, a title, a level and an education requirement. Your resume is then scored against that list in code, using weights we estimated that you can see in the breakdown. The same resume and job give the same number. It is not any other scanner's number.",
   },
   {
-    q: "Does it guarantee I’ll get past an ATS?",
-    a: "No, and no tool honestly can. The ATS readability part of the score checks structure that parsers commonly struggle with, such as headings, dates and contact details. How a particular employer’s system ranks you is outside anyone’s control.",
+    q: "Do I need a key to scan?",
+    a: "You need one to read a new job post. After that, scanning or rescanning a resume against that job works without it, and so does Power Edit.",
   },
   {
-    q: "Does tailoring change my original resume?",
-    a: "Never. Each tailoring run creates its own application with a snapshot of the original, so your master resume stays as you uploaded it and you can tailor it again for the next job.",
+    q: "Will the AI invent experience I don't have?",
+    a: "It is instructed not to, and you don't have to take that on trust. Every tailoring change is shown as a redline with its reason, and a separate check flags any number, name or skill your original resume doesn't back up as Verify. A missing requirement is only added when you say you have it.",
+  },
+  {
+    q: "Does a high score guarantee I'll get past an ATS?",
+    a: "No, and no tool honestly can. The report checks structure that parsers commonly struggle with and compares your wording with the job. How a particular employer's system ranks you is outside anyone's control.",
+  },
+  {
+    q: "Which model does it use, and what files can I use?",
+    a: "Gemini 2.5 Flash by default, which a self-hoster can change with the GEMINI_MODEL setting. You can scan or import PDF, Word (.docx) or plain text files (up to 8 MB to scan, 10 MB to import). Download PDF or Word, and a Word file you upload comes back with only the wording changed.",
   },
 ];
 
 export function Faq() {
   return (
     <section id="faq" aria-labelledby="faq-title" className="scroll-mt-20 border-t border-line py-24 lg:py-32">
-      <Container className="grid gap-12 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:gap-20">
+      <Container className="grid grid-cols-[minmax(0,1fr)] gap-12 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:gap-20">
         <div>
           <DisplayHeading id="faq-title">Questions, answered plainly.</DisplayHeading>
           <p className="mt-5 max-w-sm text-body text-ink-2">
-            Setting up takes a Gemini key and a resume. Everything else is below.
+            The short answers on cost, limits, where your data lives and how your key is kept.
           </p>
         </div>
         <div className="border-t border-line">

@@ -14,16 +14,16 @@ const AUTH_TAG_LENGTH = 16;
 const ALGORITHM = "aes-256-gcm";
 
 function getEncryptionKey(): Buffer {
-  const secret = process.env.GEMINI_KEY_ENCRYPTION_SECRET;
+  const secret = process.env.KEY_ENCRYPTION_SECRET;
   if (!secret) {
     throw new Error(
-      "GEMINI_KEY_ENCRYPTION_SECRET is not set. Generate one with `openssl rand -base64 32`."
+      "KEY_ENCRYPTION_SECRET is not set. Generate one with `openssl rand -base64 32`."
     );
   }
   const key = Buffer.from(secret, "base64");
   if (key.length !== 32) {
     throw new Error(
-      "GEMINI_KEY_ENCRYPTION_SECRET must decode to exactly 32 bytes (base64 of `openssl rand -base64 32`)."
+      "KEY_ENCRYPTION_SECRET must decode to exactly 32 bytes (base64 of `openssl rand -base64 32`)."
     );
   }
   return key;
@@ -52,6 +52,10 @@ export function decryptApiKey(blob: Buffer): string {
   const plaintext = Buffer.concat([decipher.update(ciphertext), decipher.final()]);
   return plaintext.toString("utf8");
 }
+
+/** Seals a short server secret, such as an emailed link, for storage outside Postgres. */
+export const sealText = (plaintext: string) => encryptApiKey(plaintext).toString("base64");
+export const openText = (sealed: string) => decryptApiKey(Buffer.from(sealed, "base64"));
 
 export function lastFour(plaintext: string): string {
   return plaintext.slice(-4);

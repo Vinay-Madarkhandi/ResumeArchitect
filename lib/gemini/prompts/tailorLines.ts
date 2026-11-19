@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { generateStructured, type JsonModel } from "@/lib/gemini/model";
+import type { MatchReport } from "@/lib/report/report";
 import type { JobAnalysis } from "@/lib/schemas/jobAnalysis";
-import type { ScoreReport } from "@/lib/scoring/score";
 import { isLocked, type Unit } from "@/lib/resume/units";
 
 /**
@@ -20,6 +20,8 @@ export const LineEditSchema = z.object({
   reason: z.string(),
   /** Requirement ids from the job analysis this edit addresses. */
   requirementIds: z.array(z.string()).default([]),
+  /** Source line numbers from the numbered resume that support this edit. */
+  cites: z.array(z.number().int()).default([]),
 });
 export type LineEdit = z.infer<typeof LineEditSchema>;
 
@@ -42,6 +44,7 @@ Edit operations:
   already supports somewhere else.
 - remove: delete line N. Use it rarely, only for content that is clearly
   irrelevant to this job and costs space.
+- cites: array of line numbers from the numbered resume that directly support this edit's claims. Every candidate claim must cite the source line numbers supporting it.
 Lines marked "locked" contain nested content: never rewrite or remove them
 (you may insert_after them).
 
@@ -50,7 +53,8 @@ Hard rules, no exceptions:
    certifications, tools, skills, projects, or achievements that the resume
    does not already state or directly imply.
 2. Never invent or change numbers. Keep every existing metric exactly; never
-   add a metric that is not in the resume.
+   add a metric that is not in the resume. Keep each figure with its original
+   action, unit and result, and keep each experience under its original role.
 3. Use the job's vocabulary only when the underlying claim is already true
    ("JS" → "JavaScript" is fine; adding Kubernetes the resume never mentions is not).
 4. If a requirement is missing from the resume, do not fake it. Leave it for
@@ -94,16 +98,26 @@ export function numberedResume(units: Unit[]): string {
 
 export async function tailorLines(
   model: JsonModel,
-  input: { units: Unit[]; job: JobAnalysis; before: ScoreReport },
+  /** `report` scores the resume as it is now; its skills are the requirements the model sees. */
+  input: { units: Unit[]; job: JobAnalysis; report: MatchReport },
 ): Promise<TailorResponse> {
-  const { units, job, before } = input;
-  const reqLines = before.requirements.map(
-    (r) => `- ${r.id} · ${r.label} · ${r.importance === "must" ? "must-have" : "nice-to-have"} · ${r.matched ? "shown in resume" : "NOT shown in resume"}`,
+  const { units, job, report } = input;
+  const statusMap = new Map(
+    [...report.hardSkills, ...report.softSkills].map((s) => [s.term.toLowerCase(), s.status]),
   );
+  const reqs = job.requirements.length > 0 ? job.requirements : [...report.hardSkills, ...report.softSkills].map((s) => ({
+    id: s.term.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "skill",
+    label: s.term,
+    importance: (s.importance === "high" ? "must" : "nice") as "must" | "nice",
+  }));
+  const reqLines = reqs.map((r) => {
+    const status = statusMap.get(r.label.toLowerCase()) === "missing" ? "NOT shown in resume" : "shown in resume";
+    return `- ${r.id} · ${r.label} · ${r.importance === "must" ? "high" : "low"} importance · ${status}`;
+  });
   const prompt = [
     `# Role\n${job.title}${job.company ? ` at ${job.company}` : ""}${job.seniority ? ` (${job.seniority})` : ""}\n${job.summary}`,
     `# Requirements\n${reqLines.join("\n")}`,
-    job.keywords.length ? `# Keywords recruiters search for\n${job.keywords.map((k) => k.term).join(", ")}` : "",
+    report.otherKeywords.length ? `# Keywords recruiters search for\n${report.otherKeywords.map((k) => k.term).join(", ")}` : "",
     `# Resume (numbered lines)\n${numberedResume(units)}`,
     "Return the edits, and in summary tell the candidate in two or three sentences what you changed and why (not resume text), as JSON.",
   ]

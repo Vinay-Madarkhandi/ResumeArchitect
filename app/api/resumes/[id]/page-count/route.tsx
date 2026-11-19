@@ -1,3 +1,5 @@
+import { readJson } from "@/lib/server/request-body";
+import { checkOrigin } from "@/lib/auth/guards";
 import { NextResponse } from "next/server";
 import { renderToBuffer } from "@react-pdf/renderer";
 import { extractText, getDocumentProxy } from "unpdf";
@@ -27,16 +29,20 @@ function pageEndAnchor(pageText: string): string {
  * possibly unsaved content posted by the client.
  */
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const originError = checkOrigin(request);
+  if (originError) return originError;
   const { id } = await params;
   const owned = await requireOwnedResume(id);
   if (!owned.ok) return owned.response;
 
-  const body = await request.json().catch(() => null);
+  const json = await readJson<Record<string, unknown>>(request);
+  if (!json.ok) return json.response;
+  const body = json.data;
   const parsed = DocumentContentSchema.safeParse(body?.content);
   if (!parsed.success) return NextResponse.json({ error: "Invalid content." }, { status: 400 });
 
   try {
-    const buffer = await renderToBuffer(<DocumentPdf doc={parsed.data} template={getTemplate(body?.template)} />);
+    const buffer = await renderToBuffer(<DocumentPdf doc={parsed.data} template={getTemplate(typeof body?.template === "string" ? body.template : undefined)} />);
     const pdf = await getDocumentProxy(new Uint8Array(buffer));
     const pageCount = pdf.numPages;
 

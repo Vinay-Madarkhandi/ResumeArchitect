@@ -9,6 +9,7 @@ import type { JobAnalysis } from "@/lib/schemas/jobAnalysis";
 import type { TailoredChange } from "@/lib/schemas/tailoring";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
+import { hasUnverifiedClaim } from "@/lib/grounding/placeholder";
 import { cn } from "@/lib/cn";
 
 export interface ChangeEntry {
@@ -63,6 +64,7 @@ export function ChangeList({
         const isReviewed = reviewed.has(hunk.id);
         const focused = focusedId === hunk.id;
         const flags = change?.flags ?? [];
+        const needsReview = hunk.after.some((line) => hasUnverifiedClaim(line.text));
         return (
           <li
             key={hunk.id}
@@ -145,7 +147,7 @@ export function ChangeList({
                   </p>
                 ))}
                 <div className="flex gap-2">
-                  {!isReviewed && (
+                  {!isReviewed && !needsReview && (
                     <Button size="sm" variant="primary" onClick={() => onKeep(hunk.id)}>
                       <Check aria-hidden /> Keep
                     </Button>

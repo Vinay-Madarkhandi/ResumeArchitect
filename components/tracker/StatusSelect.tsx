@@ -5,16 +5,19 @@ import { useRouter } from "next/navigation";
 import { Check, ChevronDown } from "lucide-react";
 import { Menu, MenuContent, MenuItem, MenuTrigger } from "@/components/ui/Menu";
 import { useToast } from "@/components/ui/Toast";
-import type { ApplicationStatus } from "@/lib/supabase/database.types";
+import { stageLabels, stages, type ApplicationStatus } from "@/lib/tracker/stages";
 import { cn } from "@/lib/cn";
 
-export const STATUSES: Array<{ id: ApplicationStatus; label: string; dot: string }> = [
-  { id: "saved", label: "Saved", dot: "bg-ink-3" },
-  { id: "applied", label: "Applied", dot: "bg-brass" },
-  { id: "interviewing", label: "Interviewing", dot: "bg-query" },
-  { id: "offer", label: "Offer", dot: "bg-add" },
-  { id: "rejected", label: "Rejected", dot: "bg-del" },
-];
+const statusDots: Record<ApplicationStatus, string> = {
+  saved: "bg-ink-3",
+  applied: "bg-brass",
+  interviewing: "bg-query",
+  offer: "bg-add",
+  rejected: "bg-del",
+  withdrawn: "bg-ink-3",
+};
+
+export const STATUSES = stages.map((id) => ({ id, label: stageLabels[id], dot: statusDots[id] }));
 
 export function statusMeta(id: ApplicationStatus) {
   return STATUSES.find((s) => s.id === id) ?? STATUSES[0];

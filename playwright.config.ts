@@ -1,11 +1,12 @@
+import { randomUUID } from "node:crypto";
+import { loadEnvConfig } from "@next/env";
 import { defineConfig, devices } from "@playwright/test";
 
-/**
- * End-to-end tests against the real app, a local Supabase stack
- * (`npx supabase start`), and the fake Gemini server in e2e/fake-gemini.mjs.
- * The app must run with GEMINI_API_BASE_URL=http://127.0.0.1:4010.
- */
-const PORT = Number(process.env.E2E_PORT ?? 3217);
+loadEnvConfig(process.cwd(), true);
+const port = Number(process.env.E2E_PORT ?? 3217);
+const fakePort = Number(process.env.FAKE_GEMINI_PORT ?? 4010);
+const baseURL = `http://localhost:${port}`;
+const adminEmail = process.env.E2E_ADMIN_EMAIL ??= `e2e-admin-${randomUUID()}@example.com`;
 
 export default defineConfig({
   testDir: "e2e",
@@ -13,23 +14,27 @@ export default defineConfig({
   expect: { timeout: 20_000 },
   fullyParallel: false,
   retries: 0,
-  reporter: [["list"]],
-  use: {
-    baseURL: `http://localhost:${PORT}`,
-    trace: "retain-on-failure",
-    screenshot: "only-on-failure",
-  },
+  reporter: [[ "list" ]],
+  use: { baseURL, trace: "retain-on-failure", screenshot: "only-on-failure" },
   projects: [
     { name: "desktop", use: { ...devices["Desktop Chrome"], viewport: { width: 1440, height: 960 } } },
   ],
   webServer: [
-    { command: "node e2e/fake-gemini.mjs", port: 4010, reuseExistingServer: true },
+    { command: "node e2e/fake-gemini.mjs", port: fakePort },
     {
-      command: `npx next dev -p ${PORT}`,
-      port: PORT,
-      reuseExistingServer: true,
-      timeout: 180_000,
-      env: { GEMINI_API_BASE_URL: "http://127.0.0.1:4010" },
+      command: "npm run build:worker && npm run db:migrate && npm run build && node e2e/run-stack.mjs",
+      url: `${baseURL}/api/health`,
+      timeout: 300_000,
+      env: {
+        APP_URL: baseURL,
+        ADMIN_EMAILS: [process.env.ADMIN_EMAILS, adminEmail].filter(Boolean).join(","),
+        E2E_PORT: String(port),
+        GEMINI_API_BASE_URL: `http://127.0.0.1:${fakePort}`,
+        KEY_ENCRYPTION_SECRET: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+        RESEND_API_KEY: "",
+        CLIPPER_EXTENSION_ORIGINS: "chrome-extension://abcdefghijklmnopabcdefghijklmnop",
+      },
+      gracefulShutdown: { signal: "SIGTERM", timeout: 5000 },
     },
   ],
 });

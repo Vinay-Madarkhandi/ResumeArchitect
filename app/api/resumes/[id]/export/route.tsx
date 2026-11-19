@@ -1,7 +1,12 @@
-import { cookies } from "next/headers";
+import { readJson } from "@/lib/server/request-body";
+import { hasUnverifiedClaim, RESOLVE_CLAIMS } from "@/lib/grounding/placeholder";
+import { documentText } from "@/lib/resume/units";
+import { getResume } from "@/lib/data/resumes";
+import { getObject } from "@/lib/storage";
+import { checkOrigin } from "@/lib/auth/guards";
+import { currentUser } from "@/lib/auth/current-user";
 import { NextResponse } from "next/server";
 import { renderToBuffer } from "@react-pdf/renderer";
-import { createClient } from "@/utils/supabase/server";
 import { resolveDocument } from "@/lib/documentConversion";
 import { DocumentPdf, LetterPdf } from "@/lib/pdf/docToPdfTree";
 import { documentToDocx, letterToDocx } from "@/lib/docx/docToDocx";
@@ -49,18 +54,9 @@ async function render(body: Body, format: "pdf" | "docx", templateId: string | n
 }
 
 async function load(id: string) {
-  const supabase = createClient(await cookies());
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await currentUser();
   if (!user) return null;
-  const { data } = await supabase
-    .from("resumes")
-    .select("id, title, content, template, design_source_path")
-    .eq("id", id)
-    .eq("user_id", user.id)
-    .single();
-  return data ? { ...data, supabase } : null;
+  return getResume(user.id, id);
 }
 
 type Loaded = NonNullable<Awaited<ReturnType<typeof load>>>;
@@ -69,10 +65,10 @@ async function renderDesign(resume: Loaded, doc: DocumentContent): Promise<Respo
   if (!resume.design_source_path) {
     return NextResponse.json({ error: "This resume wasn't imported from a Word file." }, { status: 409 });
   }
-  const { data: file } = await resume.supabase.storage.from(RESUME_UPLOADS_BUCKET).download(resume.design_source_path);
+  const file = await getObject(resume.user_id, RESUME_UPLOADS_BUCKET, resume.design_source_path).catch(() => null);
   if (!file) return NextResponse.json({ error: "Your original Word file is no longer stored. Upload it again." }, { status: 409 });
   try {
-    const bytes = await patchDocx(await file.arrayBuffer(), doc);
+    const bytes = await patchDocx(Uint8Array.from(file).buffer, doc);
     return download(bytes, fileName(resume.title, "docx"), DOCX_TYPE);
   } catch (error) {
     if (error instanceof DesignMismatchError) return NextResponse.json({ error: error.message }, { status: 409 });
@@ -93,6 +89,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   if (!resume) return NextResponse.json({ error: "Resume not found." }, { status: 404 });
   const doc = resolveDocument(resume.content);
   if (!doc) return NextResponse.json({ error: "This resume couldn't be read." }, { status: 422 });
+  if (hasUnverifiedClaim(documentText(doc))) return NextResponse.json({ error: RESOLVE_CLAIMS }, { status: 422 });
   try {
     if (format === "design") return await renderDesign(resume, doc);
     return await render({ kind: "resume", doc }, format, resume.template, resume.title);
@@ -107,8 +104,12 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
  * { format, kind: "letter", text, template? } for the cover letter.
  */
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const originError = checkOrigin(request);
+  if (originError) return originError;
   const { id } = await params;
-  const body = await request.json().catch(() => null);
+  const json = await readJson<Record<string, unknown>>(request);
+  if (!json.ok) return json.response;
+  const body = json.data;
   const format = parseFormat(body?.format);
   if (!format) return NextResponse.json({ error: "Invalid export request." }, { status: 400 });
   const resume = await load(id);
@@ -119,10 +120,12 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       if (format === "design") return NextResponse.json({ error: "Invalid export request." }, { status: 400 });
       const text = typeof body.text === "string" ? body.text.slice(0, 20_000) : "";
       if (!text.trim()) return NextResponse.json({ error: "The letter is empty." }, { status: 400 });
+      if (hasUnverifiedClaim(text)) return NextResponse.json({ error: RESOLVE_CLAIMS }, { status: 422 });
       return await render({ kind: "letter", text }, format, template, `${resume.title} — Cover letter`);
     }
     const parsed = DocumentContentSchema.safeParse(body?.content);
     if (!parsed.success) return NextResponse.json({ error: "Invalid export request." }, { status: 400 });
+    if (hasUnverifiedClaim(documentText(parsed.data))) return NextResponse.json({ error: RESOLVE_CLAIMS }, { status: 422 });
     if (format === "design") return await renderDesign(resume, parsed.data);
     return await render({ kind: "resume", doc: parsed.data }, format, template, resume.title);
   } catch {

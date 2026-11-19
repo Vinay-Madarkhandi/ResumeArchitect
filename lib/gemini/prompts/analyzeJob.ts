@@ -1,5 +1,6 @@
 import { generateStructured, type JsonModel } from "@/lib/gemini/model";
 import { JobAnalysisSchema, type JobAnalysis } from "@/lib/schemas/jobAnalysis";
+import { uniqueIds } from "./uniqueIds";
 
 const SYSTEM = `You are a senior technical recruiter. Read a job description and extract
 what a hiring manager will actually screen for.
@@ -33,13 +34,5 @@ export async function analyzeJob(model: JsonModel, jobDescription: string): Prom
     schema: JobAnalysisSchema,
     temperature: 0.2,
   });
-  // Ids are used as React keys and in stored scores; make sure they are unique.
-  const seen = new Set<string>();
-  const requirements = result.requirements.map((r, i) => {
-    let id = r.id.trim() || `req-${i}`;
-    while (seen.has(id)) id = `${id}-${i}`;
-    seen.add(id);
-    return { ...r, id };
-  });
-  return { ...result, requirements };
+  return { ...result, requirements: uniqueIds(result.requirements, "req") };
 }

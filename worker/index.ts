@@ -1,0 +1,90 @@
+import { hostname } from "node:os";
+import { Worker } from "bullmq";
+import { cache, redisUrl } from "@/lib/cache";
+import { sqlClient } from "@/lib/db";
+import { processEmail, sealQueuedLinks, type LegacyEmailJob } from "@/lib/email";
+import { logger } from "@/lib/logger";
+import { emailQueue, maintenanceQueue, type EmailJob, type MaintenanceJob, type MaintenancePayload } from "@/lib/queue";
+import { purgeExpiredAuth } from "@/lib/auth/purge";
+import { deleteObjects, deleteUserObjects, listObjects, resumeBuckets } from "@/lib/storage";
+import { listReminderRecipients } from "@/lib/data/tracker-reminders";
+import { referencedObjects } from "@/lib/data/resumes";
+
+async function cleanOrphans() {
+  const cutoff = Date.now() - 86_400_000;
+  for (const bucket of resumeBuckets) {
+    for await (const objects of listObjects(bucket)) {
+      const byOwner = new Map<string, string[]>();
+      for (const { Key, LastModified } of objects) {
+        const owner = Key?.split("/")[0];
+        if (!Key || !owner || !LastModified || LastModified.getTime() >= cutoff) continue;
+        const paths = byOwner.get(owner) ?? [];
+        paths.push(Key);
+        byOwner.set(owner, paths);
+      }
+      for (const [owner, paths] of byOwner) {
+        const referenced = await referencedObjects(owner, bucket, paths);
+        await deleteObjects(owner, bucket, paths.filter((path) => !referenced.has(path)));
+      }
+    }
+  }
+}
+
+async function main() {
+  const queue = maintenanceQueue();
+  await queue.upsertJobScheduler("purge-auth", { every: 3_600_000 }, { name: "purge-auth" });
+  await queue.upsertJobScheduler("orphaned-objects", { every: 86_400_000 }, { name: "orphaned-objects" });
+
+  await queue.upsertJobScheduler("tracker-reminders", { pattern: "0 8 * * *", tz: "UTC" }, {
+    name: "tracker-reminders",
+    opts: { attempts: 5, backoff: { type: "exponential", delay: 5000 } },
+  });
+
+  const connection = { url: redisUrl(), maxRetriesPerRequest: null };
+  await sealQueuedLinks(emailQueue());
+  const email = new Worker<EmailJob | LegacyEmailJob>("email", processEmail, { connection, concurrency: 4 });
+  const maintenance = new Worker<MaintenancePayload, void, MaintenanceJob>("maintenance", async (job) => {
+    if (job.name === "delete-user-objects") {
+      if (!job.data.userId) throw new Error("Account ID is required");
+      return deleteUserObjects(job.data.userId);
+    }
+    if (job.name === "orphaned-objects") return cleanOrphans();
+    if (job.name === "tracker-reminders") {
+      const day = new Date(job.opts.prevMillis ?? Date.now()).toISOString().slice(0, 10);
+      if (day !== new Date().toISOString().slice(0, 10)) return;
+      const recipients = await listReminderRecipients(day);
+      if (recipients.length) await emailQueue().addBulk(recipients.map(({ id }) => ({
+        name: "trackerDigest",
+        data: { template: "trackerDigest", data: { userId: id, day } },
+        opts: { jobId: `tracker-digest-${id}-${day}`, removeOnComplete: { age: 259_200 }, removeOnFail: { age: 259_200 } },
+      })));
+      return;
+    }
+    if (job.name === "purge-auth") return purgeExpiredAuth();
+  }, { connection });
+  for (const worker of [email, maintenance]) {
+    worker.on("failed", (job) => logger.error({ queue: worker.name, jobId: job?.id }, "Background job failed"));
+    worker.on("error", () => logger.error({ queue: worker.name }, "Worker connection error"));
+  }
+  await Promise.all([email.waitUntilReady(), maintenance.waitUntilReady()]);
+  const heartbeatKey = `worker:heartbeat:${hostname()}`;
+  await cache().set(heartbeatKey, "1", "EX", 45);
+  const heartbeat = setInterval(() => {
+    void cache().set(heartbeatKey, "1", "EX", 45).catch(() => {});
+  }, 15_000);
+  logger.info("Worker ready");
+
+  const shutdown = async () => {
+    clearInterval(heartbeat);
+    await Promise.all([email.close(), maintenance.close()]);
+    await Promise.all([queue.close(), emailQueue().close(), sqlClient.end(), cache().quit()]);
+  };
+  for (const signal of ["SIGINT", "SIGTERM"] as const) process.once(signal, () => {
+    void shutdown().catch(() => process.exit(1));
+  });
+}
+
+main().catch(() => {
+  logger.error("Worker startup failed");
+  process.exit(1);
+});

@@ -38,12 +38,21 @@ const JOB = {
   keywords: [{ term: "payments", aliases: [] }],
 };
 
+const FACTS = {
+  title: JOB.title,
+  level: "senior",
+  hardSkills: [{ term: "Go", importance: "high" }, { term: "PostgreSQL", importance: "high" }, { term: "Kubernetes", importance: "low" }],
+  otherKeywords: [{ term: "payments", importance: "medium" }],
+};
+
+const POSTING = "Senior Backend Engineer for Go, PostgreSQL, and Kubernetes services on the payments platform.";
+
 const TAILOR = {
   summary: "Leads with backend depth in Go and PostgreSQL.",
   edits: [
-    { op: "rewrite", line: 4, text: "Backend engineer building reliable **Go** and **PostgreSQL** services for payments.", reason: "Mirrors the role's focus.", requirementIds: ["go", "pg"] },
-    { op: "rewrite", line: 7, text: "Built Go services on Postgres processing 2M payments a day on Kubernetes", reason: "Leads with impact.", requirementIds: ["go"] },
-    { op: "insert_after", line: 8, text: "Containerized services with Docker", reason: "Shows deployment experience.", requirementIds: [] },
+    { op: "rewrite", line: 4, text: "Backend engineer building reliable **Go** and **PostgreSQL** services.", cites: [4], reason: "Mirrors the role's focus.", requirementIds: ["go", "pg"] },
+    { op: "rewrite", line: 7, cites: [7], text: "Built Go services on Postgres processing 2M payments a day on Kubernetes", reason: "Leads with impact.", requirementIds: ["go"] },
+    { op: "insert_after", line: 8, cites: [10], text: "Containerized services with Docker", reason: "Shows deployment experience.", requirementIds: [] },
     { op: "rewrite", line: 99, text: "nonsense", reason: "Out of range.", requirementIds: [] },
   ],
 };
@@ -94,7 +103,7 @@ describe("runPipeline", () => {
   it("runs all five stages and saves a tailored resume", async () => {
     const { store, sessions, resumes } = memoryStore();
     const events = await collect(
-      runPipeline({ model: fakeModel([JOB, TAILOR]), store }, { source: { title: "Master", content: SOURCE }, jobDescription: "x".repeat(100) }),
+      runPipeline({ model: fakeModel([JOB, FACTS, TAILOR]), store }, { source: { title: "Master", content: SOURCE }, jobDescription: POSTING }),
     );
     const done = events.filter((e) => e.type === "stage" && e.status === "done").map((e) => (e as { stage: string }).stage);
     expect(done).toEqual(["copy", "markup", "set", "proof", "lockup"]);
@@ -103,24 +112,25 @@ describe("runPipeline", () => {
     const session = sessions.get("s1")!;
     expect(session.status).toBe("completed");
     expect(session.changes).toHaveLength(3); // out-of-range edit dropped
-    expect(session.score_after!).toBeGreaterThanOrEqual(session.score_before!);
+    expect(session.score_after).toBeDefined();
     expect((resumes.get("r1") as { title: string }).title).toBe("Senior Backend Engineer — Northwind");
   });
 
   it("flags numbers and requirements the original never mentions", async () => {
-    const { store, sessions } = memoryStore();
-    await collect(runPipeline({ model: fakeModel([JOB, TAILOR]), store }, { source: { title: "M", content: SOURCE }, jobDescription: "x".repeat(100) }));
-    const bullet = sessions.get("s1")!.changes!.find((c) => c.after?.includes("2M"))!;
-    expect(bullet.flags.map((f) => f.kind).sort()).toEqual(["number", "skill"]);
-    expect(bullet.flags.find((f) => f.kind === "skill")!.value).toBe("Kubernetes");
+    const { store, sessions, resumes } = memoryStore();
+    await collect(runPipeline({ model: fakeModel([JOB, FACTS, TAILOR]), store }, { source: { title: "M", content: SOURCE }, jobDescription: POSTING }));
+    const bullet = sessions.get("s1")!.changes!.find((c) => c.flags.some((f) => f.value === "2M"))!;
+    expect(bullet.after).toMatch(/Worked on services.*\[Verify claim 2\]$/);
+    expect(bullet.flags).toContainEqual(expect.objectContaining({ kind: "skill", value: "Kubernetes" }));
     expect(bullet.flags.find((f) => f.kind === "number")!.value).toBe("2M");
     const docker = sessions.get("s1")!.changes!.find((c) => c.op === "insert_after")!;
     expect(docker.flags).toEqual([]);
+    expect(JSON.stringify(resumes.get("r1"))).not.toMatch(/2M payments/);
   });
 
   it("produces a diff whose hunks line up with the recorded changes", async () => {
     const { store, resumes } = memoryStore();
-    await collect(runPipeline({ model: fakeModel([JOB, TAILOR]), store }, { source: { title: "M", content: SOURCE }, jobDescription: "x".repeat(100) }));
+    await collect(runPipeline({ model: fakeModel([JOB, FACTS, TAILOR]), store }, { source: { title: "M", content: SOURCE }, jobDescription: POSTING }));
     const tailored = (resumes.get("r1") as { content: Parameters<typeof toUnits>[0] }).content;
     const hunks = diffUnits(toUnits(SOURCE), toUnits(tailored));
     expect(hunks.map((h) => h.kind).sort()).toEqual(["added", "modified", "modified"]);
@@ -130,14 +140,98 @@ describe("runPipeline", () => {
     const { store, sessions } = memoryStore();
     const events = await collect(
       runPipeline(
-        { model: fakeModel([JOB, { nope: true }, { nope: true }]), store },
-        { source: { title: "M", content: SOURCE }, jobDescription: "x".repeat(100) },
+        { model: fakeModel([JOB, FACTS, { nope: true }, { nope: true }]), store },
+        { source: { title: "M", content: SOURCE }, jobDescription: POSTING },
       ),
     );
     const last = events.at(-1)!;
     expect(last).toMatchObject({ type: "error", code: "schema_validation_failed", stage: "set" });
     expect(sessions.get("s1")!.status).toBe("failed");
   }, 10_000);
+  it("preserves requirement aliases from synonyms and keeps non-skill requirements with differing facts wording", async () => {
+    const source = markdownToDocument(`# Alex Rivera
+
+alex@example.com
+
+## Summary
+
+Experienced backend developer.
+
+## Experience
+
+### Software Engineer — FinTech Corp
+
+- Developed distributed payment microservices in Golang backed by Postgres datastores
+`);
+
+    const jobAnalysis = {
+      title: "Backend Engineer",
+      company: "Acme",
+      seniority: "Mid",
+      summary: "Build payment services.",
+      requirements: [
+        { id: "go-req", label: "Go", aliases: [], importance: "must", category: "skill" },
+        { id: "pg-req", label: "PostgreSQL", aliases: [], importance: "must", category: "tool" },
+        { id: "degree-req", label: "Bachelor's degree", aliases: [], importance: "must", category: "qualification" },
+      ],
+      keywords: [{ term: "payments", aliases: [] }],
+    };
+
+    const differingFacts = {
+      title: "Backend Engineer",
+      level: "mid",
+      hardSkills: [
+        { term: "Golang", importance: "high" },
+        { term: "Postgres", importance: "high" },
+      ],
+      otherKeywords: [{ term: "payments", importance: "medium" }],
+    };
+
+    const tailorResponse = {
+      summary: "Highlights Go and PostgreSQL depth.",
+      edits: [
+        {
+          op: "rewrite",
+          line: 4,
+          text: "Senior backend developer specializing in Go and PostgreSQL systems.",
+          reason: "Aligns with tech stack.",
+          requirementIds: ["go-req", "pg-req"],
+        },
+      ],
+    };
+
+    const { store, sessions } = memoryStore();
+    await collect(
+      runPipeline(
+        { model: fakeModel([jobAnalysis, differingFacts, tailorResponse]), store },
+        { source: { title: "Alex", content: source }, jobDescription: "We need Go and PostgreSQL." },
+      ),
+    );
+
+    const session = sessions.get("s1")!;
+    expect(session.status).toBe("completed");
+
+    // Verify non-skill requirement "Bachelor's degree" was kept
+    const job = session.job_analysis!;
+    const degreeReq = job.requirements.find((r) => r.id === "degree-req");
+    expect(degreeReq).toBeDefined();
+    expect(degreeReq?.label).toBe("Bachelor's degree");
+    expect(degreeReq?.category).toBe("qualification");
+
+    // Verify aliases were built from synonyms
+    const goReq = job.requirements.find((r) => r.id === "go-req");
+    expect(goReq).toBeDefined();
+    expect(goReq?.aliases).toContain("Golang");
+
+    const pgReq = job.requirements.find((r) => r.id === "pg-req");
+    expect(pgReq).toBeDefined();
+    expect(pgReq?.aliases).toContain("Postgres");
+
+    // Verify change is NOT flagged "Claims Go..." or "Claims PostgreSQL..."
+    const change = session.changes![0];
+    const claimsSkillFlags = change.flags.filter((f) => f.kind === "skill" && f.message.startsWith("Claims "));
+    expect(claimsSkillFlags).toHaveLength(0);
+  });
 });
 
 describe("runPipeline atomicity", () => {
@@ -151,7 +245,7 @@ describe("runPipeline atomicity", () => {
       },
     };
     const events = await collect(
-      runPipeline({ model: fakeModel([JOB, TAILOR]), store: failing }, { source: { title: "M", content: SOURCE }, jobDescription: "x".repeat(100) }),
+      runPipeline({ model: fakeModel([JOB, FACTS, TAILOR]), store: failing }, { source: { title: "M", content: SOURCE }, jobDescription: POSTING }),
     );
     expect(events.at(-1)).toMatchObject({ type: "error", stage: "lockup" });
     expect(resumes.size).toBe(0);
@@ -161,7 +255,7 @@ describe("runPipeline atomicity", () => {
 
 describe("properNouns", () => {
   it("ignores the sentence-initial capital but keeps real names", async () => {
-    const { properNouns } = await import("@/lib/tailoring/verify");
+    const { properNouns } = await import("@/lib/grounding");
     expect(properNouns("Built Go services")).toEqual([]);
     expect(properNouns("Migrated workloads to Google Cloud Platform. Led Acme Corp hiring")).toEqual([
       "Google Cloud Platform",

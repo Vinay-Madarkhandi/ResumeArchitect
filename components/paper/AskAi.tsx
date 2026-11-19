@@ -84,7 +84,7 @@ export function AskAi({ editor, resumeId }: { editor: Editor; resumeId: string }
   }
 
   function keep() {
-    if (!captured || !preview) return;
+    if (!captured || !preview || preview.flagged) return;
     // The pending decoration is mapped through every edit made while waiting,
     // so it marks where the selected text is now, not where it was.
     const [range] = PendingKey.getState(editor.state)?.find() ?? [];
@@ -124,7 +124,7 @@ export function AskAi({ editor, resumeId }: { editor: Editor; resumeId: string }
               <Button size="sm" variant="ghost" onClick={close}>
                 Discard
               </Button>
-              <Button size="sm" variant="primary" onClick={keep} autoFocus>
+              <Button size="sm" variant="primary" onClick={keep} disabled={preview.flagged} autoFocus>
                 Keep rewrite
               </Button>
             </div>

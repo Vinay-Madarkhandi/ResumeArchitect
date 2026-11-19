@@ -2,7 +2,7 @@ import { Document, Link, Page, StyleSheet, Text, View } from "@react-pdf/rendere
 import type { ReactNode } from "react";
 import type { BlockNode, DocumentContent, InlineNode, ListItemNode } from "@/lib/schemas/document";
 import { registerResumeFonts } from "@/lib/pdf/fonts";
-import type { Template } from "@/lib/resume/templates";
+import { boldWeight, resumeFontFamily, RESUME_PAGE, RESUME_SPACING as spacing, type Template } from "@/lib/resume/templates";
 
 registerResumeFonts();
 
@@ -14,52 +14,35 @@ registerResumeFonts();
  * capitals into "S U M M A RY".
  */
 function makeStyles(t: Template) {
+  const head = { fontFamily: resumeFontFamily(t.heading), fontWeight: boldWeight(t.heading) };
+  const align = t.header === "center" ? "center" : "left";
   return StyleSheet.create({
     page: {
-      paddingVertical: 42,
-      paddingHorizontal: 46,
-      fontFamily: t.bodyFont,
+      paddingVertical: t.space.marginY,
+      paddingHorizontal: t.space.marginX,
+      fontFamily: resumeFontFamily(t.body),
       fontSize: t.size.body,
       color: t.color.ink,
-      lineHeight: 1.42,
+      lineHeight: t.space.line,
     },
-    h1: {
-      fontFamily: t.headingFont,
-      fontSize: t.size.name,
-      fontWeight: 700,
-      lineHeight: 1.15,
-      marginBottom: 6,
-      textAlign: t.header === "center" ? "center" : "left",
+    h1: { ...head, fontSize: t.size.name, lineHeight: spacing.nameLine, marginBottom: spacing.nameAfter, textAlign: align },
+    contact: { marginBottom: spacing.paragraphAfter, textAlign: align },
+    h2: {
+      ...head,
+      fontSize: t.size.section,
+      textTransform: t.sectionCase === "upper" ? "uppercase" : "none",
+      color: t.sectionStyle === "accent" ? t.color.accent : t.color.ink,
+      marginTop: t.space.section,
+      marginBottom: spacing.sectionAfter,
+      ...(t.sectionStyle === "rule" ? { borderBottom: `${spacing.sectionRule}pt solid ${t.color.rule}`, paddingBottom: spacing.sectionRulePad } : {}),
     },
-    contact: { marginBottom: 3.5, textAlign: t.header === "center" ? "center" : "left" },
-    h2:
-      t.sectionStyle === "rule"
-        ? {
-            fontFamily: t.headingFont,
-            fontSize: t.size.section,
-            fontWeight: 600,
-            textTransform: t.sectionCase === "upper" ? "uppercase" : "none",
-            borderBottom: `0.75pt solid ${t.color.rule}`,
-            paddingBottom: 3,
-            marginTop: 13,
-            marginBottom: 6,
-          }
-        : {
-            fontFamily: t.headingFont,
-            fontSize: t.size.section,
-            fontWeight: 700,
-            textTransform: "uppercase",
-            color: t.color.accent,
-            marginTop: 14,
-            marginBottom: 5,
-          },
-    h3: { fontFamily: t.headingFont, fontSize: t.size.entry, fontWeight: 600, marginTop: 6, marginBottom: 1.5 },
-    paragraph: { marginBottom: 3.5 },
-    list: { marginBottom: 3.5 },
-    row: { flexDirection: "row", marginBottom: 2, paddingLeft: 2 },
-    glyph: { width: 11, color: t.color.muted },
+    h3: { fontFamily: resumeFontFamily(t.heading), fontSize: t.size.entry, fontWeight: 600, marginTop: spacing.entryBefore, marginBottom: spacing.entryAfter },
+    paragraph: { marginBottom: spacing.paragraphAfter },
+    list: { marginBottom: spacing.paragraphAfter },
+    row: { flexDirection: "row", marginBottom: spacing.bulletAfter, paddingLeft: 2 },
+    glyph: { width: spacing.bulletIndent - 2, color: t.color.muted },
     content: { flex: 1 },
-    bold: { fontWeight: 700 },
+    bold: { fontWeight: boldWeight(t.body) },
     italic: { fontStyle: "italic" },
     link: { color: t.color.ink, textDecoration: "none" },
   });
@@ -147,7 +130,7 @@ export function DocumentPdf({ doc, template, title }: { doc: DocumentContent; te
   const s = makeStyles(template);
   return (
     <Document title={title} creator="ResumeArchitect" producer="ResumeArchitect">
-      <Page size="A4" style={s.page}>
+      <Page size={RESUME_PAGE} style={s.page}>
         {doc.content.map((block, i) => renderBlock(block, i, s, isContactLine(doc.content, i)))}
       </Page>
     </Document>
@@ -160,7 +143,7 @@ export function LetterPdf({ text, template, title }: { text: string; template: T
     <Document title={title} creator="ResumeArchitect" producer="ResumeArchitect">
       <Page
         size="A4"
-        style={{ paddingVertical: 64, paddingHorizontal: 64, fontFamily: template.bodyFont, fontSize: 10.5, lineHeight: 1.55, color: template.color.ink }}
+        style={{ paddingVertical: 64, paddingHorizontal: 64, fontFamily: resumeFontFamily(template.body), fontSize: 10.5, lineHeight: 1.55, color: template.color.ink }}
       >
         {paragraphs.map((p, i) => (
           <Text key={i} style={{ marginBottom: 11 }}>

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { Menu, MenuContent, MenuItem, MenuLabel, MenuSeparator, MenuTrigger } from "@/components/ui/Menu";
 import { useToast } from "@/components/ui/Toast";
 import type { DocumentContent } from "@/lib/schemas/document";
+import { hasUnverifiedClaim, RESOLVE_CLAIMS } from "@/lib/grounding/placeholder";
 import { documentText } from "@/lib/resume/units";
 
 type Format = "pdf" | "docx" | "design";
@@ -39,6 +40,8 @@ export function ExportMenu({
 }) {
   const toast = useToast();
   const [busy, setBusy] = useState<Format | null>(null);
+
+  const needsReview = hasUnverifiedClaim(documentText(doc));
 
   async function download(format: Format) {
     setBusy(format);
@@ -87,10 +90,11 @@ export function ExportMenu({
         </Button>
       </MenuTrigger>
       <MenuContent>
+        {needsReview && <p className="max-w-64 px-2 py-1.5 text-label text-query">{RESOLVE_CLAIMS}</p>}
         {keepsWordDesign && (
           <>
             <MenuLabel>Your design</MenuLabel>
-            <MenuItem onSelect={() => void download("design")}>
+            <MenuItem disabled={needsReview} onSelect={() => void download("design")}>
               <FileCheck /> Word, your original file
             </MenuItem>
             <p className="max-w-64 px-2 pb-1.5 text-label text-ink-3">
@@ -101,14 +105,14 @@ export function ExportMenu({
           </>
         )}
         <MenuLabel>{keepsWordDesign ? "In this template" : "Exactly what\u2019s on screen"}</MenuLabel>
-        <MenuItem onSelect={() => void download("pdf")}>
+        <MenuItem disabled={needsReview} onSelect={() => void download("pdf")}>
           <Download /> PDF
         </MenuItem>
-        <MenuItem onSelect={() => void download("docx")}>
+        <MenuItem disabled={needsReview} onSelect={() => void download("docx")}>
           <FileText /> Word (.docx)
         </MenuItem>
         <MenuSeparator />
-        <MenuItem onSelect={() => void copy()}>
+        <MenuItem disabled={needsReview} onSelect={() => void copy()}>
           <ClipboardCopy /> Copy as plain text
         </MenuItem>
       </MenuContent>

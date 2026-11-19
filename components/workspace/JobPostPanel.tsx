@@ -1,24 +1,24 @@
 "use client";
 
 import { useMemo } from "react";
-import type { JobAnalysis } from "@/lib/schemas/jobAnalysis";
-import type { ScoreReport } from "@/lib/scoring/score";
-import { highlightJob } from "@/lib/scoring/highlightJob";
+import { highlightPosting } from "@/lib/report/keywords";
+import type { MatchReport } from "@/lib/report/report";
 import { cn } from "@/lib/cn";
 
 /**
- * The job post with every requirement and keyword marked: solid verdigris
- * when your resume shows it, dashed vermilion when it doesn't. Updates live
- * as the resume changes.
+ * The job post with every skill and keyword the score counts marked: solid
+ * verdigris when your resume shows it, dashed vermilion when it doesn't.
+ * Updates live as the resume changes.
  */
-export function JobPostPanel({ text, job, report }: { text: string | null; job: JobAnalysis; report: ScoreReport }) {
-  const segments = useMemo(() => (text ? highlightJob(text, job, report) : []), [text, job, report]);
-  const missing = report.requirements.filter((r) => !r.matched);
+export function JobPostPanel({ text, summary, report }: { text: string | null; summary: string; report: MatchReport }) {
+  const skills = useMemo(() => [...report.hardSkills, ...report.softSkills, ...report.otherKeywords], [report]);
+  const segments = useMemo(() => (text ? highlightPosting(text, skills) : []), [text, skills]);
+  const missing = [...report.hardSkills, ...report.softSkills].filter((s) => s.status === "missing");
 
   return (
     <div className="flex flex-col gap-5">
       <div>
-        <p className="text-small text-ink-2">{job.summary}</p>
+        <p className="text-small text-ink-2">{summary}</p>
         <div className="mt-3 flex flex-wrap gap-3 text-label text-ink-3">
           <span className="inline-flex items-center gap-1.5">
             <span className="h-0.5 w-4 rounded-full bg-add" aria-hidden /> In your resume
@@ -33,14 +33,14 @@ export function JobPostPanel({ text, job, report }: { text: string | null; job: 
         <div>
           <h3 className="text-small font-medium text-ink-2">Not shown in your resume</h3>
           <ul className="mt-2 flex flex-wrap gap-1.5">
-            {missing.map((r) => (
+            {missing.map((s) => (
               <li
-                key={r.id}
+                key={s.term}
                 className="rounded-sm border border-dashed border-del/60 px-1.5 py-px text-label text-ink-2"
-                title={r.importance === "must" ? "Must-have" : "Nice-to-have"}
+                title={`${IMPORTANCE[s.importance]} importance`}
               >
-                {r.label}
-                {r.importance === "must" && <span className="ml-1 text-del">must</span>}
+                {s.term}
+                {s.importance === "high" && <span className="ml-1 text-del">high</span>}
               </li>
             ))}
           </ul>
@@ -53,16 +53,16 @@ export function JobPostPanel({ text, job, report }: { text: string | null; job: 
           <h3 className="text-small font-medium text-ink-2">The posting</h3>
           <div className="mt-2 max-h-[60vh] overflow-y-auto whitespace-pre-wrap rounded-md border border-line bg-sunken p-3 text-small leading-relaxed text-ink-2">
             {segments.map((s, i) =>
-              s.term ? (
+              s.skill ? (
                 <mark
                   key={i}
-                  title={`${s.term.label} · ${s.term.kind === "keyword" ? "keyword" : s.term.kind === "must" ? "must-have" : "nice-to-have"} · ${s.term.matched ? "in your resume" : "not shown yet"}`}
+                  title={`${s.skill.term} · ${IMPORTANCE[s.skill.importance].toLowerCase()} importance · ${s.skill.status === "missing" ? "not shown yet" : "in your resume"}`}
                   className={cn(
                     "rounded-[2px] bg-transparent px-0.5 text-ink",
-                    s.term.matched
-                      ? "underline decoration-add decoration-2 underline-offset-[3px]"
-                      : "underline decoration-del decoration-dashed decoration-2 underline-offset-[3px]",
-                    s.term.kind === "must" && "font-medium",
+                    s.skill.status === "missing"
+                      ? "underline decoration-del decoration-dashed decoration-2 underline-offset-[3px]"
+                      : "underline decoration-add decoration-2 underline-offset-[3px]",
+                    s.skill.importance === "high" && "font-medium",
                   )}
                 >
                   {s.text}
@@ -79,3 +79,5 @@ export function JobPostPanel({ text, job, report }: { text: string | null; job: 
     </div>
   );
 }
+
+const IMPORTANCE = { high: "High", medium: "Medium", low: "Low" } as const;

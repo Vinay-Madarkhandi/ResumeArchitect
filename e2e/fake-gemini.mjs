@@ -18,33 +18,65 @@ const JOB = {
     { id: "postgres", label: "PostgreSQL", aliases: ["Postgres"], importance: "must", category: "tool" },
     { id: "kafka", label: "Kafka", aliases: [], importance: "must", category: "tool" },
     { id: "incident", label: "Incident response", aliases: ["on-call"], importance: "must", category: "skill" },
+    { id: "degree", label: "Bachelor's degree", aliases: ["B.S.", "BSc"], importance: "must", category: "qualification" },
     { id: "k8s", label: "Kubernetes", aliases: ["K8s"], importance: "nice", category: "tool" },
     { id: "mentoring", label: "Mentoring", aliases: ["mentored"], importance: "nice", category: "soft" },
   ],
   keywords: [
-    { term: "payments", aliases: ["payment"] },
+    { term: "payments", aliases: [] },
     { term: "reliability", aliases: [] },
     { term: "latency", aliases: [] },
   ],
 };
 
+const FACTS = {
+  title: JOB.title,
+  level: "senior",
+  hardSkills: [
+    { term: "Golang", importance: "high" },
+    { term: "PostgreSQL", importance: "high" },
+    { term: "Kafka", importance: "high" },
+    { term: "Incident response", importance: "high" },
+    { term: "Kubernetes", importance: "low" },
+  ],
+  softSkills: [{ term: "Mentoring", importance: "low" }],
+  otherKeywords: JOB.keywords.map((k) => ({ term: k.term, importance: "medium" })),
+  education: { degree: "bachelor", fields: ["Computer Science"], equivalentExperience: true },
+  yearsRequired: null,
+  predictedSkills: [{ term: "Distributed tracing", reason: "Useful for diagnosing latency across services." }],
+};
+
 function tailor(prompt) {
+  const reqSection = prompt.split("# Requirements")[1]?.split("#")[0] ?? "";
+  const reqs = [...reqSection.matchAll(/^-\s*([^\s·]+)\s*·\s*([^·\n]+)/gm)].map((m) => ({
+    id: m[1].trim(),
+    label: m[2].trim(),
+  }));
+  const findId = (pattern) => reqs.find((r) => pattern.test(r.label) || pattern.test(r.id))?.id;
+  const goId = findId(/go/i) ?? "go";
+  const k8sId = findId(/kube|k8s/i) ?? "k8s";
+  const mentoringId = findId(/mentor/i) ?? "mentoring";
+
   const lines = [...prompt.matchAll(/^\[(\d+)\] \(([^)]+)\) (.*)$/gm)].map((m) => ({ n: Number(m[1]), kind: m[2], text: m[3] }));
   const bullets = lines.filter((l) => l.kind === "bullet");
   const edits = [];
   if (bullets[0]) {
+    const summaryLine = lines.find((l) => /payment/i.test(l.text))?.n;
+    const cites = summaryLine ? [bullets[0].n, summaryLine] : [bullets[0].n];
     edits.push({
       op: "rewrite",
       line: bullets[0].n,
-      text: bullets[0].text.replace(/^(Worked on|Helped with|Responsible for)\s*/i, "Led ").replace(/services/i, "payment services"),
+      cites,
+      text: bullets[0].text.replace(/^(Worked on|Built)\s*services in Go backed by PostgreSQL/i, "Worked on services in Go backed by PostgreSQL for the payments team").replace(/^Worked on services in Go/i, "Worked on services in Go backed by PostgreSQL for the payments team"),
       reason: "The posting centers on payments; this bullet now says so up front.",
-      requirementIds: ["go"],
+      requirementIds: goId ? [goId] : [],
     });
   }
   if (bullets[1]) {
     edits.push({
       op: "rewrite",
       line: bullets[1].n,
+      cites: [bullets[1].n],
       text: `${bullets[1].text.replace(/\.$/, "")}, improving reliability for 2M daily transactions`,
       reason: "Ties the work to reliability, a stated priority.",
       requirementIds: [],
@@ -55,13 +87,14 @@ function tailor(prompt) {
     edits.push({
       op: "rewrite",
       line: lines[skills + 1].n,
+      cites: [lines[skills + 1].n],
       text: `${lines[skills + 1].text}, Kubernetes`,
       reason: "Kubernetes is listed as a plus.",
-      requirementIds: ["k8s"],
+      requirementIds: k8sId ? [k8sId] : [],
     });
   }
   if (bullets[2]) {
-    edits.push({ op: "insert_after", line: bullets[2].n, text: "Mentored engineers through on-call rotations", reason: "Shows mentoring.", requirementIds: ["mentoring"] });
+    edits.push({ op: "insert_after", line: bullets[2].n, cites: [bullets[2].n], text: "Mentored engineers through on-call rotations", reason: "Shows mentoring.", requirementIds: mentoringId ? [mentoringId] : [] });
   }
   return { summary: "Leads with payments and reliability, and surfaces mentoring the posting asks for.", edits };
 }
@@ -75,19 +108,59 @@ function parse(prompt) {
   return { title: `${lines[0] ?? "Resume"} — Master`, markdown: md };
 }
 
+const QUESTIONS = [
+  ["behavioral", "Tell me about a time you led an incident response.", "Ownership and communication under pressure.", "Incident response"],
+  ["behavioral", "Describe a time you helped a colleague build a new skill.", "Coaching and adapting to the learner.", "Mentoring"],
+  ["behavioral", "Tell me about a time you had to change direction on a project.", "How you communicate and handle changing priorities.", null],
+  ["technical", "How did you measure the effect of your Kafka pipeline on invoice latency?", "Measurement and a fair baseline.", "Kafka"],
+  ["technical", "How would you diagnose a slow PostgreSQL query?", "A systematic approach to query plans and indexes.", "PostgreSQL"],
+  ["technical", "How would you handle cancellation across Go services?", "Understanding of context propagation.", "Go"],
+  ["role", "What would you prioritize in your first month on a payments team?", "How you learn the system and assess risk.", "Reliability"],
+  ["role", "How would you decide whether to retry a failed payment?", "Balancing availability with duplicate payment risk.", "Payments"],
+  ["role", "Why do you want to work on this payments platform?", "Interest in the role and understanding of its priorities.", null],
+].map(([category, question, assessing, requirement], i) => ({ id: `question-${i + 1}`, category, question, assessing, requirement }));
+
 function answer(system, prompt) {
+  if (system.includes("candidate names a role")) {
+    return { ...JOB, title: prompt.split("# Target role")[1]?.trim() || JOB.title, company: null };
+  }
+  if (system.includes("rewrite a candidate's LinkedIn headline")) {
+    return {
+      headlines: [
+        "Backend Engineer | Go, PostgreSQL, Kafka | Cut invoice latency by 38%",
+        "Backend Engineer | Go services and incident response",
+        "Backend Engineer | Kafka pipelines and PostgreSQL",
+      ],
+      about: "I built a Kafka pipeline that cut invoice latency by 38%. I also led an Apache Pulsar migration at Globex Corp.",
+      notes: ["List Kafka in your Skills section so recruiters can find it.", "Add Apache Pulsar to your Skills section."],
+    };
+  }
+  if (system.includes("prepare a candidate for interviews")) return { questions: QUESTIONS };
+  if (system.includes("coach a candidate on one practice interview answer")) {
+    return {
+      star: { situation: true, task: true, action: true, result: true },
+      specificity: 4,
+      relevance: 5,
+      strengths: ["The 38% reduction makes the result measurable."],
+      improvements: ["Explain how you measured invoice latency."],
+      starEvidence: { action: "I sorted product samples.", result: "I cut invoice latency by 38%." },
+    };
+  }
+  if (system.includes("one field of a resume builder")) {
+    return { lines: ["Built a Kafka pipeline that cut invoice latency by 38%"] };
+  }
+  if (system.includes("job-posting parser")) return FACTS;
   if (system.includes("senior technical recruiter")) return JOB;
   if (system.includes("numbered lines")) return tailor(prompt);
   if (system.includes("convert text extracted")) return parse(prompt);
   if (system.includes("write cover letters")) {
     const name = prompt.split("# Candidate's resume")[1]?.match(/^# (.+)$/m)?.[1] ?? "Candidate";
     return {
-      letter: `Dear Hiring Manager,\n\nI'm applying for the Senior Backend Engineer role. I build payment services in Go on PostgreSQL.\n\nAt Analytical Engines I built a Kafka pipeline that cut invoice latency by 38%, and I ran the on-call rotation.\n\nI'd welcome a conversation.\n\n${name}`,
+      letter: `Dear Hiring Manager,\n\nI'm applying for this role. I built a Kafka pipeline that cut invoice latency by 38%.\n\nI led an Apache Pulsar migration that cut costs by 38%.\n\nI'd welcome a conversation.\n\n${name}`,
     };
   }
   if (system.includes("one specific piece of text")) {
-    const selected = prompt.split("# Selected text to rewrite")[1]?.split("#")[0]?.trim() ?? "";
-    return { replacementText: `${selected} (sharpened)`, flagged: false, flagReason: null };
+    return { replacementText: "Led Apache Pulsar at Globex Corp", flagged: false, flagReason: null };
   }
   return {};
 }

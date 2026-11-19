@@ -1,36 +1,40 @@
-import { cookies } from "next/headers";
+import { readJson } from "@/lib/server/request-body";
+import { updateResume } from "@/lib/data/resumes";
+import { checkOrigin } from "@/lib/auth/guards";
+import { currentUser } from "@/lib/auth/current-user";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { createClient } from "@/utils/supabase/server";
 import { DocumentContentSchema } from "@/lib/schemas/document";
+import { TEMPLATE_IDS } from "@/lib/resume/templates";
+
+import { stages } from "@/lib/tracker/stages";
 
 const PatchSchema = z
   .object({
     content: DocumentContentSchema.optional(),
     title: z.string().trim().min(1).max(160).optional(),
-    template: z.enum(["classic", "modern", "standard"]).optional(),
+    template: z.enum(TEMPLATE_IDS).optional(),
     reviewedChangeIds: z.array(z.string().max(32)).max(500).optional(),
-    applicationStatus: z.enum(["saved", "applied", "interviewing", "offer", "rejected"]).optional(),
+    applicationStatus: z.enum(stages).optional(),
     coverLetter: z.string().max(20_000).optional(),
   })
   .refine((v) => Object.values(v).some((x) => x !== undefined), "Nothing to update.");
 
 /** Saves editor state: content (autosave), title, template, kept-change ids, tracker status, cover letter. */
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const originError = checkOrigin(request);
+  if (originError) return originError;
   const { id } = await params;
-  const supabase = createClient(await cookies());
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await currentUser();
   if (!user) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
 
-  const parsed = PatchSchema.safeParse(await request.json().catch(() => null));
+  const json = await readJson(request);
+  if (!json.ok) return json.response;
+  const parsed = PatchSchema.safeParse(json.data);
   if (!parsed.success) return NextResponse.json({ error: "That update wasn't valid." }, { status: 400 });
   const { content, title, template, reviewedChangeIds, applicationStatus, coverLetter } = parsed.data;
 
-  const { data, error } = await supabase
-    .from("resumes")
-    .update({
+  const data = await updateResume(user.id, id, {
       ...(content ? { content } : {}),
       ...(title ? { title } : {}),
       ...(template ? { template } : {}),
@@ -39,12 +43,9 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
         ? { application_status: applicationStatus, application_status_updated_at: new Date().toISOString() }
         : {}),
       ...(coverLetter !== undefined ? { cover_letter: coverLetter } : {}),
-    })
-    .eq("id", id)
-    .eq("user_id", user.id)
-    .select("updated_at")
-    .single();
+    }).catch(() => "failed" as const);
 
-  if (error || !data) return NextResponse.json({ error: "Couldn't save. Check your connection and try again." }, { status: 500 });
+  if (data === "failed") return NextResponse.json({ error: "Couldn't save. Check your connection and try again." }, { status: 500 });
+  if (!data) return NextResponse.json({ error: "Resume not found." }, { status: 404 });
   return NextResponse.json({ updatedAt: data.updated_at });
 }

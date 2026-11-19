@@ -1,6 +1,12 @@
-import { cookies } from "next/headers";
+import { readJson } from "@/lib/server/request-body";
+import { postingUrlSchema } from "@/lib/tracker/schema";
+import { getTrackedJob } from "@/lib/data/jobs";
+import { getResume } from "@/lib/data/resumes";
+import { getTailoringSession } from "@/lib/data/tailoring";
+import { createJobDescription, getJobDescription, saveJobFacts } from "@/lib/data/job-descriptions";
+import { checkOrigin } from "@/lib/auth/guards";
+import { currentUser } from "@/lib/auth/current-user";
 import { after, NextResponse } from "next/server";
-import { createClient } from "@/utils/supabase/server";
 import { resolveDocument } from "@/lib/documentConversion";
 import { geminiModel } from "@/lib/gemini/model";
 import { loadGeminiKey } from "@/lib/server/geminiKey";
@@ -10,8 +16,9 @@ import {
   MIN_JOB_DESCRIPTION_LENGTH,
   type PipelineEvent,
 } from "@/lib/schemas/tailoring";
+import { JobFactsSchema } from "@/lib/schemas/jobFacts";
 import { runPipeline } from "@/lib/tailoring/pipeline";
-import { supabasePipelineStore } from "@/lib/tailoring/supabaseStore";
+import { postgresPipelineStore } from "@/lib/tailoring/postgresStore";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -28,41 +35,52 @@ function fail(status: number, code: string, message: string) {
  *   { retrySessionId }.
  */
 export async function POST(request: Request) {
-  const supabase = createClient(await cookies());
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const originError = checkOrigin(request);
+  if (originError) return originError;
+  const user = await currentUser();
   if (!user) return fail(401, "unauthorized", "Sign in to continue.");
 
-  const body = await request.json().catch(() => null);
+  const json = await readJson<Record<string, unknown>>(request);
+  if (!json.ok) return json.response;
+  const body = json.data;
   const str = (v: unknown) => (typeof v === "string" ? v.trim() : "");
 
   let sourceResumeId = str(body?.sourceResumeId);
   let jobDescriptionText = str(body?.jobDescriptionText);
   let jobDescriptionId: string | null = null;
-  const jobTitle = str(body?.jobTitle) || null;
-  const company = str(body?.company) || null;
+  let jobTitle = str(body?.jobTitle) || null;
+  let company = str(body?.company) || null;
 
+  const sourceUrl = postingUrlSchema.safeParse(str(body?.sourceUrl));
+  const trackedJobId = str(body?.trackedJobId);
+  const savedJobId = str(body?.jobDescriptionId);
   const retrySessionId = str(body?.retrySessionId);
   if (retrySessionId) {
-    const { data: previous } = await supabase
-      .from("tailoring_sessions")
-      .select("source_resume_id, job_description_id")
-      .eq("id", retrySessionId)
-      .eq("user_id", user.id)
-      .single();
+    const previous = await getTailoringSession(user.id, retrySessionId);
     if (!previous?.source_resume_id || !previous.job_description_id) {
       return fail(404, "source_not_found", "That run can't be retried. Start a new application instead.");
     }
-    const { data: jd } = await supabase
-      .from("job_descriptions")
-      .select("id, raw_text")
-      .eq("id", previous.job_description_id)
-      .single();
+    const jd = await getJobDescription(user.id, previous.job_description_id);
     if (!jd) return fail(404, "invalid_jd", "The job description for that run is gone. Start a new application.");
     sourceResumeId = previous.source_resume_id;
     jobDescriptionText = jd.raw_text;
     jobDescriptionId = jd.id;
+    jobTitle = jd.job_title;
+    company = jd.company;
+  } else if (savedJobId) {
+    const job = await getJobDescription(user.id, savedJobId);
+    if (!job) return fail(404, "invalid_jd", "That job could not be found.");
+    jobDescriptionId = job.id;
+    jobDescriptionText = job.raw_text.trim();
+    jobTitle = job.job_title;
+    company = job.company;
+  } else if (trackedJobId) {
+    const job = await getTrackedJob(user.id, trackedJobId);
+    if (!job) return fail(404, "invalid_jd", "That tracked job could not be found.");
+    jobDescriptionId = job.id;
+    jobDescriptionText = job.description.trim();
+    jobTitle = job.title;
+    company = job.company || null;
   }
 
   if (!sourceResumeId) return fail(400, "source_not_found", "Choose a resume to tailor.");
@@ -73,20 +91,15 @@ export async function POST(request: Request) {
     return fail(400, "invalid_jd", "That job description is very long. Paste just the role details and requirements.");
   }
 
-  const { data: source } = await supabase
-    .from("resumes")
-    .select("id, title, content, design_source_path")
-    .eq("id", sourceResumeId)
-    .eq("user_id", user.id)
-    .single();
+  const source = await getResume(user.id, sourceResumeId);
   if (!source) return fail(404, "source_not_found", "That resume could not be found.");
   const sourceDoc = resolveDocument(source.content);
   if (!sourceDoc) return fail(422, "source_not_found", "That resume couldn't be read. Open it and save it once, then retry.");
 
-  const key = await loadGeminiKey(supabase, user.id);
+  const key = await loadGeminiKey(user.id);
   if (!key.ok) return fail(400, key.code, key.message);
 
-  const waitMinutes = await tailoringRateLimit(supabase, user.id);
+  const waitMinutes = await tailoringRateLimit(user.id);
   if (waitMinutes !== null) {
     return fail(
       429,
@@ -96,27 +109,30 @@ export async function POST(request: Request) {
   }
 
   if (!jobDescriptionId) {
-    const { data: jd, error } = await supabase
-      .from("job_descriptions")
-      .insert({ user_id: user.id, raw_text: jobDescriptionText, company, job_title: jobTitle })
-      .select("id")
-      .single();
-    if (error || !jd) return fail(500, "unknown", "Couldn't save the job description. Try again.");
-    jobDescriptionId = jd.id;
+    const jdId = await createJobDescription(user.id, {
+      raw_text: jobDescriptionText, company, job_title: jobTitle,
+      source_url: sourceUrl.data || null,
+    })
+      .catch(() => null);
+    if (!jdId) return fail(500, "unknown", "Couldn't save the job description. Try again.");
+    jobDescriptionId = jdId;
   }
 
+  const posting = await getJobDescription(user.id, jobDescriptionId);
+  if (!posting) return fail(404, "invalid_jd", "That job could not be found.");
+  const jobFacts = JobFactsSchema.safeParse(posting.job_facts);
   const events = runPipeline(
     {
-      model: geminiModel(key.apiKey),
-      store: supabasePipelineStore(supabase, {
-        userId: user.id,
+      model: geminiModel(key.apiKey, user.id),
+      saveFacts: (facts) => saveJobFacts(user.id, posting.id, facts, posting.raw_text),
+      store: postgresPipelineStore(user.id, {
         sourceResumeId: source.id,
         sourceTitle: source.title,
         designSourcePath: source.design_source_path,
         jobDescriptionId,
       }),
     },
-    { source: { title: source.title, content: sourceDoc }, jobDescription: jobDescriptionText, jobTitle, company },
+    { source: { title: source.title, content: sourceDoc }, jobDescription: posting.raw_text, jobFacts: jobFacts.data, jobTitle, company },
   );
 
   // The run is independent of the connection: if the browser goes away, sends

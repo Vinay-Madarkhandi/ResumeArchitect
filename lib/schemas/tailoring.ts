@@ -4,11 +4,10 @@ import { JobAnalysisSchema } from "@/lib/schemas/jobAnalysis";
 
 /**
  * Something in an AI edit the candidate should look at: a claim the source
- * resume can't back up, a detail the rewrite lost, or added padding. Flags never
- * block: they are shown on the change for the candidate to confirm or revert.
+ * resume can't back up, a detail the rewrite lost, or added padding. The UI shows these on the change for the candidate to review.
  */
 export const ChangeFlagSchema = z.object({
-  kind: z.enum(["number", "name", "skill", "dropped", "filler"]),
+  kind: z.enum(["number", "name", "skill", "title", "claim", "dropped", "filler"]),
   value: z.string(),
   message: z.string(),
 });
@@ -25,6 +24,7 @@ export const TailoredChangeSchema = z.object({
   reason: z.string(),
   requirementIds: z.array(z.string()).default([]),
   flags: z.array(ChangeFlagSchema).default([]),
+  cites: z.array(z.number().int()).default([]),
 });
 export type TailoredChange = z.infer<typeof TailoredChangeSchema>;
 
