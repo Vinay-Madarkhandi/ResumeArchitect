@@ -159,6 +159,7 @@ export const DOMAINS: PersonaDomain[] = [
       "Registered Nurse (RN) with BSN degree from City College",
     ],
     pairs: [
+      { kind: "legit", label: "pattern3: verb scale same rung collaborated with", before: "Coordinated discharge planning alongside social workers and case managers", after: "Collaborated with social workers and case managers to coordinate discharge planning" },
       { kind: "invented", label: "pattern2: invented tool Cerner-based", before: "Documented patient assessments and medication administration in Epic EHR", after: "Documented patient assessments in Cerner-based EHR systems" },
       { kind: "legit", label: "pattern1: sentence-initial verb Used", before: "Documented patient assessments and medication administration in Epic EHR", after: "Used Epic EHR to document patient assessments and medication administration" },
       { kind: "legit", label: "word to digit 3 nurses", before: "Mentored three new-graduate nurses on clinical procedures and hospital protocols", after: "Mentored 3 new-graduate nurses on clinical procedures and hospital protocols" },
@@ -194,6 +195,8 @@ export const DOMAINS: PersonaDomain[] = [
       "B.A. in Communications from State University",
     ],
     pairs: [
+      { kind: "legit", label: "pattern3: verb scale same rung worked alongside", before: "Partnered with customer success teams to secure 92% client renewal rate", after: "Worked alongside customer success teams to secure 92% client renewal rate" },
+      { kind: "legit", label: "pattern3: verb scale same rung teamed with", before: "Partnered with customer success teams to secure 92% client renewal rate", after: "Teamed with customer success teams to secure 92% client renewal rate" },
       { kind: "legit", label: "pattern1: bullet-initial verb Used", before: "Tracked sales pipeline, deal stages, and customer calls in Salesforce", after: "- Used Salesforce CRM to track sales pipeline and customer calls" },
       { kind: "legit", label: "Salesforce CRM", before: "Tracked sales pipeline, deal stages, and customer calls in Salesforce", after: "Tracked sales pipeline, deal stages, and customer calls in Salesforce CRM" },
       { kind: "legit", label: "$2.4M to $2.4 million", before: "Generated $2.4M in new annual recurring revenue against a $2M target", after: "Generated $2.4 million in new annual recurring revenue against a $2 million target" },
@@ -228,6 +231,7 @@ export const DOMAINS: PersonaDomain[] = [
       "B.S. in Finance from University of Michigan",
     ],
     pairs: [
+      { kind: "legit", label: "pattern3: verb scale same rung supported", before: "Assisted senior portfolio managers with financial due diligence for 8 acquisitions", after: "Supported senior portfolio managers with financial due diligence for 8 acquisitions" },
       { kind: "legit", label: "pattern2: morphological suffix Pythonic", before: "Automated recurring monthly reporting using Python and SQL scripts", after: "Automated recurring monthly reporting using Pythonic and SQL scripts" },
       { kind: "legit", label: "pattern1: colon-initial verb Built", before: "Built quarterly financial forecasting models in Microsoft Excel", after: "Responsibilities: Built quarterly financial forecasting models in Microsoft Excel" },
       { kind: "legit", label: "$15M to $15 million", before: "Analyzed variance for $15M operational expense budget", after: "Analyzed variance for $15 million operational expense budget" },
@@ -263,6 +267,7 @@ export const DOMAINS: PersonaDomain[] = [
       "B.A. in Mathematics Education from Central College",
     ],
     pairs: [
+      { kind: "invented", label: "pattern3: verb inflation collaborated to led", before: "Collaborated with 5 department faculty to revamp freshman curriculum", after: "Led 5 department faculty to revamp freshman curriculum" },
       { kind: "invented", label: "pattern2: invented tool Canvas-powered", before: "Integrated Google Classroom and Khan Academy into daily instruction", after: "Integrated Canvas-powered portals into daily instruction" },
       { kind: "invented", label: "pattern1: invented tool Canvas LMS with starter verb", before: "Integrated Google Classroom and Khan Academy into daily instruction", after: "Used Canvas LMS and Khan Academy in daily instruction" },
       { kind: "legit", label: "two years to 2 years", before: "Improved standardized test passing rates from 72% to 86% over two years", after: "Improved standardized test passing rates from 72% to 86% over 2 years" },
@@ -298,6 +303,7 @@ export const DOMAINS: PersonaDomain[] = [
       "B.S. in Supply Chain Management from Penn State",
     ],
     pairs: [
+      { kind: "invented", label: "pattern3: verb inflation collaborated to directed", before: "Collaborated with warehouse team of 10 to streamline loading docks", after: "Directed warehouse team of 10 to streamline loading docks" },
       { kind: "legit", label: "pattern2: morphological suffix SAP-driven", before: "Monitored warehouse inventory counts and stock transfers in SAP", after: "Monitored warehouse inventory counts and stock transfers in SAP-driven systems" },
       { kind: "invented", label: "pattern1: invented ERP tool with bullet starter", before: "Monitored warehouse inventory counts and stock transfers in SAP", after: "- Operated Oracle SCM for tracking warehouse inventory counts" },
       { kind: "legit", label: "80 shipments weekly", before: "Handled 80 shipments weekly across regional distribution centers", after: "Handled 80 inbound and outbound shipments a week across regional distribution centers" },

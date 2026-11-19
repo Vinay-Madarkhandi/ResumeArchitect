@@ -16,16 +16,20 @@ export function lookupSynonymGroup(term: string): SynonymGroup | null {
 
 // Scope verb levels
 export const VERB_LEVELS: Record<string, number> = {
-  // Level 1: Low ownership
-  participate: 1, participated: 1, participating: 1,
-  assist: 1, assisted: 1, assisting: 1,
-  help: 1, helped: 1, helping: 1,
-  support: 1, supported: 1, supporting: 1,
-  contribute: 1, contributed: 1, contributing: 1,
-  collaborate: 1, collaborated: 1, collaborating: 1,
-  partner: 1, partnered: 1, partnering: 1,
+  // Level 1: Low ownership (assisting, collaborating, participating)
+  participate: 1, participated: 1, participating: 1, "participate in": 1, "participated in": 1, "participating in": 1,
+  assist: 1, assisted: 1, assisting: 1, "assist with": 1, "assisted with": 1, "assisting with": 1, "assist in": 1, "assisted in": 1,
+  help: 1, helped: 1, helping: 1, "help with": 1, "helped with": 1, "helping with": 1, "help to": 1, "helped to": 1,
+  support: 1, supported: 1, supporting: 1, "support for": 1,
+  contribute: 1, contributed: 1, contributing: 1, "contribute to": 1, "contributed to": 1, "contributing to": 1,
+  collaborate: 1, collaborated: 1, collaborating: 1, "collaborate with": 1, "collaborated with": 1, "collaborating with": 1,
+  partner: 1, partnered: 1, partnering: 1, "partner with": 1, "partnered with": 1, "partnering with": 1,
+  team: 1, teamed: 1, teaming: 1, "team with": 1, "teamed with": 1, "teaming with": 1, "team up": 1, "teamed up": 1, "teaming up": 1,
+  "work alongside": 1, "worked alongside": 1, "working alongside": 1,
+  cooperate: 1, cooperated: 1, cooperating: 1, "cooperate with": 1, "cooperated with": 1, "cooperating with": 1,
+  aid: 1, aided: 1, aiding: 1,
 
-  // Level 2: Medium ownership
+  // Level 2: Medium ownership (operating, executing, doing, hands-on)
   "work on": 2, "worked on": 2, "working on": 2,
   build: 2, built: 2, building: 2,
   develop: 2, developed: 2, developing: 2,
@@ -70,8 +74,21 @@ export const VERB_LEVELS: Record<string, number> = {
   raise: 2, raised: 2, raising: 2,
   improve: 2, improved: 2, improving: 2,
   boost: 2, boosted: 2, boosting: 2,
+  answer: 2, answered: 2, answering: 2,
+  handle: 2, handled: 2, handling: 2,
+  dispatch: 2, dispatched: 2, dispatching: 2,
+  sort: 2, sorted: 2, sorting: 2,
+  pack: 2, packed: 2, packing: 2,
+  load: 2, loaded: 2, loading: 2,
+  assemble: 2, assembled: 2, assembling: 2,
+  review: 2, reviewed: 2, reviewing: 2,
+  audit: 2, audited: 2, auditing: 2,
+  process: 2, processed: 2, processing: 2,
+  document: 2, documented: 2, documenting: 2,
+  schedule: 2, scheduled: 2, scheduling: 2,
+  reconcile: 2, reconciled: 2, reconciling: 2,
 
-  // Level 3: High ownership
+  // Level 3: High ownership (leading, managing, directing, supervising)
   lead: 3, led: 3, leading: 3, "lead all": 3, "led all": 3,
   own: 3, owned: 3, owning: 3, "own all": 3, "owned all": 3,
   manage: 3, managed: 3, managing: 3, "manage all": 3, "managed all": 3,
@@ -80,6 +97,12 @@ export const VERB_LEVELS: Record<string, number> = {
   head: 3, headed: 3, heading: 3,
   spearhead: 3, spearheaded: 3, spearheading: 3,
   architect: 3, architected: 3, architecting: 3,
+  oversee: 3, oversaw: 3, overseeing: 3,
+  supervise: 3, supervised: 3, supervising: 3,
+  govern: 3, governed: 3, governing: 3,
+  guide: 3, guided: 3, guiding: 3,
+  steer: 3, steered: 3, steering: 3,
+  champion: 3, championed: 3, championing: 3,
 };
 
 export const VERB_ORDER = Object.keys(VERB_LEVELS).sort((a, b) => b.length - a.length);
