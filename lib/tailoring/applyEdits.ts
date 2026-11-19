@@ -49,7 +49,7 @@ export function applyEdits(
     const primary = isLocked(unit) ? undefined : lineEdits.find((e) => e.op === "rewrite" || e.op === "remove");
 
     if (primary?.op === "remove") {
-      record({ op: "remove", before: unit.markdown, after: null, reason: primary.reason, requirementIds: primary.requirementIds });
+      record({ op: "remove", before: unit.markdown, after: null, reason: primary.reason, requirementIds: primary.requirementIds, cites: primary.cites ?? [index + 1] });
     } else if (primary?.op === "rewrite" && primary.text.trim() && !same(primary.text, unit.markdown)) {
       const rewritten = withMarkdown(unit, primary.text);
       const change = record({
@@ -58,6 +58,7 @@ export function applyEdits(
         after: rewritten.markdown,
         reason: primary.reason,
         requirementIds: primary.requirementIds,
+        cites: primary.cites?.length ? primary.cites : [index + 1],
       });
       out.push(change.after === rewritten.markdown ? rewritten : withMarkdown(unit, change.after ?? unit.markdown));
     } else {
@@ -66,7 +67,7 @@ export function applyEdits(
 
     for (const insert of lineEdits.filter((e) => e.op === "insert_after" && e.text.trim())) {
       const added = unitFromMarkdown(insertKind(unit, units[index + 1]), insert.text);
-      const change = record({ op: "insert_after", before: null, after: added.markdown, reason: insert.reason, requirementIds: insert.requirementIds });
+      const change = record({ op: "insert_after", before: null, after: added.markdown, reason: insert.reason, requirementIds: insert.requirementIds, cites: insert.cites ?? [] });
       if (change.after) out.push(change.after === added.markdown ? added : withMarkdown(added, change.after));
     }
   });

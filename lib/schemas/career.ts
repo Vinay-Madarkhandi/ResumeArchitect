@@ -75,10 +75,15 @@ export const LinkedInReportSchema = z.object({
 export type LinkedInReport = z.infer<typeof LinkedInReportSchema>;
 
 /** What Gemini returns for a LinkedIn profile. Validated, then each line is proofed against the resume. */
+export const CitationItemSchema = z.object({
+  text: z.string().trim().min(1),
+  cites: z.array(z.number().int()).default([]),
+});
+
 export const LinkedInDraftSchema = z.object({
-  headlines: z.array(z.string().trim().min(1).max(220)).min(1).max(5),
-  about: z.string().trim().min(1).max(2_600),
-  notes: z.array(z.string()).max(6).default([]),
+  headlines: z.array(z.union([z.string().trim().min(1).max(220), CitationItemSchema])).min(1).max(5),
+  about: z.union([z.string().trim().min(1).max(2_600), CitationItemSchema, z.array(CitationItemSchema)]),
+  notes: z.array(z.union([z.string(), CitationItemSchema])).max(6).default([]),
 });
 
 const VerifiedDraft = z.object({ text: z.string(), flags: z.array(ChangeFlagSchema) });

@@ -24,6 +24,7 @@ export const TailoredChangeSchema = z.object({
   reason: z.string(),
   requirementIds: z.array(z.string()).default([]),
   flags: z.array(ChangeFlagSchema).default([]),
+  cites: z.array(z.number().int()).default([]),
 });
 export type TailoredChange = z.infer<typeof TailoredChangeSchema>;
 

@@ -26,14 +26,21 @@ export async function suggestBuilderField(model: JsonModel, input: z.infer<typeo
       "Use only claims supported by the source. Never add tools, qualifications, employers, results, or quantities.",
       "Preserve supplied numbers with their original units and context. Use digits, never spell out quantities.",
       "Keep each achievement tied to its original action, tool, and result. Omit details you cannot trace to the exact source sentence.",
-      "Return plain text, with one string per bullet or one string for the requested field. Do not add bullet markers.",
+      "Return plain text, with one string per bullet or one string for the requested field. Do not add bullet markers. Include cites: [line_numbers] for each bullet.",
     ].join(" "),
     prompt: JSON.stringify({ source: input.source }),
-    schema: z.object({ lines: z.array(z.string().trim().min(1).max(max)).min(1).max(bullets ? 5 : 1) }),
+    schema: z.object({
+      lines: z.array(z.union([
+        z.string().trim().min(1).max(max),
+        z.object({ text: z.string().trim().min(1).max(max), cites: z.array(z.number().int()).default([]) }),
+      ])).min(1).max(bullets ? 5 : 1),
+    }),
     temperature: 0.2,
   });
-  return lines.map((line) => {
-    const { text, flags } = checkGrounding([input.source], line.replace(/\s+/g, " "));
+  return lines.map((item) => {
+    const lineStr = typeof item === "string" ? item : item.text;
+    const cites = typeof item === "string" ? undefined : item.cites;
+    const { text, flags } = checkGrounding([input.source], lineStr.replace(/\s+/g, " "), { cites });
     return { text: text.slice(0, max), flags };
   });
 }

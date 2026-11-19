@@ -77,7 +77,7 @@ export async function editSelection(
     input.selectedText,
     input.contextAfter,
   ].filter(Boolean) as string[];
-  const { flags } = checkGrounding(sources.length ? sources : [input.selectedText], result.replacementText);
+  const { flags } = checkGrounding(sources.length ? sources : [input.selectedText], result.replacementText, { cites: result.cites });
   if (!flags.length && !result.flagged) return result;
   return {
     replacementText: VERIFY_CLAIM,

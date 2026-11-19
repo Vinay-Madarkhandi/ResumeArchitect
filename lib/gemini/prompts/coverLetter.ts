@@ -3,9 +3,19 @@ import { z } from "zod";
 import { generateStructured, type JsonModel } from "@/lib/gemini/model";
 import type { JobAnalysis } from "@/lib/schemas/jobAnalysis";
 
-const CoverLetterSchema = z.object({
-  /** The letter as plain paragraphs separated by blank lines, greeting and sign-off included. */
-  letter: z.string(),
+export const CoverLetterSentenceSchema = z.object({
+  text: z.string(),
+  cites: z.array(z.number().int()).default([]),
+});
+
+export const CoverLetterParagraphSchema = z.object({
+  sentences: z.array(CoverLetterSentenceSchema),
+});
+
+export const CoverLetterSchema = z.object({
+  /** Flat letter text fallback */
+  letter: z.string().optional(),
+  paragraphs: z.array(CoverLetterParagraphSchema).optional(),
 });
 
 export const COVER_LETTER_TONES = ["confident", "warm", "concise"] as const;
@@ -44,13 +54,16 @@ export async function writeCoverLetter(
   ]
     .filter(Boolean)
     .join("\n\n");
-  const { letter } = await generateStructured(model, {
+  const response = await generateStructured(model, {
     label: "coverLetter",
     system: SYSTEM,
     prompt,
     schema: CoverLetterSchema,
     temperature: 0.7,
   });
+  const rawLetter = response.paragraphs?.length
+    ? response.paragraphs.map((p) => p.sentences.map((s) => s.text).join(" ")).join("\n\n")
+    : (response.letter ?? "");
   const safeLetterText = [
     "Dear Hiring Manager,",
     "I'm applying for this role.",
@@ -60,5 +73,9 @@ export async function writeCoverLetter(
     "Best regards,",
   ].join("\n");
   const sources = [input.sourceMarkdown, input.resumeMarkdown, safeLetterText].filter(Boolean) as string[];
-  return checkGrounding(sources, letter.trim()).text;
+  return checkGrounding(sources, rawLetter.trim(), {
+    isCoverLetter: true,
+    company: input.job.company,
+    jobTitle: input.job.title,
+  }).text;
 }

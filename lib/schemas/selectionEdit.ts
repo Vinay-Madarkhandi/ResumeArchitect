@@ -7,6 +7,7 @@ import { z } from "zod";
  * of text, not a whole-document rewrite. */
 export const SelectionEditResultSchema = z.object({
   replacementText: z.string(),
+  cites: z.array(z.number().int()).default([]),
   flagged: z.boolean().default(false),
   flagReason: z.string().nullable().default(null),
 });

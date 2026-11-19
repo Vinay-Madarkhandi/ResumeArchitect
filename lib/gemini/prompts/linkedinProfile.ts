@@ -56,14 +56,27 @@ export async function suggestLinkedIn(model: JsonModel, input: LinkedInSuggestio
     temperature: 0.6,
   });
 
-  const proof = (text: string) => {
-    const checked = checkGrounding([resumeMarkdown], text);
+  const proof = (item: string | { text: string; cites?: number[] }) => {
+    const textStr = typeof item === "string" ? item : item.text;
+    const cites = typeof item === "string" ? undefined : item.cites;
+    const checked = checkGrounding([resumeMarkdown], textStr, { cites });
     return { text: checked.text, flags: checked.flags };
   };
+  const aboutStr = typeof draft.about === "string"
+    ? draft.about
+    : Array.isArray(draft.about)
+      ? draft.about.map((a) => a.text).join("\n\n")
+      : draft.about.text;
+  const aboutCites = typeof draft.about === "object" && !Array.isArray(draft.about) ? draft.about.cites : undefined;
+
   return {
-    headlines: draft.headlines.map((h) => proof(h.replace(/\s+/g, " "))),
-    about: proof(draft.about),
-    notes: draft.notes.map((n) => n.trim()).filter(Boolean).map(proof),
+    headlines: draft.headlines.map((h) => {
+      const text = typeof h === "string" ? h.replace(/\s+/g, " ") : h.text.replace(/\s+/g, " ");
+      const cites = typeof h === "string" ? undefined : h.cites;
+      return proof({ text, cites });
+    }),
+    about: proof({ text: aboutStr, cites: aboutCites }),
+    notes: draft.notes.map((n) => proof(n)),
     grounded: true,
   };
 }

@@ -5,6 +5,10 @@ import { AnswerRatingSchema, type AnswerRating, type InterviewQuestion } from "@
 import type { JobAnalysis } from "@/lib/schemas/jobAnalysis";
 
 const RatingDraft = AnswerRatingSchema.extend({
+  improvements: z.array(z.union([
+    z.string(),
+    z.object({ text: z.string(), cites: z.array(z.number().int()).default([]) }),
+  ])).max(4).default([]),
   starEvidence: z.object({
     situation: z.string().optional(),
     task: z.string().optional(),
