@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { eq } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
@@ -78,6 +80,21 @@ beforeAll(async () => {
 afterAll(() => fixture.close());
 
 describe("POST /api/scans uploads", () => {
+  it.each([
+    ["pdf_5pages.pdf", "Page 0 Ada Lovelace built Go services"],
+    ["pdf_20pages.pdf", "Page 0 Ada Lovelace built Go services"],
+    ["pdf_short_text.pdf", "Ada Lovelace"],
+    ["pdf_photo_plus_real_text.pdf", "Ada Lovelace"],
+  ] as const)("scans valid PDF fixture %s and extracts its text", async (filename, expectedText) => {
+    const jobId = await signIn();
+    const filePath = join(process.cwd(), "lib/report/__fixtures__/valid_pdfs", filename);
+    const buffer = readFileSync(filePath);
+    const response = await post(uploadForm(buffer, filename, "application/pdf", { jobSource: "saved", jobId }));
+    expect(response.status).toBe(201);
+    const [scan] = await db.select().from(scans).where(eq(scans.user_id, fixture.userId));
+    expect(scan.resume_text).toContain(expectedText);
+  }, 30_000);
+
   it("scans an ordinary Word upload and keeps its layout facts", async () => {
     const jobId = await signIn();
     const response = await post(uploadForm(docxResume(), "resume.docx", DOCX, { jobSource: "saved", jobId }));

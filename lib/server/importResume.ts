@@ -91,7 +91,7 @@ export async function importResume(
   }
 
   const { text, parsed } = resume;
-  if (text.replace(/\s+/g, "").length < 80) {
+  if (text.replace(/\s+/g, "").length < 30) {
     throw new ImportError(
       "We found almost no text in that resume. If it's a scanned image, paste the text instead.",
     );

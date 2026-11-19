@@ -6,6 +6,7 @@ import { InspectionLimit } from "./inspectLimits.ts";
 import { checkPdfStreams } from "./pdfStreams.ts";
 import { readPdfLayout } from "./pdfLayout.ts";
 import type { FileInspectionFailure, ResumeFileFacts } from "./report";
+import { logger } from "../logger";
 
 type Extension = FileInspectionFailure["extension"];
 
@@ -19,13 +20,18 @@ async function read(extension: Extension, file: Uint8Array): Promise<{ facts: Re
       facts = await readDocxLayout(bounded);
     } else {
       await checkPdfStreams(file);
-      facts = await readPdfLayout(file);
+      facts = await readPdfLayout(file.slice());
     }
   } catch (error) {
     const reason = error instanceof InspectionLimit ? "too-large" : "unreadable";
     return { facts: { format: "invalid", extension, reason }, resume: null };
   }
-  const resume = await (extension === "docx" ? extractDocx(bounded) : extractPdf(bounded)).catch(() => null);
+  let resume: ExtractedResume | null = null;
+  try {
+    resume = extension === "docx" ? await extractDocx(bounded) : await extractPdf(file.slice());
+  } catch (error) {
+    logger.error({ error, extension, reason: "extract_failed" }, "Could not extract resume from uploaded file");
+  }
   return { facts, resume };
 }
 

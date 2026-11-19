@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { eq } from "drizzle-orm";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
@@ -69,6 +71,23 @@ beforeEach(() => vi.mocked(putObject).mockClear());
 afterAll(() => fixture.close());
 
 describe("POST /api/resumes/parse", () => {
+  it.each([
+    ["pdf_5pages.pdf", "Ada Lovelace built Go services"],
+    ["pdf_20pages.pdf", "Ada Lovelace built Go services"],
+    ["pdf_short_text.pdf", "Ada Lovelace"],
+    ["pdf_photo_plus_real_text.pdf", "Ada Lovelace"],
+  ] as const)("parses valid PDF fixture %s and extracts its text", async (filename, expectedText) => {
+    await signIn();
+    const filePath = join(process.cwd(), "lib/report/__fixtures__/valid_pdfs", filename);
+    const buffer = readFileSync(filePath);
+    const form = fileForm(buffer, filename, "application/pdf");
+    const response = await post(form);
+    expect(response.status).toBe(200);
+    const saved = await savedResumes();
+    expect(saved).toHaveLength(1);
+    expect(JSON.stringify(saved[0].content)).toContain(expectedText);
+  }, 30_000);
+
   it("imports an ordinary Word upload word for word and keeps the original", async () => {
     await signIn();
     const response = await post(fileForm(docxResume(), "resume.docx", DOCX));

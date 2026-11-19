@@ -1,3 +1,4 @@
+import { join } from "node:path";
 import { readFile } from "node:fs/promises";
 import { expect, test } from "@playwright/test";
 import { Document, HeadingLevel, Packer, Paragraph } from "docx";
@@ -135,4 +136,41 @@ test("explain a missing Gemini key and still scan a cached posting", async ({ pa
   await expect(page).toHaveURL(/\/scan\/[0-9a-f-]+$/);
   expect(page.url()).not.toBe(originalScan);
   await expect(page.getByRole("heading", { name: "Match report" })).toBeVisible();
+});
+
+test("upload a real PDF resume through the UI and get a match report", async ({ page }) => {
+  await signUp(page);
+  await onboard(page);
+  await page.getByRole("link", { name: "Scanner" }).click();
+  await page.getByRole("radio", { name: "Upload file" }).check();
+  const pdfBuffer = await readFile(join(process.cwd(), "lib/report/__fixtures__/valid_pdfs/pdf_photo_plus_real_text.pdf"));
+  await page.getByLabel("Resume file").setInputFiles({
+    name: "ada_resume.pdf",
+    mimeType: "application/pdf",
+    buffer: pdfBuffer,
+  });
+  await page.getByLabel("Job post").fill(JOB);
+  await page.getByRole("button", { name: "Scan", exact: true }).click();
+  await expect(page).toHaveURL(/\/scan\/[0-9a-f-]+$/);
+  await expect(page.getByRole("heading", { name: "Match report" })).toBeVisible();
+  await expect(page.getByText("Target 75%")).toBeVisible();
+  await expect(page.getByRole("region", { name: "Hard skills" })).toBeVisible();
+});
+
+test("import a real PDF as a master resume", async ({ page }) => {
+  await signUp(page);
+  await page.getByLabel("API key").fill("AIzaTESTKEY0000wxyz");
+  await page.getByRole("button", { name: "Connect key" }).click();
+  await expect(page).toHaveURL(/\/onboarding\/resume/);
+
+  const pdfBuffer = await readFile(join(process.cwd(), "lib/report/__fixtures__/valid_pdfs/pdf_photo_plus_real_text.pdf"));
+  await page.locator("input[type='file']").setInputFiles({
+    name: "ada_master.pdf",
+    mimeType: "application/pdf",
+    buffer: pdfBuffer,
+  });
+  await expect(page).toHaveURL(/\/onboarding\/review\?resumeId=/, { timeout: 30_000 });
+  await expect(page.getByRole("textbox", { name: "Resume document" })).toContainText("Ada Lovelace");
+  await page.getByRole("button", { name: "Save as my master resume" }).click();
+  await expect(page).toHaveURL(/\/dashboard/);
 });
