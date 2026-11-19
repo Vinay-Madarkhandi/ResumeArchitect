@@ -91,14 +91,14 @@ export function SkillTable({ skills, label }: { skills: SkillMatch[]; label: str
   if (skills.length === 0) return <p className="text-small text-ink-3">The posting doesn&rsquo;t list any.</p>;
   return (
     <div className="-mx-1 overflow-x-auto">
-      <table className="w-full min-w-[34rem] border-collapse text-left text-small">
+      <table className="w-full border-collapse text-left text-small sm:min-w-[34rem]">
         <caption className="sr-only">{label}</caption>
         <thead>
           <tr className="border-b border-line text-label text-ink-3">
             <th scope="col" className="px-1 py-2 font-medium">Skill</th>
-            <th scope="col" className="px-1 py-2 font-medium">Importance</th>
-            <th scope="col" className="px-1 py-2 text-right font-medium">Job</th>
-            <th scope="col" className="px-1 py-2 text-right font-medium">Resume</th>
+            <th scope="col" className="hidden px-1 py-2 font-medium sm:table-cell">Importance</th>
+            <th scope="col" className="hidden px-1 py-2 text-right font-medium sm:table-cell">Job</th>
+            <th scope="col" className="hidden px-1 py-2 text-right font-medium sm:table-cell">Resume</th>
             <th scope="col" className="py-2 pl-4 pr-1 font-medium">In your resume</th>
           </tr>
         </thead>
@@ -107,11 +107,14 @@ export function SkillTable({ skills, label }: { skills: SkillMatch[]; label: str
             <tr key={s.term} className="border-b border-line align-top last:border-b-0">
               <th scope="row" className="px-1 py-2.5 font-medium text-ink">
                 <span className={cn(s.status === "missing" && "rounded-sm border border-dashed border-del/60 px-1.5 py-px")}>{s.term}</span>
+                <p className="mt-1 text-label font-normal text-ink-3 sm:hidden">
+                  {IMPORTANCE[s.importance]} · job <span className="font-mono tabular">{s.jdCount}</span> · resume <span className="font-mono tabular">{s.resumeCount}</span>
+                </p>
                 {s.advice && <p className="mt-1.5 max-w-prose font-normal text-ink-2">{s.advice}</p>}
               </th>
-              <td className="px-1 py-2.5 text-ink-2">{IMPORTANCE[s.importance]}</td>
-              <td className="px-1 py-2.5 text-right font-mono text-ink-2 tabular">{s.jdCount}</td>
-              <td className="px-1 py-2.5 text-right font-mono text-ink-2 tabular">{s.resumeCount}</td>
+              <td className="hidden px-1 py-2.5 text-ink-2 sm:table-cell">{IMPORTANCE[s.importance]}</td>
+              <td className="hidden px-1 py-2.5 text-right font-mono text-ink-2 tabular sm:table-cell">{s.jdCount}</td>
+              <td className="hidden px-1 py-2.5 text-right font-mono text-ink-2 tabular sm:table-cell">{s.resumeCount}</td>
               <td className="py-2.5 pl-4 pr-1">
                 <SkillStatusMark status={s.status} form={s.matchedForm} />
               </td>

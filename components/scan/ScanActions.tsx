@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Columns3, Download, PenLine, RefreshCw, Sparkles } from "lucide-react";
+import { Columns3, Download, PenLine, RefreshCw, PencilRuler } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
 import { rescanAction, scanResumeAction, trackScannedJob } from "@/app/actions/scans";
@@ -45,9 +45,9 @@ export function ScanActions({ scanId, tracked, jobId }: { scanId: string; tracke
   }
 
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
       <Button variant="primary" loading={busy === "optimize"} disabled={busy !== null} onClick={() => void open("optimize")}>
-        <Sparkles aria-hidden /> Optimize with AI
+        <PencilRuler aria-hidden /> Optimize with AI
       </Button>
       <Button loading={busy === "edit"} disabled={busy !== null} onClick={() => void open("edit")}>
         <PenLine aria-hidden /> Edit and re-scan
@@ -57,7 +57,7 @@ export function ScanActions({ scanId, tracked, jobId }: { scanId: string; tracke
         <RefreshCw aria-hidden /> Re-scan
       </Button>
       {tracked ? (
-        <a href={`/tracker?job=${jobId}`} className="inline-flex h-9 items-center gap-2 rounded-md px-4 text-body text-ink-2 transition-colors hover:bg-hover hover:text-ink [&_svg]:size-4">
+        <a href={`/tracker?job=${jobId}`} className="inline-flex h-9 items-center justify-center gap-2 rounded-md px-4 text-body text-ink-2 transition-colors hover:bg-hover hover:text-ink [&_svg]:size-4">
           <Columns3 aria-hidden /> In tracker
         </a>
       ) : (
@@ -66,7 +66,7 @@ export function ScanActions({ scanId, tracked, jobId }: { scanId: string; tracke
         </Button>
       )}
       <a href={`/api/scans/${scanId}/download`} download
-        className="inline-flex h-9 items-center gap-2 rounded-md px-4 text-body text-ink-2 transition-colors hover:bg-hover hover:text-ink [&_svg]:size-4">
+        className="inline-flex h-9 items-center justify-center gap-2 rounded-md px-4 text-body text-ink-2 transition-colors hover:bg-hover hover:text-ink [&_svg]:size-4">
         <Download aria-hidden /> Download
       </a>
     </div>
