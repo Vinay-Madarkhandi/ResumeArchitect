@@ -129,7 +129,7 @@ export const TEAM_FRAMING_REGEX = /\b(?:as part of a team|as part of the team|pa
 export const CAUSAL_JOIN_REGEX = /\b(?:which\s+drove|resulting\s+in|leading\s+to|that\s+(?:raised|cut|reduced|increased|boosted|improved|lowered|saved)|which\s+(?:raised|cut|reduced|increased|boosted|improved|lowered|saved)|helping\s+(?:cut|reduce|raise|boost|improve|lower|save)|thanks\s+to|so\s+that|enabling|causing|thereby)\b/i;
 
 export const SCOPE_DOMAIN_QUALIFIERS = [
-  "global", "enterprise", "urban", "gifted", "critical-care", "critical care",
+  "global", "enterprise", "half-day", "half day", "half-day workshop", "urban", "gifted", "critical-care", "critical care",
   "international", "real-time", "realtime", "distributed", "high-scale", "large-scale",
   "fortune 500", "fortune 100", "conglomerate", "multinational", "worldwide", "nationwide",
   "multi-tenant", "mission-critical", "mission critical", "high-concurrency", "low-latency",

@@ -123,6 +123,7 @@ export const DOMAINS: PersonaDomain[] = [
       "B.Sc. in Computer Science from State University",
     ],
     pairs: [
+      { kind: "legit", label: "pattern4: hyphenated idiom second-to-none", before: "Wrote unit and integration tests achieving 85% test coverage", after: "Delivered second-to-none 85% test coverage through unit and integration tests" },
       { kind: "legit", label: "pattern2: APIs equivalent to web services", before: "Worked on services in Go backed by PostgreSQL and Redis", after: "Wrote Go APIs backed by PostgreSQL and Redis" },
       { kind: "legit", label: "pattern2: morphological suffix Kubernetes-based", before: "Maintained CI/CD pipelines in GitHub Actions and deployed microservices on Kubernetes", after: "Deployed microservices on Kubernetes-based infrastructure and maintained CI/CD pipelines in GitHub Actions" },
       { kind: "legit", label: "pattern1: sentence-initial verb Build", before: "Worked on services in Go backed by PostgreSQL and Redis", after: "Build Go services backed by PostgreSQL and Redis" },
@@ -159,6 +160,7 @@ export const DOMAINS: PersonaDomain[] = [
       "Registered Nurse (RN) with BSN degree from City College",
     ],
     pairs: [
+      { kind: "invented", label: "pattern4: ungrounded duration half-day workshop", before: "Participated in unit quality committee meetings to review infection control protocols", after: "Facilitated a half-day workshop on infection control protocols" },
       { kind: "legit", label: "pattern3: verb scale same rung collaborated with", before: "Coordinated discharge planning alongside social workers and case managers", after: "Collaborated with social workers and case managers to coordinate discharge planning" },
       { kind: "invented", label: "pattern2: invented tool Cerner-based", before: "Documented patient assessments and medication administration in Epic EHR", after: "Documented patient assessments in Cerner-based EHR systems" },
       { kind: "legit", label: "pattern1: sentence-initial verb Used", before: "Documented patient assessments and medication administration in Epic EHR", after: "Used Epic EHR to document patient assessments and medication administration" },
@@ -195,6 +197,7 @@ export const DOMAINS: PersonaDomain[] = [
       "B.A. in Communications from State University",
     ],
     pairs: [
+      { kind: "legit", label: "pattern4: hyphenated idiom one-on-one prospecting", before: "Conducted outbound prospecting via email and phone campaigns", after: "Conducted one-on-one outbound prospecting via email and phone campaigns" },
       { kind: "legit", label: "pattern3: verb scale same rung worked alongside", before: "Partnered with customer success teams to secure 92% client renewal rate", after: "Worked alongside customer success teams to secure 92% client renewal rate" },
       { kind: "legit", label: "pattern3: verb scale same rung teamed with", before: "Partnered with customer success teams to secure 92% client renewal rate", after: "Teamed with customer success teams to secure 92% client renewal rate" },
       { kind: "legit", label: "pattern1: bullet-initial verb Used", before: "Tracked sales pipeline, deal stages, and customer calls in Salesforce", after: "- Used Salesforce CRM to track sales pipeline and customer calls" },
@@ -231,6 +234,7 @@ export const DOMAINS: PersonaDomain[] = [
       "B.S. in Finance from University of Michigan",
     ],
     pairs: [
+      { kind: "invented", label: "pattern4: invented quantity with one-off idiom", before: "Monitored cash flow positions and maintained daily treasury reconciliations", after: "Resolved three one-off treasury reconciliation discrepancies" },
       { kind: "legit", label: "pattern3: verb scale same rung supported", before: "Assisted senior portfolio managers with financial due diligence for 8 acquisitions", after: "Supported senior portfolio managers with financial due diligence for 8 acquisitions" },
       { kind: "legit", label: "pattern2: morphological suffix Pythonic", before: "Automated recurring monthly reporting using Python and SQL scripts", after: "Automated recurring monthly reporting using Pythonic and SQL scripts" },
       { kind: "legit", label: "pattern1: colon-initial verb Built", before: "Built quarterly financial forecasting models in Microsoft Excel", after: "Responsibilities: Built quarterly financial forecasting models in Microsoft Excel" },
@@ -267,6 +271,7 @@ export const DOMAINS: PersonaDomain[] = [
       "B.A. in Mathematics Education from Central College",
     ],
     pairs: [
+      { kind: "legit", label: "pattern4: hyphenated idiom one-on-one tutoring", before: "Facilitated weekly after-school tutoring sessions for at-risk students", after: "Facilitated weekly one-on-one after-school tutoring sessions for at-risk students" },
       { kind: "invented", label: "pattern3: verb inflation collaborated to led", before: "Collaborated with 5 department faculty to revamp freshman curriculum", after: "Led 5 department faculty to revamp freshman curriculum" },
       { kind: "invented", label: "pattern2: invented tool Canvas-powered", before: "Integrated Google Classroom and Khan Academy into daily instruction", after: "Integrated Canvas-powered portals into daily instruction" },
       { kind: "invented", label: "pattern1: invented tool Canvas LMS with starter verb", before: "Integrated Google Classroom and Khan Academy into daily instruction", after: "Used Canvas LMS and Khan Academy in daily instruction" },
@@ -303,6 +308,7 @@ export const DOMAINS: PersonaDomain[] = [
       "B.S. in Supply Chain Management from Penn State",
     ],
     pairs: [
+      { kind: "legit", label: "pattern4: hyphenated idiom all-in-one barcode", before: "Implemented barcode scanning procedures for inbound freight", after: "Implemented all-in-one barcode scanning procedures for inbound freight" },
       { kind: "invented", label: "pattern3: verb inflation collaborated to directed", before: "Collaborated with warehouse team of 10 to streamline loading docks", after: "Directed warehouse team of 10 to streamline loading docks" },
       { kind: "legit", label: "pattern2: morphological suffix SAP-driven", before: "Monitored warehouse inventory counts and stock transfers in SAP", after: "Monitored warehouse inventory counts and stock transfers in SAP-driven systems" },
       { kind: "invented", label: "pattern1: invented ERP tool with bullet starter", before: "Monitored warehouse inventory counts and stock transfers in SAP", after: "- Operated Oracle SCM for tracking warehouse inventory counts" },

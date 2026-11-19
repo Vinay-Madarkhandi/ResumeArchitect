@@ -43,7 +43,25 @@ export function parseWordNumber(text: string): number | null {
   return total + current;
 }
 
+export const HYPHENATED_IDIOMS_REGEX = /\b(?:all-in-one|one-on-one|one-off|one-stop|first-hand|second-to-none|half-day)\b/gi;
+
+export function isPartOfHyphenatedIdiom(word: string, contextBefore: string, contextAfter: string): boolean {
+  const w = word.toLowerCase();
+  if (w === "one") {
+    if (/(?:all-in-)$/i.test(contextBefore)) return true;
+    if (/^-(?:on-one|off|stop|way)\b/i.test(contextAfter)) return true;
+  }
+  if (w === "first" && /^-(?:hand|rate)\b/i.test(contextAfter)) return true;
+  if (w === "second" && /^-(?:to-none|rate)\b/i.test(contextAfter)) return true;
+  if (w === "half" && /^-(?:day)\b/i.test(contextAfter)) return true;
+  return false;
+}
+
 export function isQuantityUsage(word: string, contextBefore: string, contextAfter: string): boolean {
+  if (isPartOfHyphenatedIdiom(word, contextBefore, contextAfter)) {
+    return false;
+  }
+
   const w = word.toLowerCase();
   if (w !== "one" && w !== "half" && w !== "quarter") return true;
 
@@ -138,16 +156,30 @@ function cleanWord(w: string): string {
 
 export function extractFiguresWithMeasures(clauseText: string): FigureMatch[] {
   const matches: FigureMatch[] = [];
+  // Find all hyphenated idiom spans in clauseText
+  const idiomSpans: Array<[number, number]> = [];
+  for (const m of clauseText.matchAll(HYPHENATED_IDIOMS_REGEX)) {
+    if (m.index !== undefined) {
+      idiomSpans.push([m.index, m.index + m[0].length]);
+    }
+  }
+
   for (const match of clauseText.matchAll(FIGURE)) {
     const raw = match[0].trim();
     if (!raw) continue;
+
+    const start = match.index ?? 0;
+    const end = start + match[0].length;
+
+    // Skip if match falls within any hyphenated idiom
+    if (idiomSpans.some(([iStart, iEnd]) => iStart <= start && end <= iEnd)) {
+      continue;
+    }
     // Skip if it looks like part of a tech name or path (e.g. S3, IPv6, OAuth2, K8s)
     if (/^[a-zA-Z]+\d+$/i.test(raw) || /^\d+[a-zA-Z]+$/i.test(raw)) {
       if (!/^[+-]?\d+(?:[kmbx%]|st|nd|rd|th)$/i.test(raw)) continue;
     }
 
-    const start = match.index ?? 0;
-    const end = start + match[0].length;
     const contextBefore = clauseText.slice(Math.max(0, start - 20), start);
     const contextAfter = clauseText.slice(end, end + 25);
 
