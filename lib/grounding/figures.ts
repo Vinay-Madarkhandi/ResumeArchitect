@@ -193,15 +193,16 @@ export function extractFiguresWithMeasures(clauseText: string): FigureMatch[] {
     const isCurrency = /^[$€£]/.test(raw) || /(?:dollar|euro|pound)/i.test(raw);
 
     // Isolate words strictly within the current clause boundary (stopping at . ! ? ; \n)
-    const beforeClause = clauseText.slice(0, start).split(/[.!?;\n]|\s+(?:and|or|but|while)\s+/).pop() ?? "";
-    const afterClause = clauseText.slice(end).split(/[.!?;\n]|\s+(?:and|or|but|while)\s+/)[0] ?? "";
+    const beforeClause = clauseText.slice(0, start).split(/[.!?;\n]/).pop() ?? "";
+    const afterClause = clauseText.slice(end).split(/[.!?;\n]/)[0] ?? "";
 
     const beforeWords = beforeClause.split(/\s+/).map(cleanWord).filter((w) => w.length >= 2 && !STOPWORDS.has(w) && !(w in NUMBER_WORDS) && !/^\d+$/.test(w));
     const afterWords = afterClause.split(/\s+/).map(cleanWord).filter((w) => w.length >= 2 && !STOPWORDS.has(w) && !(w in NUMBER_WORDS) && !/^\d+$/.test(w));
 
     // Determine primary head noun:
     let headNoun: string | undefined;
-    if (/\b(?:by|from|to|at|of)\s*$/i.test(beforeClause.trim())) {
+    const isPrepGoverned = /\b(?:by|from|to|at|of|in)\s*$/i.test(beforeClause.trim());
+    if (isPrepGoverned) {
       if (beforeWords.length > 0) {
         headNoun = beforeWords[beforeWords.length - 1];
       } else if (afterWords.length > 0) {
@@ -213,7 +214,29 @@ export function extractFiguresWithMeasures(clauseText: string): FigureMatch[] {
       headNoun = beforeWords[beforeWords.length - 1];
     }
 
-    const measureWords = [...new Set([...beforeWords.slice(-3), ...afterWords.slice(0, 3)])];
+    const ADVERBIAL_PREPS = new Set(["through", "via", "using", "over", "across", "during", "within", "throughout", "under", "where", "while"]);
+    const rawTokens = afterClause.trim().split(/\s+/);
+    const immediateAfterWords: string[] = [];
+    for (const token of rawTokens) {
+      const w = cleanWord(token);
+      if (!w) continue;
+      if (ADVERBIAL_PREPS.has(w)) break;
+      if (!STOPWORDS.has(w) && !(w in NUMBER_WORDS) && !/^\d+$/.test(w)) {
+        immediateAfterWords.push(w);
+      }
+    }
+
+    let measureWords: string[];
+    if (isPrepGoverned) {
+      measureWords = [...new Set([...beforeWords.slice(-3), ...immediateAfterWords.slice(0, 2)])];
+    } else {
+      const substantive = immediateAfterWords.filter((w) => !/^(?:weekly|annually|daily|yearly|monthly|per|ago)$/i.test(w));
+      if (substantive.length > 0) {
+        measureWords = substantive.slice(0, 4);
+      } else {
+        measureWords = [...new Set([...beforeWords.slice(-3), ...immediateAfterWords.slice(0, 3)])];
+      }
+    }
 
     let numValue: number | undefined;
     const numPart = normalized.replace(/^[$€£]/, "").replace(/[%kmbx+]$/i, "");
@@ -240,21 +263,76 @@ export function extractFiguresWithMeasures(clauseText: string): FigureMatch[] {
   return matches;
 }
 
+const ACTION_CHANGE_WORDS = new Set([
+  "improved", "improve", "improving", "increased", "increase", "increasing",
+  "reduced", "reduce", "reducing", "cut", "cutting", "raised", "raise", "raising",
+  "boosted", "boost", "boosting", "maintained", "maintain", "maintaining",
+  "grew", "grow", "growing", "growth", "exceeded", "exceed", "exceeding",
+  "achieved", "achieve", "achieving", "delivered", "deliver", "delivering",
+  "lowered", "lower", "lowering", "saved", "save", "saving", "dropped", "drop", "dropping",
+  "generated", "generate", "generating", "earned", "earn", "earning",
+  "spent", "spend", "spending", "drove", "drive", "driving", "led", "lead", "leading",
+  "handled", "handle", "handling", "sorted", "sort", "sorting", "processed", "process",
+  "percent", "percentage", "points", "point", "dollar", "dollars", "per", "cent",
+]);
+
 export function areMeasuresCompatible(figA: FigureMatch, figB: FigureMatch): boolean {
   const normalizeNoun = (s: string) =>
     s.toLowerCase().replace(/^[^\w]+|[^\w]+$/g, "").replace(/(?:ies|es|s)$/, (m) => (m === "ies" ? "y" : ""));
 
-  const wordsA = figA.measureWords.flatMap((w) => w.toLowerCase().split("-")).map(normalizeNoun).filter((w) => w.length >= 3);
-  const wordsB = figB.measureWords.flatMap((w) => w.toLowerCase().split("-")).map(normalizeNoun).filter((w) => w.length >= 3);
+  const wordsA = figA.measureWords
+    .flatMap((w) => w.toLowerCase().split("-"))
+    .filter((w) => !ACTION_CHANGE_WORDS.has(w) && w.length >= 3)
+    .map(normalizeNoun);
 
-  if (wordsA.length === 0 || wordsB.length === 0) return true;
+  const wordsB = figB.measureWords
+    .flatMap((w) => w.toLowerCase().split("-"))
+    .filter((w) => !ACTION_CHANGE_WORDS.has(w) && w.length >= 3)
+    .map(normalizeNoun);
+
+  // Pattern 7: A line merely containing a number must not satisfy a different measure
+  if (wordsA.length > 0 && wordsB.length === 0) return false;
+  if (wordsB.length > 0 && wordsA.length === 0) return false;
+  if (wordsA.length === 0 && wordsB.length === 0) return true;
+
+  const GENERIC_MEASURE_NOUNS = new Set([
+    "rate", "score", "level", "metric", "ratio", "percentage", "percent", "count", "number"
+  ]);
 
   const setB = new Set(wordsB);
   const common = wordsA.filter((w) => setB.has(w));
-  if (common.length >= 1) return true;
+  const specificCommon = common.filter((w) => !GENERIC_MEASURE_NOUNS.has(w));
+  if (specificCommon.length >= 1) return true;
+
+  // Domain synonym equivalence:
+  // spend / cost / expense / expenditure / budget
+  const COST_SYNONYMS = new Set(["spend", "cost", "expense", "expenditure", "budget"]);
+  const hasCostA = wordsA.some((w) => COST_SYNONYMS.has(w));
+  const hasCostB = wordsB.some((w) => COST_SYNONYMS.has(w));
+  if (hasCostA && hasCostB) return true;
+
+  // latency / time / duration / delay / turnaround
+  const TIME_SYNONYMS = new Set(["latency", "time", "duration", "delay", "turnaround"]);
+  const hasTimeA = wordsA.some((w) => TIME_SYNONYMS.has(w));
+  const hasTimeB = wordsB.some((w) => TIME_SYNONYMS.has(w));
+  if (hasTimeA && hasTimeB) return true;
+
+  // renewal / retention
+  const RETENTION_SYNONYMS = new Set(["renewal", "retention"]);
+  const hasRetentionA = wordsA.some((w) => RETENTION_SYNONYMS.has(w));
+  const hasRetentionB = wordsB.some((w) => RETENTION_SYNONYMS.has(w));
+  if (hasRetentionA && hasRetentionB) return true;
+
+  // compliance / safety / rating / protocol
+  const COMPLIANCE_SYNONYMS = new Set(["compliance", "safety", "rating", "protocol"]);
+  const hasCompA = wordsA.some((w) => COMPLIANCE_SYNONYMS.has(w));
+  const hasCompB = wordsB.some((w) => COMPLIANCE_SYNONYMS.has(w));
+  if (hasCompA && hasCompB && (wordsA.includes("safety") || wordsB.includes("safety"))) return true;
 
   for (const a of wordsA) {
+    if (GENERIC_MEASURE_NOUNS.has(a)) continue;
     for (const b of wordsB) {
+      if (GENERIC_MEASURE_NOUNS.has(b)) continue;
       if (a === b || (a.length >= 4 && b.length >= 4 && (a.startsWith(b) || b.startsWith(a)))) {
         return true;
       }
@@ -262,7 +340,6 @@ export function areMeasuresCompatible(figA: FigureMatch, figB: FigureMatch): boo
   }
   return false;
 }
-
 export function isFigureSupported(target: FigureMatch, sourceFigures: FigureMatch[]): boolean {
   // 1. Direct candidate match (same normalized value or numeric value)
   const directCandidates = sourceFigures.filter((src) => {
@@ -294,7 +371,7 @@ export function isFigureSupported(target: FigureMatch, sourceFigures: FigureMatc
         const bVal = figB.numValue;
 
         // Check measure compatibility between operands and target
-        const operandsCompatible = areMeasuresCompatible(figA, figB);
+        const operandsCompatible = areMeasuresCompatible(figA, figB) || (figA.isCurrency && figB.isCurrency) || (figA.isPercent && figB.isPercent);
         const targetCompatible = areMeasuresCompatible(target, figA) || areMeasuresCompatible(target, figB);
 
         if (!operandsCompatible || !targetCompatible) continue;

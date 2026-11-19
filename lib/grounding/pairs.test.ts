@@ -123,6 +123,8 @@ export const DOMAINS: PersonaDomain[] = [
       "B.Sc. in Computer Science from State University",
     ],
     pairs: [
+      { kind: "legit", label: "pattern7: measure preserved latency equivalent to response time", before: "Reduced invoice latency by 38% through query caching", after: "Cut invoice response time by 38% through query caching" },
+      { kind: "invented", label: "pattern7: measure moved from latency to hosting spend", before: "Reduced invoice latency by 38% through query caching", after: "Reduced cloud hosting spend by 38% through query caching" },
       { kind: "invented", label: "pattern6: specific flag for swapped employer Google", before: "Software Engineer at Acme Corp, 2021–Present", after: "Software Engineer at Google, 2021–Present" },
       { kind: "legit", label: "pattern4: hyphenated idiom second-to-none", before: "Wrote unit and integration tests achieving 85% test coverage", after: "Delivered second-to-none 85% test coverage through unit and integration tests" },
       { kind: "legit", label: "pattern2: APIs equivalent to web services", before: "Worked on services in Go backed by PostgreSQL and Redis", after: "Wrote Go APIs backed by PostgreSQL and Redis" },
@@ -161,6 +163,8 @@ export const DOMAINS: PersonaDomain[] = [
       "Registered Nurse (RN) with BSN degree from City College",
     ],
     pairs: [
+      { kind: "legit", label: "pattern7: measure preserved clinical safety compliance rating", before: "Maintained 98% patient safety compliance score across quarterly evaluations", after: "Maintained 98% patient safety compliance rating across quarterly evaluations" },
+      { kind: "invented", label: "pattern7: measure moved from safety compliance to on-time arrival", before: "Maintained 98% patient safety compliance score across quarterly evaluations", after: "Maintained 98% on-time shift arrival rate across quarterly evaluations" },
       { kind: "invented", label: "pattern6: specific flag for unsupported tool Cerner", before: "Documented patient assessments and medication administration in Epic EHR", after: "Documented patient assessments and medication administration in Cerner EHR" },
       { kind: "invented", label: "pattern5: invented percentage 40% not in source", before: "Provided acute inpatient bedside care for up to 6 patients per shift", after: "Delivered 40% improvement in clinical bedside care" },
       { kind: "invented", label: "pattern4: ungrounded duration half-day workshop", before: "Participated in unit quality committee meetings to review infection control protocols", after: "Facilitated a half-day workshop on infection control protocols" },
@@ -200,6 +204,8 @@ export const DOMAINS: PersonaDomain[] = [
       "B.A. in Communications from State University",
     ],
     pairs: [
+      { kind: "legit", label: "pattern7: measure preserved account retention rate", before: "Partnered with customer success teams to secure 92% client renewal rate", after: "Partnered with customer success teams to secure 92% client retention rate" },
+      { kind: "invented", label: "pattern7: measure moved from client renewal rate to email response rate", before: "Partnered with customer success teams to secure 92% client renewal rate", after: "Partnered with customer success teams to secure 92% email response rate" },
       { kind: "invented", label: "pattern6: specific flag for inflated revenue $5M", before: "Generated $2.4M in new annual recurring revenue against a $2M target", after: "Generated $5M in new annual recurring revenue against a $2M target" },
       { kind: "legit", label: "pattern5: derived currency difference $400k", before: "Generated $2.4M in new annual recurring revenue against a $2M target", after: "Exceeded annual recurring revenue target by $400,000" },
       { kind: "legit", label: "pattern4: hyphenated idiom one-on-one prospecting", before: "Conducted outbound prospecting via email and phone campaigns", after: "Conducted one-on-one outbound prospecting via email and phone campaigns" },
@@ -239,6 +245,8 @@ export const DOMAINS: PersonaDomain[] = [
       "B.S. in Finance from University of Michigan",
     ],
     pairs: [
+      { kind: "legit", label: "pattern7: measure preserved operating costs equivalent to expenses", before: "Identified $350,000 in redundant operational expenses", after: "Identified $350,000 in redundant operating costs" },
+      { kind: "invented", label: "pattern7: measure moved from operating expenses to revenue expansion", before: "Identified $350,000 in redundant operational expenses", after: "Identified $350,000 in revenue expansion opportunities" },
       { kind: "invented", label: "pattern6: specific flag for modified year 2017", before: "Financial Analyst at Summit Capital, 2020–Present", after: "Financial Analyst at Summit Capital, 2017–Present" },
       { kind: "invented", label: "pattern4: invented quantity with one-off idiom", before: "Monitored cash flow positions and maintained daily treasury reconciliations", after: "Resolved three one-off treasury reconciliation discrepancies" },
       { kind: "legit", label: "pattern3: verb scale same rung supported", before: "Assisted senior portfolio managers with financial due diligence for 8 acquisitions", after: "Supported senior portfolio managers with financial due diligence for 8 acquisitions" },
@@ -277,6 +285,8 @@ export const DOMAINS: PersonaDomain[] = [
       "B.A. in Mathematics Education from Central College",
     ],
     pairs: [
+      { kind: "legit", label: "pattern7: measure preserved mathematics exam passing rates", before: "Improved standardized test passing rates from 72% to 86% over two years", after: "Raised mathematics exam passing rates from 72% to 86% over two years" },
+      { kind: "invented", label: "pattern7: measure moved from test passing rates to attendance", before: "Improved standardized test passing rates from 72% to 86% over two years", after: "Improved student attendance by 12 percent over two years" },
       { kind: "legit", label: "pattern6: honest title synonym without catch-all flag", before: "High School Math Teacher at Oakridge Academy, 2019–Present", after: "High School Mathematics Teacher at Oakridge Academy, 2019–Present" },
       { kind: "legit", label: "pattern5: derived percentage-point change 14 percentage points", before: "Improved standardized test passing rates from 72% to 86% over two years", after: "Raised standardized test passing rates by 14 percentage points over two years" },
       { kind: "legit", label: "pattern5: derived percentage points difference 14 points", before: "Improved standardized test passing rates from 72% to 86% over two years", after: "Raised standardized test passing rates by 14 points over two years" },
@@ -317,6 +327,8 @@ export const DOMAINS: PersonaDomain[] = [
       "B.S. in Supply Chain Management from Penn State",
     ],
     pairs: [
+      { kind: "legit", label: "pattern7: measure preserved shipping costs equivalent to spend", before: "Negotiated carrier freight rates reducing annual shipping spend by 12%", after: "Cut annual freight shipping costs by 12% by negotiating carrier rates" },
+      { kind: "invented", label: "pattern7: measure moved from shipping spend to transit damages", before: "Negotiated carrier freight rates reducing annual shipping spend by 12%", after: "Negotiated carrier freight rates reducing transit damages by 12%" },
       { kind: "legit", label: "pattern6: honest reword without catch-all flag", before: "Monitored warehouse inventory counts and stock transfers in SAP", after: "Monitored warehouse inventory counts and stock transfers in SAP ERP" },
       { kind: "invented", label: "pattern5: invented derived figure 35% not from source", before: "Negotiated carrier freight rates reducing annual shipping spend by 12%", after: "Negotiated carrier freight rates reducing annual shipping spend by 35%" },
       { kind: "legit", label: "pattern4: hyphenated idiom all-in-one barcode", before: "Implemented barcode scanning procedures for inbound freight", after: "Implemented all-in-one barcode scanning procedures for inbound freight" },
