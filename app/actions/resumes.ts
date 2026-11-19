@@ -16,6 +16,7 @@ export async function renameResume(resumeId: string, title: string): Promise<Act
   const saved = await updateResume(user.id, resumeId, { title: trimmed }).catch(() => null);
   if (!saved) return { ok: false, error: "Couldn't rename that resume." };
   revalidatePath("/dashboard");
+  revalidatePath("/resumes");
   return { ok: true };
 }
 
@@ -37,6 +38,7 @@ export async function duplicateResume(resumeId: string): Promise<ActionResult> {
   }).catch(() => null);
   if (!id) return { ok: false, error: "Couldn't duplicate that resume." };
   revalidatePath("/dashboard");
+  revalidatePath("/resumes");
   return { ok: true };
 }
 
@@ -61,5 +63,6 @@ export async function deleteResume(resumeId: string): Promise<ActionResult> {
     }
   }
   revalidatePath("/dashboard");
+  revalidatePath("/resumes");
   return { ok: true };
 }

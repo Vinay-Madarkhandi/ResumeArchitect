@@ -20,8 +20,8 @@ export function ConnectStep({ status, last4 }: { status: GeminiKeyStatusT; last4
           </Link>
         )}
         {status !== "valid" && (
-          <Link href="/onboarding/resume" className="text-small text-ink-3 underline decoration-line-strong hover:text-ink">
-            Skip for now and import without AI
+          <Link href="/onboarding/resume" className={buttonVariants({ variant: "secondary" })}>
+            Start with my resume instead
           </Link>
         )}
       </div>

@@ -76,7 +76,7 @@ export function ReviewMaster({
           Save as my master resume
         </Button>
         <p className="flex gap-2 text-label text-ink-3">
-          <Info className="mt-px size-3.5 shrink-0" aria-hidden /> You can edit your master anytime from the dashboard.
+          <Info className="mt-px size-3.5 shrink-0" aria-hidden /> Next you’ll scan it against a job. You can edit your master anytime from Resumes.
         </p>
       </aside>
     </div>

@@ -264,7 +264,7 @@ export function Workspace({ resume, session, jobText, jobFacts, asOf, initialVie
     <div className="flex min-h-dvh flex-col">
       <header className="sticky top-0 z-30 border-b border-line bg-ground/92 backdrop-blur-md">
         <div className="flex h-14 items-center gap-3 px-3 sm:px-5">
-          <Link href="/dashboard" className="rounded-md p-2 text-ink-3 transition-colors hover:bg-hover hover:text-ink" aria-label="Back to applications">
+          <Link href="/resumes" className="rounded-md p-2 text-ink-3 transition-colors hover:bg-hover hover:text-ink" aria-label="Back to resumes">
             <ArrowLeft className="size-4" />
           </Link>
           <div className="min-w-0">
