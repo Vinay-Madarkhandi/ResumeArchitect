@@ -1,4 +1,4 @@
-import { ArrowRight, Check, FileDown, Minus } from "lucide-react";
+import { Check, FileDown, Minus } from "lucide-react";
 import type { ReactNode } from "react";
 import { atsRegistry } from "@/lib/ats/registry";
 import { TEMPLATE_IDS } from "@/lib/resume/templates";
@@ -31,7 +31,7 @@ function AtsMock() {
 
 function PowerEditMock() {
   return (
-    <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_12rem]">
+    <div className="grid items-start gap-4 sm:grid-cols-[minmax(0,1fr)_12rem]">
       <div className="paper px-5 py-5 text-[12.5px]" data-template="classic" aria-hidden>
         <div className="paper-flow">
           <h2 style={{ marginTop: 0, fontSize: 11 }}>Skills</h2>
@@ -68,7 +68,7 @@ function TemplatesMock() {
           <p className="mt-2 text-label capitalize text-ink-2">{t}</p>
         </div>
       ))}
-      <div className="ml-auto hidden flex-col gap-1.5 sm:flex">
+      <div className="ml-4 hidden flex-col gap-1.5 sm:flex">
         {["PDF", "Word"].map((f) => (
           <span key={f} className="inline-flex items-center gap-1.5 rounded-md border border-line-strong px-2.5 py-1 text-small text-ink-2">
             <FileDown className="size-3.5 text-ink-3" /> {f}
@@ -235,7 +235,7 @@ export function FeatureRows({ keys, last }: { keys: (keyof typeof FEATURES)[]; l
       {keys.map((key) => {
         const f = FEATURES[key];
         return (
-          <section key={f.id} id={f.id} aria-labelledby={`${f.id}-title`} className="grid scroll-mt-20 gap-8 border-t border-line py-10 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-14">
+          <section key={f.id} id={f.id} aria-labelledby={`${f.id}-title`} className="grid scroll-mt-20 grid-cols-[minmax(0,1fr)] gap-8 border-t border-line py-10 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-14">
             <div>
               <h3 id={`${f.id}-title`} className="text-title font-semibold text-ink">{f.title}</h3>
               <p className="mt-3 max-w-[34rem] text-body text-pretty text-ink-2">{f.body}</p>
@@ -246,7 +246,7 @@ export function FeatureRows({ keys, last }: { keys: (keyof typeof FEATURES)[]; l
       })}
       {last && (
         <p className="border-t border-line pt-5 text-label text-ink-3">
-          Illustrations use example data. <ArrowRight className="inline size-3" aria-hidden /> Everything above is free to use.
+          Illustrations use example data.
         </p>
       )}
     </Container>

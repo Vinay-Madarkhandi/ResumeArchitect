@@ -42,14 +42,14 @@ const QUESTIONS: { q: string; a: ReactNode }[] = [
   },
   {
     q: "Which model does it use, and what files can I use?",
-    a: "Gemini 2.5 Flash by default, which a self-hoster can change with the GEMINI_MODEL setting. You can import PDF, Word (.docx) or plain text up to 10 MB. Download PDF or Word, and a Word file you upload comes back with only the wording changed.",
+    a: "Gemini 2.5 Flash by default, which a self-hoster can change with the GEMINI_MODEL setting. You can scan or import PDF, Word (.docx) or plain text files (up to 8 MB to scan, 10 MB to import). Download PDF or Word, and a Word file you upload comes back with only the wording changed.",
   },
 ];
 
 export function Faq() {
   return (
     <section id="faq" aria-labelledby="faq-title" className="scroll-mt-20 border-t border-line py-24 lg:py-32">
-      <Container className="grid gap-12 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:gap-20">
+      <Container className="grid grid-cols-[minmax(0,1fr)] gap-12 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:gap-20">
         <div>
           <DisplayHeading id="faq-title">Questions, answered plainly.</DisplayHeading>
           <p className="mt-5 max-w-sm text-body text-ink-2">

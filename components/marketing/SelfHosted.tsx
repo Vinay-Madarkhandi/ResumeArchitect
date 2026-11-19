@@ -37,7 +37,7 @@ const FACTS = [
 export function SelfHosted() {
   return (
     <section id="self-hosted" aria-labelledby="self-hosted-title" className="scroll-mt-20 border-y border-line bg-sunken/60 py-24 lg:py-32">
-      <Container className="grid gap-16 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] lg:gap-20">
+      <Container className="grid grid-cols-[minmax(0,1fr)] gap-16 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] lg:gap-20">
         <div>
           <DisplayHeading id="self-hosted-title">Your server, your key, your data.</DisplayHeading>
           <Lede className="mt-5">
@@ -45,9 +45,9 @@ export function SelfHosted() {
             Google AI Studio, and every request runs on your own account.
           </Lede>
           <figure className="mt-10 max-w-md">
-            <pre className="overflow-x-auto rounded-lg border border-line bg-panel p-4 font-mono text-small leading-6 text-ink-2">
+            <pre className="whitespace-pre-wrap break-words rounded-lg border border-line bg-panel p-4 font-mono text-small leading-6 text-ink-2">
               <code>{`cp .env.example .env
-openssl rand -base64 32   # into KEY_ENCRYPTION_SECRET
+# put openssl rand -base64 32 in KEY_ENCRYPTION_SECRET
 docker compose up -d --build --wait`}</code>
             </pre>
             <figcaption className="mt-2 text-label text-ink-3">
@@ -56,7 +56,7 @@ docker compose up -d --build --wait`}</code>
           </figure>
         </div>
 
-        <ul className="grid content-start gap-x-10 gap-y-9 sm:grid-cols-2">
+        <ul className="grid min-w-0 grid-cols-1 content-start gap-x-10 gap-y-9 sm:grid-cols-2">
           {FACTS.map(({ icon: Icon, title, body }) => (
             <li key={title} className="border-t border-line-strong pt-5">
               <h3 className="flex items-center gap-2.5 text-lead font-semibold text-ink">

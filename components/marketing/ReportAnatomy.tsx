@@ -14,7 +14,7 @@ const PARTS = [
 export function ReportAnatomy() {
   return (
     <section id="report" aria-labelledby="report-title" className="scroll-mt-20 border-y border-line bg-panel/50 py-24 lg:py-32">
-      <Container className="grid gap-12 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:gap-20">
+      <Container className="grid grid-cols-[minmax(0,1fr)] gap-12 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:gap-20">
         <div className="lg:sticky lg:top-24 lg:self-start">
           <DisplayHeading id="report-title">What a match report tells you.</DisplayHeading>
           <Lede className="mt-5">

@@ -7,13 +7,13 @@ import { Container } from "./Section";
 export function Hero() {
   return (
     <section aria-labelledby="hero-title" className="pb-24 pt-14 sm:pt-20 lg:pb-32 lg:pt-24">
-      <Container className="grid items-center gap-x-14 gap-y-16 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
+      <Container className="grid grid-cols-[minmax(0,1fr)] items-center gap-x-14 gap-y-16 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
         <div>
           <h1
             id="hero-title"
-            className="font-display text-[clamp(2.75rem,5.2vw,4.375rem)] font-normal leading-[0.98] tracking-[-0.02em] text-balance text-ink"
+            className="font-display text-[clamp(2.5rem,4.6vw,3.75rem)] font-normal leading-[0.98] tracking-[-0.02em] text-balance text-ink"
           >
-            Scan your resume against the job,
+            Scan your resume,
             <br />
             <em className="text-brass">free, on your own key.</em>
           </h1>
