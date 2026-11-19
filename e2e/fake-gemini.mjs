@@ -22,7 +22,7 @@ const JOB = {
     { id: "mentoring", label: "Mentoring", aliases: ["mentored"], importance: "nice", category: "soft" },
   ],
   keywords: [
-    { term: "payments", aliases: ["payment"] },
+    { term: "payments", aliases: [] },
     { term: "reliability", aliases: [] },
     { term: "latency", aliases: [] },
   ],
@@ -36,7 +36,7 @@ function tailor(prompt) {
     edits.push({
       op: "rewrite",
       line: bullets[0].n,
-      text: bullets[0].text.replace(/^(Worked on|Helped with|Responsible for)\s*/i, "Led ").replace(/services/i, "payment services"),
+      text: bullets[0].text.replace(/^(Worked on|Helped with|Responsible for)\s*services in Go backed by PostgreSQL/i, "Built services in Go backed by PostgreSQL for the payments team").replace(/^Worked on services in Go/i, "Built services in Go backed by PostgreSQL for the payments team"),
       reason: "The posting centers on payments; this bullet now says so up front.",
       requirementIds: ["go"],
     });

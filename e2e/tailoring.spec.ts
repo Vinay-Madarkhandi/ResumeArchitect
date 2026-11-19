@@ -34,6 +34,7 @@ test("sign up, tailor a resume, review every change, edit, and download", async 
   const savedExport = await page.request.get(`/api${new URL(page.url()).pathname}/export?format=pdf`);
   expect(savedExport.status()).toBe(422);
   for (const id of [2, 3, 4]) {
+    await expect(rail.getByText(`[Verify claim ${id}]`, { exact: true })).toBeVisible();
     await rail.getByText(`[Verify claim ${id}]`, { exact: true }).click();
     await expect(rail.getByText("Replace this placeholder with details you can verify, or revert the change.")).toBeVisible();
     if (id === 2) await expect(rail.getByText(/Verify “2M”/)).toBeVisible();
@@ -159,7 +160,7 @@ async function adaWordFile(): Promise<Buffer> {
             new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "Ada Lovelace", bold: true, size: 36 })] }),
             new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun("ada@example.com | +44 20 7946 0958 | London")] }),
             section("Professional Summary"),
-            new Paragraph({ children: [new TextRun("Backend engineer who builds dependable systems and enjoys teaching.")] }),
+            new Paragraph({ children: [new TextRun("Backend engineer who builds dependable payment systems and enjoys teaching.")] }),
             section("Work Experience"),
             new Paragraph({
               tabStops: [{ type: TabStopType.RIGHT, position: 10000 }],
@@ -223,8 +224,8 @@ test("a Word resume comes back as the same file with only the wording changed", 
   const before = await paragraphs(original);
   const after = await paragraphs(tailored);
   const xml = after.join("\n");
-  expect(xml).toContain("Led payment services in Go backed by PostgreSQL");
-  expect(xml).not.toMatch(/2M daily transactions|Mentored engineers through on-call rotations/);
+  expect(xml).toContain("Built services in Go backed by PostgreSQL for the payments team");
+  expect(xml).not.toMatch(/Led payment|2M daily transactions|Mentored engineers through on-call rotations/);
   expect(after).toHaveLength(before.length);
   // The centered header and tab-aligned dates are the original paragraphs, byte for byte.
   expect(after[0]).toBe(before[0]);

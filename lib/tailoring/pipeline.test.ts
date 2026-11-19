@@ -12,7 +12,7 @@ ada@example.com · +1 415 555 0100
 
 ## Summary
 
-Backend engineer who likes reliable systems.
+Backend engineer who likes reliable systems and payment processing.
 
 ## Experience
 
