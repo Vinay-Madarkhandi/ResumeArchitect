@@ -301,11 +301,40 @@ export function verifySentence(
   }
 
   if (effectiveCitedLines.length === 0) {
-    flags.push({
-      kind: "claim",
-      value: cleanSentence,
-      message: `Verify “${cleanSentence}”: this claim isn't in your resume.`,
-    });
+    const entities = extractEntities(cleanSentence);
+    for (const name of entities.properNames) {
+      flags.push({ kind: "name", value: name, message: `Verify “${name}”: “${name}” isn't in the lines this cites.` });
+    }
+    for (const cred of entities.credentials) {
+      flags.push({ kind: "skill", value: cred, message: `Verify “${cred}”: “${cred}” isn't in the lines this cites.` });
+    }
+    for (const title of entities.titles) {
+      flags.push({ kind: "title", value: title, message: `Verify “${title}”: “${title}” isn't in the lines this cites.` });
+    }
+    for (const token of entities.capitalizedTokens) {
+      if (entities.properNames.some((p) => p.includes(token))) continue;
+      if (entities.credentials.some((c) => c.includes(token))) continue;
+      if (entities.titles.some((t) => t.includes(token))) continue;
+      flags.push({ kind: "skill", value: token, message: `Verify “${token}”: “${token}” isn't in the lines this cites.` });
+    }
+    const figs = extractFiguresWithMeasures(cleanSentence);
+    for (const f of figs) {
+      flags.push({ kind: "number", value: f.raw, message: `Verify “${f.raw}”: “${f.raw}” isn't in your resume.` });
+    }
+    const qualifiers = findQualifiers(cleanSentence);
+    for (const q of qualifiers) {
+      flags.push({ kind: "claim", value: q, message: `Verify “${q}”: '${q}' isn't in your resume.` });
+    }
+    if (flags.length === 0) {
+      const verbs = findVerbs(cleanSentence);
+      if (verbs.length > 0) {
+        flags.push({ kind: "claim", value: verbs[0].word, message: `Verify “${verbs[0].word}”: '${verbs[0].word}' isn't in your resume.` });
+      } else {
+        const words = cleanSentence.split(/\s+/).filter(w => w.length >= 3);
+        const term = words[0] ?? cleanSentence.slice(0, 15);
+        flags.push({ kind: "claim", value: term, message: `Verify “${term}”: '${term}' isn't in your resume.` });
+      }
+    }
     return uniqueFlags(flags);
   }
 
@@ -473,14 +502,7 @@ export function verifySentence(
     }
   }
 
-  // If there are flags and no generic claim flag, add a claim flag
-  if (flags.length > 0 && !flags.some((f) => f.kind === "claim")) {
-    flags.push({
-      kind: "claim",
-      value: cleanSentence,
-      message: `Verify “${cleanSentence}”: this claim isn't in your resume.`,
-    });
-  }
+  // Removed catch-all whole-sentence claim flag (Pattern 6 requirement)
 
   return uniqueFlags(flags);
 }

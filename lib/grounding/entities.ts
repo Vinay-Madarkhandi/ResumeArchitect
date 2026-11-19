@@ -317,8 +317,15 @@ export function isEntitySupported(
   citedTexts: string[],
   options?: { isCoverLetter?: boolean; framingWords?: Set<string> },
 ): boolean {
-  const normEntity = entity.toLowerCase().trim();
+  let normEntity = entity.toLowerCase().trim();
   const fullCited = citedTexts.join(" \n ").toLowerCase();
+
+  // Math <-> Mathematics equivalence
+  if (/\bmath\b/i.test(normEntity) && /\bmathematics\b/i.test(fullCited)) {
+    normEntity = normEntity.replace(/\bmath\b/gi, "mathematics");
+  } else if (/\bmathematics\b/i.test(normEntity) && /\bmath\b/i.test(fullCited)) {
+    normEntity = normEntity.replace(/\bmathematics\b/gi, "math");
+  }
 
   // 1. APIs vs Web Services equivalence
   if (/\b(?:apis?|web\s+services?|rest\s+apis?)\b/i.test(normEntity)) {
