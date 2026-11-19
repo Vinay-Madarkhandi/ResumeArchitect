@@ -3,7 +3,7 @@ import { expect, type Page } from "@playwright/test";
 const RESUME = `Ada Lovelace
 ada@example.com · +44 20 7946 0958 · London
 Summary
-Backend engineer who builds dependable systems and enjoys teaching.
+Backend engineer who builds dependable payment systems and enjoys teaching.
 Experience
 Senior Engineer — Analytical Engines Ltd
 2020 – Present

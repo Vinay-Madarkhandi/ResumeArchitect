@@ -81,6 +81,7 @@ export async function editSelection(
   if (!flags.length && !result.flagged) return result;
   return {
     replacementText: VERIFY_CLAIM,
+    cites: [],
     flagged: true,
     flagReason: flags[0]?.message ?? "Add the verified details directly to your resume.",
   };

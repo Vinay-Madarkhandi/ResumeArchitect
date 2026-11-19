@@ -42,6 +42,7 @@ export const VERB_LEVELS: Record<string, number> = {
   refactor: 2, refactored: 2, refactoring: 2,
   resolve: 2, resolved: 2, resolving: 2,
   streamline: 2, streamlined: 2, streamlining: 2,
+  containerize: 2, containerized: 2, containerizing: 2,
   revamp: 2, revamped: 2, revamping: 2,
   instruct: 2, instructed: 2, instructing: 2,
   author: 2, authored: 2, authoring: 2,
@@ -168,7 +169,7 @@ const COMMON_SENTENCE_STARTERS = new Set([
   "monitored", "improved", "boosted", "guided", "trained", "mentored", "taught", "oversaw",
   "established", "introduced", "organized", "spearheaded", "administered", "executed",
   "dear", "sincerely", "thank", "best", "experience", "education", "skills", "summary",
-  "streamlined", "revamped", "instructed", "authored", "delivered", "facilitated", "through", "using", "working", "ran", "held",
+  "list", "streamlined", "revamped", "instructed", "authored", "delivered", "facilitated", "through", "using", "working", "ran", "held",
 ]);
 
 export interface ExtractedEntities {
@@ -217,11 +218,12 @@ export function extractEntities(sentence: string): ExtractedEntities {
     const preceding = sentence.slice(0, start).trimEnd();
     const isStartOfSentence = !preceding || /[.!?:;]$/.test(preceding);
 
-    if (isStartOfSentence && COMMON_SENTENCE_STARTERS.has(token.toLowerCase())) {
+    if (isStartOfSentence && (COMMON_SENTENCE_STARTERS.has(token.toLowerCase()) || findVerbs(token).length > 0 || /ed$|ing$|ized?$|ated?$/i.test(token))) {
       continue;
     }
     // Skip if single letter unless I or A
     if (token.length <= 1) continue;
+    if (new Set(["summary", "experience", "education", "skills", "projects", "certifications", "section"]).has(token.toLowerCase())) continue;
 
     capitalizedTokens.push(token);
   }
@@ -386,7 +388,10 @@ export function checkDomainQualifiers(
 
   for (const q of qualifiers) {
     const esc = q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/\s+/g, "[\\s-]+");
-    if (!new RegExp(`\\b${esc}\\b`, "i").test(fullCited)) {
+    const stem = q.endsWith("s") ? q.slice(0, -1) : q;
+    const stemEsc = stem.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/\s+/g, "[\\s-]+");
+    const re = new RegExp(`\\b(?:${esc}|${stemEsc}|${stemEsc}s)\\b`, "i");
+    if (!re.test(fullCited)) {
       flags.push({
         kind: "claim",
         value: q,

@@ -4,23 +4,18 @@ import type { ChangeFlag } from "@/lib/schemas/tailoring";
 import {
   extractFiguresWithMeasures,
   isFigureSupported,
-  normalizeFigure,
-  FIGURE,
   type FigureMatch,
 } from "./figures";
 import {
   extractEntities,
   findVerbs,
-  findQualifiers,
   isEntitySupported,
-  checkScopeInflation,
   checkTeamInflation,
   checkCausalJoins,
   checkDomainQualifiers,
   lookupSynonymGroup,
   TEAM_FRAMING_REGEX,
   CAUSAL_JOIN_REGEX,
-  VERB_LEVELS,
 } from "./entities";
 import { VERIFY_CLAIM } from "./placeholder";
 

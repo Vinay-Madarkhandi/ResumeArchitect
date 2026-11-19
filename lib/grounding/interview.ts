@@ -77,7 +77,13 @@ export function groundInterviewQuestion(
 
 type StarEvidence = Partial<Record<keyof AnswerRating["star"], string>>;
 
-export function groundAnswerRating(answer: string, draft: AnswerRating & { starEvidence?: StarEvidence }): AnswerRating {
+export function groundAnswerRating(
+  answer: string,
+  draft: Omit<AnswerRating, "improvements"> & {
+    improvements?: Array<string | { text: string; cites?: number[] }>;
+    starEvidence?: StarEvidence;
+  },
+): AnswerRating {
   const strengths = [...new Set(draft.strengths.flatMap((line) => {
     const quote = answerQuote(answer, line);
     return quote ? [`“${quote}”`] : [];

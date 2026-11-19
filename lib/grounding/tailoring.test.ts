@@ -5,7 +5,7 @@ import { specifics, verifyChange } from "./tailoring";
 const job = { requirements: [] } as unknown as JobAnalysis;
 
 function check(before: string, after: string) {
-  return verifyChange({ id: "c1", op: "rewrite", before, after, reason: "", requirementIds: [] }, before, job);
+  return verifyChange({ id: "c1", op: "rewrite", before, after, reason: "", requirementIds: [], cites: [] }, before, job);
 }
 
 // Edits a real tailoring run made: each reads smoother and says less.

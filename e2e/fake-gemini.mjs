@@ -33,11 +33,13 @@ function tailor(prompt) {
   const bullets = lines.filter((l) => l.kind === "bullet");
   const edits = [];
   if (bullets[0]) {
+    const summaryLine = lines.find((l) => /payment/i.test(l.text))?.n;
+    const cites = summaryLine ? [bullets[0].n, summaryLine] : [bullets[0].n];
     edits.push({
       op: "rewrite",
       line: bullets[0].n,
-      cites: [bullets[0].n],
-      text: bullets[0].text.replace(/^Worked on services/i, "Worked on the services"),
+      cites,
+      text: bullets[0].text.replace(/^(Worked on|Built)\s*services in Go backed by PostgreSQL/i, "Worked on services in Go backed by PostgreSQL for the payments team").replace(/^Worked on services in Go/i, "Worked on services in Go backed by PostgreSQL for the payments team"),
       reason: "The posting centers on payments; this bullet now says so up front.",
       requirementIds: ["go"],
     });

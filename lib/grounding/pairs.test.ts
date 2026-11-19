@@ -1,7 +1,5 @@
 import { describe, expect, it } from "vitest";
 import { buildSourceIndex, checkGrounding } from "./index";
-import { verifyChange } from "./tailoring";
-import type { JobAnalysis } from "@/lib/schemas/jobAnalysis";
 
 export interface PersonaDomain {
   domain: string;
