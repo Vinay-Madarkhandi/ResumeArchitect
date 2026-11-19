@@ -1,3 +1,4 @@
+import { NextResponse } from "next/server";
 export class BodyTooLarge extends Error {}
 
 /** The request body, refused by its declared length or once it streams past `maxBytes`, so an oversize body is never held whole. */
@@ -33,4 +34,33 @@ export async function readFormData(request: Request, maxBytes: number): Promise<
   const body = Buffer.concat(await readBytes(request, maxBytes));
   const contentType = request.headers.get("content-type") ?? "";
   return new Response(body, { headers: { "content-type": contentType } }).formData().catch(() => null);
+}
+
+export const MAX_JSON_BYTES = 2 * 1024 * 1024;
+
+/** Reads a JSON body within `maxBytes`, returning 413 if the payload is too large. */
+export async function readJson<T = unknown>(
+  request: Request,
+  maxBytes: number = MAX_JSON_BYTES,
+): Promise<{ ok: true; data: T | null } | { ok: false; response: NextResponse }> {
+  try {
+    const text = await readText(request, maxBytes);
+    if (!text.trim()) return { ok: true, data: null };
+    try {
+      return { ok: true, data: JSON.parse(text) as T };
+    } catch {
+      return { ok: true, data: null };
+    }
+  } catch (error) {
+    if (error instanceof BodyTooLarge) {
+      return {
+        ok: false,
+        response: NextResponse.json(
+          { error: "That request is over the size limit.", code: "payload_too_large" },
+          { status: 413 },
+        ),
+      };
+    }
+    throw error;
+  }
 }

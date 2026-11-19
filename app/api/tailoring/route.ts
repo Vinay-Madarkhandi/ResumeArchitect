@@ -1,3 +1,4 @@
+import { readJson } from "@/lib/server/request-body";
 import { postingUrlSchema } from "@/lib/tracker/schema";
 import { getTrackedJob } from "@/lib/data/jobs";
 import { getResume } from "@/lib/data/resumes";
@@ -39,7 +40,9 @@ export async function POST(request: Request) {
   const user = await currentUser();
   if (!user) return fail(401, "unauthorized", "Sign in to continue.");
 
-  const body = await request.json().catch(() => null);
+  const json = await readJson<Record<string, unknown>>(request);
+  if (!json.ok) return json.response;
+  const body = json.data;
   const str = (v: unknown) => (typeof v === "string" ? v.trim() : "");
 
   let sourceResumeId = str(body?.sourceResumeId);

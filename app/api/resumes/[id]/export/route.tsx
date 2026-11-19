@@ -1,3 +1,4 @@
+import { readJson } from "@/lib/server/request-body";
 import { getResume } from "@/lib/data/resumes";
 import { getObject } from "@/lib/storage";
 import { checkOrigin } from "@/lib/auth/guards";
@@ -103,7 +104,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   const originError = checkOrigin(request);
   if (originError) return originError;
   const { id } = await params;
-  const body = await request.json().catch(() => null);
+  const json = await readJson<Record<string, unknown>>(request);
+  if (!json.ok) return json.response;
+  const body = json.data;
   const format = parseFormat(body?.format);
   if (!format) return NextResponse.json({ error: "Invalid export request." }, { status: 400 });
   const resume = await load(id);

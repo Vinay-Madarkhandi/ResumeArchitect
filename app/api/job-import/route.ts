@@ -1,3 +1,4 @@
+import { readJson } from "@/lib/server/request-body";
 import { limitAi } from "@/lib/server/rateLimit";
 import { checkOrigin } from "@/lib/auth/guards";
 import { currentUser } from "@/lib/auth/current-user";
@@ -18,7 +19,9 @@ export async function POST(request: Request) {
   const limited = await limitAi(user.id, "job-import");
   if (limited) return limited;
 
-  const body = await request.json().catch(() => null);
+  const json = await readJson<{ url?: unknown }>(request);
+  if (!json.ok) return json.response;
+  const body = json.data;
   if (typeof body?.url !== "string" || body.url.length > 2048) {
     return NextResponse.json({ error: "Paste a link to the job post." }, { status: 400 });
   }

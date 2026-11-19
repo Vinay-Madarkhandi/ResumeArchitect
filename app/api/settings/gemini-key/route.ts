@@ -1,3 +1,4 @@
+import { readJson } from "@/lib/server/request-body";
 import { limitAi } from "@/lib/server/rateLimit";
 import { updateKey } from "@/lib/data/profiles";
 import { logger } from "@/lib/logger";
@@ -15,7 +16,9 @@ export async function POST(request: Request) {
   const user = await currentUser();
   if (!user) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
 
-  const body = await request.json().catch(() => null);
+  const json = await readJson<{ apiKey?: unknown }>(request);
+  if (!json.ok) return json.response;
+  const body = json.data;
   const apiKey = typeof body?.apiKey === "string" ? body.apiKey.trim() : "";
   if (!apiKey) return NextResponse.json({ error: "Enter an API key." }, { status: 400 });
 

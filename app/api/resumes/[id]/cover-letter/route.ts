@@ -1,3 +1,4 @@
+import { readJson } from "@/lib/server/request-body";
 import { limitAi } from "@/lib/server/rateLimit";
 import { getJobDescription } from "@/lib/data/job-descriptions";
 import { getTailoringSession } from "@/lib/data/tailoring";
@@ -24,10 +25,12 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   if (!owned.ok) return owned.response;
   const { user, resume } = owned;
 
-  const body = await request.json().catch(() => null);
+  const json = await readJson<Record<string, unknown>>(request);
+  if (!json.ok) return json.response;
+  const body = json.data;
   const content = DocumentContentSchema.safeParse(body?.content);
   if (!content.success) return NextResponse.json({ error: "Invalid request." }, { status: 400 });
-  const tone: CoverLetterTone = COVER_LETTER_TONES.includes(body?.tone) ? body.tone : "confident";
+  const tone: CoverLetterTone = body && typeof body.tone === "string" && (COVER_LETTER_TONES as readonly string[]).includes(body.tone) ? (body.tone as CoverLetterTone) : "confident";
 
   if (!resume?.tailoring_session_id) {
     return NextResponse.json({ error: "Cover letters are written for a tailored application." }, { status: 400 });
