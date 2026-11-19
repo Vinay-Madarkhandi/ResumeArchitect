@@ -114,7 +114,7 @@ function wordsToAvoid({ resume, jobText }: RecruiterTipsInput): RecruiterTip {
 
 function webPresence({ resume }: RecruiterTipsInput): RecruiterTip {
   const label = "Web presence";
-  const profiles = webProfiles(resume);
+  const profiles = webProfiles(resume.contact);
   if (profiles.length > 0) return pass("web-presence", label, `Recruiters can look you up: ${profiles.join(", ")}.`);
   return fail(
     "web-presence",

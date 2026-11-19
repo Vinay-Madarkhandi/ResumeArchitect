@@ -1,7 +1,9 @@
+import { readJson } from "@/lib/server/request-body";
 import { limitAi } from "@/lib/server/rateLimit";
 import { checkOrigin } from "@/lib/auth/guards";
 import { currentUser } from "@/lib/auth/current-user";
 import { NextResponse } from "next/server";
+import { detectAts } from "@/lib/ats";
 import { importJobFromUrl, JobImportError } from "@/lib/server/jobImport";
 
 export const runtime = "nodejs";
@@ -17,12 +19,15 @@ export async function POST(request: Request) {
   const limited = await limitAi(user.id, "job-import");
   if (limited) return limited;
 
-  const body = await request.json().catch(() => null);
+  const json = await readJson<{ url?: unknown }>(request);
+  if (!json.ok) return json.response;
+  const body = json.data;
   if (typeof body?.url !== "string" || body.url.length > 2048) {
     return NextResponse.json({ error: "Paste a link to the job post." }, { status: 400 });
   }
   try {
-    return NextResponse.json(await importJobFromUrl(body.url));
+    const job = await importJobFromUrl(body.url);
+    return NextResponse.json({ ...job, ats: detectAts({ url: body.url, text: job.text }) });
   } catch (error) {
     const message = error instanceof JobImportError ? error.message : "Couldn't import that page. Paste the job post instead.";
     return NextResponse.json({ error: message }, { status: 422 });

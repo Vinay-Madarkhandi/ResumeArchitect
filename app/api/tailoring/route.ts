@@ -1,8 +1,9 @@
+import { readJson } from "@/lib/server/request-body";
 import { postingUrlSchema } from "@/lib/tracker/schema";
 import { getTrackedJob } from "@/lib/data/jobs";
 import { getResume } from "@/lib/data/resumes";
 import { getTailoringSession } from "@/lib/data/tailoring";
-import { createJobDescription, getJobDescription } from "@/lib/data/job-descriptions";
+import { createJobDescription, getJobDescription, saveJobFacts } from "@/lib/data/job-descriptions";
 import { checkOrigin } from "@/lib/auth/guards";
 import { currentUser } from "@/lib/auth/current-user";
 import { after, NextResponse } from "next/server";
@@ -15,6 +16,7 @@ import {
   MIN_JOB_DESCRIPTION_LENGTH,
   type PipelineEvent,
 } from "@/lib/schemas/tailoring";
+import { JobFactsSchema } from "@/lib/schemas/jobFacts";
 import { runPipeline } from "@/lib/tailoring/pipeline";
 import { postgresPipelineStore } from "@/lib/tailoring/postgresStore";
 
@@ -38,7 +40,9 @@ export async function POST(request: Request) {
   const user = await currentUser();
   if (!user) return fail(401, "unauthorized", "Sign in to continue.");
 
-  const body = await request.json().catch(() => null);
+  const json = await readJson<Record<string, unknown>>(request);
+  if (!json.ok) return json.response;
+  const body = json.data;
   const str = (v: unknown) => (typeof v === "string" ? v.trim() : "");
 
   let sourceResumeId = str(body?.sourceResumeId);
@@ -49,6 +53,7 @@ export async function POST(request: Request) {
 
   const sourceUrl = postingUrlSchema.safeParse(str(body?.sourceUrl));
   const trackedJobId = str(body?.trackedJobId);
+  const savedJobId = str(body?.jobDescriptionId);
   const retrySessionId = str(body?.retrySessionId);
   if (retrySessionId) {
     const previous = await getTailoringSession(user.id, retrySessionId);
@@ -62,6 +67,13 @@ export async function POST(request: Request) {
     jobDescriptionId = jd.id;
     jobTitle = jd.job_title;
     company = jd.company;
+  } else if (savedJobId) {
+    const job = await getJobDescription(user.id, savedJobId);
+    if (!job) return fail(404, "invalid_jd", "That job could not be found.");
+    jobDescriptionId = job.id;
+    jobDescriptionText = job.raw_text.trim();
+    jobTitle = job.job_title;
+    company = job.company;
   } else if (trackedJobId) {
     const job = await getTrackedJob(user.id, trackedJobId);
     if (!job) return fail(404, "invalid_jd", "That tracked job could not be found.");
@@ -106,9 +118,13 @@ export async function POST(request: Request) {
     jobDescriptionId = jdId;
   }
 
+  const posting = await getJobDescription(user.id, jobDescriptionId);
+  if (!posting) return fail(404, "invalid_jd", "That job could not be found.");
+  const jobFacts = JobFactsSchema.safeParse(posting.job_facts);
   const events = runPipeline(
     {
       model: geminiModel(key.apiKey, user.id),
+      saveFacts: (facts) => saveJobFacts(user.id, posting.id, facts, posting.raw_text),
       store: postgresPipelineStore(user.id, {
         sourceResumeId: source.id,
         sourceTitle: source.title,
@@ -116,7 +132,7 @@ export async function POST(request: Request) {
         jobDescriptionId,
       }),
     },
-    { source: { title: source.title, content: sourceDoc }, jobDescription: jobDescriptionText, jobTitle, company },
+    { source: { title: source.title, content: sourceDoc }, jobDescription: posting.raw_text, jobFacts: jobFacts.data, jobTitle, company },
   );
 
   // The run is independent of the connection: if the browser goes away, sends

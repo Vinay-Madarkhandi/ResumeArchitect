@@ -108,6 +108,14 @@ describe("buildMatchReport", () => {
     expect(r.matchRate).toBeLessThanOrEqual(100);
   });
 
+  it("caps the verdict when a posting has no skills to measure", () => {
+    const r = report("## Experience\n\n### Office Assistant", {
+      ...JOB, title: "Office Assistant", hardSkills: [], softSkills: [], predictedSkills: [],
+    }, "Office Assistant. Full-time. Apply by Friday.");
+    expect(r.verdict.reached).toBe(false);
+    expect(r.verdict.message).toBe("Not enough skills in this posting to score reliably.");
+  });
+
   it("ranks exact over synonym over missing, and a missing must-have over a missing nice-to-have", () => {
     const hard = (body: string) => report(`## Experience\n\n- Built with ${body}`).breakdown.find((c) => c.id === "hardSkills")!.ratio;
     const exact = hard("Go, PostgreSQL, Kubernetes, Terraform");

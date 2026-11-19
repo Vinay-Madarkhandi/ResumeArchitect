@@ -1,3 +1,4 @@
+import { readJson } from "@/lib/server/request-body";
 import { limitAi } from "@/lib/server/rateLimit";
 import { checkOrigin } from "@/lib/auth/guards";
 import { NextResponse } from "next/server";
@@ -23,7 +24,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   if (!owned.ok) return owned.response;
   const { user } = owned;
 
-  const body = await request.json().catch(() => null);
+  const json = await readJson<Record<string, unknown>>(request);
+  if (!json.ok) return json.response;
+  const body = json.data;
   const selectedText = typeof body?.selectedText === "string" ? body.selectedText : "";
   const contextBefore = typeof body?.contextBefore === "string" ? body.contextBefore : "";
   const contextAfter = typeof body?.contextAfter === "string" ? body.contextAfter : "";

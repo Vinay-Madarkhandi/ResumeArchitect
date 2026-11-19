@@ -8,7 +8,7 @@ import type { ApplicationStatus } from "@/lib/tracker/stages";
 const owned = (userId: string, id: string) => and(eq(jobs.user_id, userId), eq(jobs.id, id));
 const tracked = (userId: string, id: string) => and(owned(userId, id), isNotNull(jobs.tracker_stage));
 
-export type TrackerJob = JobRecord & { id: string; resumeId: string | null; reportId: string | null };
+export type TrackerJob = JobRecord & { id: string; resumeId: string | null; reportId: string | null; matchRate: number | null };
 
 function toRecord(row: typeof jobs.$inferSelect): JobRecord {
   return {
@@ -50,11 +50,11 @@ export async function listJobs(userId: string): Promise<TrackerJob[]> {
   const latestResume = db.select({ id: resumes.id }).from(resumes).where(and(
     eq(resumes.user_id, userId), eq(resumes.job_description_id, jobs.id), eq(resumes.kind, "tailored"),
   )).orderBy(desc(resumes.created_at), desc(resumes.id)).limit(1).as("latest_resume");
-  const latestReport = db.select({ id: scans.id }).from(scans).where(and(
+  const latestReport = db.select({ id: scans.id, matchRate: scans.match_rate }).from(scans).where(and(
     eq(scans.user_id, userId), eq(scans.job_description_id, jobs.id),
   )).orderBy(desc(scans.created_at), desc(scans.id)).limit(1).as("latest_report");
 
-  const rows = await db.select({ job: jobs, resumeId: latestResume.id, reportId: latestReport.id }).from(jobs)
+  const rows = await db.select({ job: jobs, resumeId: latestResume.id, reportId: latestReport.id, matchRate: latestReport.matchRate }).from(jobs)
     .leftJoinLateral(latestResume, sql`true`)
     .leftJoinLateral(latestReport, sql`true`)
     .where(and(eq(jobs.user_id, userId), isNotNull(jobs.tracker_stage)))
@@ -66,16 +66,6 @@ export async function getTrackedJob(userId: string, id: string) {
   if (!z.uuid().safeParse(id).success) return;
   const [row] = await db.select().from(jobs).where(tracked(userId, id));
   return row ? { ...toRecord(row), id: row.id } : undefined;
-}
-
-export async function getJobReport(userId: string, id: string) {
-  if (!z.uuid().safeParse(id).success) return;
-  const [row] = await db.select({
-    report: scans.report, matchRate: scans.match_rate, resumeId: scans.resume_id,
-    title: jobs.job_title, jobId: jobs.id, createdAt: scans.created_at,
-  }).from(scans).innerJoin(jobs, and(eq(jobs.id, scans.job_description_id), eq(jobs.user_id, userId)))
-    .where(and(eq(scans.id, id), eq(scans.user_id, userId)));
-  return row;
 }
 
 export async function addJobs(userId: string, input: Array<JobInput & { history?: StageChange[]; archived?: boolean }>) {
@@ -94,7 +84,11 @@ export async function clipJob(userId: string, input: JobClip) {
 }
 
 export async function editJob(userId: string, id: string, input: Omit<JobInput, "stage">) {
-  const [row] = await db.update(jobs).set({ ...details(input), tracker_updated_at: sql`now()` })
+  const [row] = await db.update(jobs).set({
+    ...details(input),
+    job_facts: sql`case when ${jobs.raw_text} = ${input.description} then ${jobs.job_facts} else null end`,
+    tracker_updated_at: sql`now()`,
+  })
     .where(tracked(userId, id)).returning({ id: jobs.id });
   return row;
 }
@@ -105,6 +99,11 @@ export async function archiveJob(userId: string, id: string, archived: boolean) 
   return row;
 }
 
+export async function deleteJob(userId: string, id: string) {
+  const [row] = await db.delete(jobs).where(tracked(userId, id)).returning({ id: jobs.id });
+  return row;
+}
+
 export async function moveJob(userId: string, id: string, stage: ApplicationStatus, tx: Pick<typeof db, "update"> = db) {
   const [row] = await tx.update(jobs).set({
     tracker_stage: stage,
@@ -112,6 +111,16 @@ export async function moveJob(userId: string, id: string, stage: ApplicationStat
       else ${jobs.tracker_history} || jsonb_build_array(jsonb_build_object('stage', ${stage}::text, 'at', clock_timestamp())) end`,
     tracker_updated_at: sql`now()`,
   }).where(tracked(userId, id)).returning({ id: jobs.id });
+  return row;
+}
+
+/** Puts a scanned or pasted posting on the tracker board, once. */
+export async function trackJobDescription(userId: string, id: string) {
+  const [row] = await db.update(jobs).set({
+    tracker_stage: "saved",
+    tracker_updated_at: sql`now()`,
+    tracker_history: sql`jsonb_build_array(jsonb_build_object('stage', 'saved', 'at', now()))`,
+  }).where(and(owned(userId, id), isNull(jobs.tracker_stage))).returning({ id: jobs.id });
   return row;
 }
 

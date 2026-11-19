@@ -168,10 +168,14 @@ export function buildMatchReport({ job: facts, jobText, resume: doc, file, asOf 
     return { id, label: LABELS[id], weight, ratio, points: Math.round(weight * ratio * 1000) / 10 };
   });
   const matchRate = Math.round(breakdown.reduce((sum, c) => sum + c.weight * c.ratio, 0) * 100);
+  const hasSkills = ratios.hardSkills !== null || ratios.softSkills !== null || ratios.otherKeywords !== null;
+  const verdict = hasSkills
+    ? { target: TARGET_MATCH_RATE, reached: matchRate >= TARGET_MATCH_RATE, message: verdictMessage(matchRate, breakdown) }
+    : { target: TARGET_MATCH_RATE, reached: false, message: "Not enough skills in this posting to score reliably." };
 
   return {
     matchRate,
-    verdict: { target: TARGET_MATCH_RATE, reached: matchRate >= TARGET_MATCH_RATE, message: verdictMessage(matchRate, breakdown) },
+    verdict,
     breakdown,
     hardSkills,
     softSkills,

@@ -33,6 +33,7 @@ export function JobDetails({ job, submit, pending, error, restoreFocus }: {
   const [interviews, setInterviews] = useState(() => (job?.interviews ?? []).map((date, id) => ({ date, id })));
   const [nextContact, setNextContact] = useState(contacts.length);
   const [nextInterview, setNextInterview] = useState(interviews.length);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
 
   async function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -54,7 +55,8 @@ export function JobDetails({ job, submit, pending, error, restoreFocus }: {
       {job && (
         <nav aria-label="Job links" className="mb-5 flex flex-wrap gap-x-4 gap-y-2 text-small text-brass [&_a]:hover:underline">
           {/^https?:\/\//i.test(job.url) && <a href={job.url} target="_blank" rel="noreferrer">View posting</a>}
-          {job.reportId && <Link href={`/tracker/reports/${job.reportId}`}>Match report</Link>}
+          {job.reportId && <Link href={`/scan/${job.reportId}`}>Match report{job.matchRate !== null && <> · <span className="font-mono tabular">{job.matchRate}%</span></>}</Link>}
+          {job.description && <Link href={`/scan?job=${job.id}`}>Scan</Link>}
           {job.resumeId && <Link href={`/resumes/${job.resumeId}?view=review`}>Tailored resume</Link>}
           {job.description && <Link href={`/new?job=${job.id}`}>Tailor a resume</Link>}
         </nav>
@@ -146,10 +148,21 @@ export function JobDetails({ job, submit, pending, error, restoreFocus }: {
         {error && <p role="alert" className="text-small text-danger">{error}</p>}
         <div className="flex flex-wrap justify-between gap-2">
           <Button type="submit" variant="primary" loading={pending}>{job ? "Save changes" : "Add job"}</Button>
-          {job && <Button disabled={pending} onClick={() => void submit(
-            { action: "archive", id: job.id, archived: !job.archived }, job.archived ? "Job restored." : "Job archived.",
-          )}>{job.archived ? "Restore to tracker" : "Archive job"}</Button>}
+          {job && <div className="flex flex-wrap gap-2">
+            <Button disabled={pending} onClick={() => void submit(
+              { action: "archive", id: job.id, archived: !job.archived }, job.archived ? "Job restored." : "Job archived.",
+            )}>{job.archived ? "Restore to tracker" : "Archive job"}</Button>
+            {!confirmingDelete && <Button variant="danger" disabled={pending} onClick={() => setConfirmingDelete(true)}>Delete job</Button>}
+          </div>}
         </div>
+        {job && confirmingDelete && (
+          <div role="group" aria-label="Confirm delete" className="flex flex-wrap items-center gap-3 rounded-lg border border-danger/50 px-3 py-2.5">
+            <p className="flex-1 text-small text-ink-2">Delete this job, its notes, and its match reports? This can&rsquo;t be undone.</p>
+            <Button size="sm" variant="ghost" onClick={() => setConfirmingDelete(false)}>Cancel</Button>
+            <Button size="sm" variant="danger" loading={pending}
+              onClick={() => void submit({ action: "delete", id: job.id }, `${job.title} deleted.`)}>Delete permanently</Button>
+          </div>
+        )}
       </form>
     </DialogContent>
   );

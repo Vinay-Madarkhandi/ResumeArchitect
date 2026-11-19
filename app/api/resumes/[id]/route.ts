@@ -1,3 +1,4 @@
+import { readJson } from "@/lib/server/request-body";
 import { updateResume } from "@/lib/data/resumes";
 import { checkOrigin } from "@/lib/auth/guards";
 import { currentUser } from "@/lib/auth/current-user";
@@ -27,7 +28,9 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   const user = await currentUser();
   if (!user) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
 
-  const parsed = PatchSchema.safeParse(await request.json().catch(() => null));
+  const json = await readJson(request);
+  if (!json.ok) return json.response;
+  const parsed = PatchSchema.safeParse(json.data);
   if (!parsed.success) return NextResponse.json({ error: "That update wasn't valid." }, { status: 400 });
   const { content, title, template, reviewedChangeIds, applicationStatus, coverLetter } = parsed.data;
 

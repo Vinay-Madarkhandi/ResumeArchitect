@@ -6,6 +6,7 @@ import {
 import type { Link, ResumeContent } from "@/lib/schemas/resume";
 import type { DocumentContent } from "@/lib/schemas/document";
 import type { JobAnalysis } from "@/lib/schemas/jobAnalysis";
+import type { JobFacts } from "@/lib/schemas/jobFacts";
 import type { PipelineStage, TailoredChange } from "@/lib/schemas/tailoring";
 import { TEMPLATE_IDS } from "@/lib/resume/templates";
 
@@ -80,6 +81,8 @@ export const jobDescriptions = pgTable("job_descriptions", {
   interview_dates: pgDate("interview_dates").array().notNull().default(sql`'{}'`),
   follow_up_date: pgDate("follow_up_date"),
   excitement: smallint("excitement"),
+  /** What the Match Report scores against, read from raw_text once (lib/gemini/prompts/extractJobFacts.ts). */
+  job_facts: jsonb("job_facts").$type<JobFacts>(),
   created_at: created(),
 }, (t) => [
   index("job_descriptions_user_id_idx").on(t.user_id),
@@ -238,13 +241,17 @@ export const scans = pgTable("scans", {
   id: id(),
   user_id: owner(),
   resume_id: uuid("resume_id").references(() => resumes.id, { onDelete: "set null" }),
+  /** The resume's title, or the uploaded file name, when it was scanned. */
+  resume_label: text("resume_label").notNull().default("Resume"),
   resume_text: text("resume_text").notNull(),
+  /** The resume as scanned, so a pasted or uploaded one can be opened in the editor later. */
+  resume_content: jsonb("resume_content").$type<DocumentContent>(),
   job_description_id: uuid("job_description_id").notNull().references(() => jobDescriptions.id, { onDelete: "cascade" }),
   report: jsonb("report").notNull(),
   match_rate: integer("match_rate").notNull(),
   created_at: created(),
 }, (t) => [
-  index("scans_user_idx").on(t.user_id), index("scans_resume_idx").on(t.resume_id),
+  index("scans_user_created_idx").on(t.user_id, t.created_at.desc()), index("scans_resume_idx").on(t.resume_id),
   index("scans_job_description_idx").on(t.job_description_id),
   check("scans_match_rate_check", sql`${t.match_rate} between 0 and 100`),
 ]);

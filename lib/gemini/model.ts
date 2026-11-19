@@ -138,10 +138,14 @@ const RETRYABLE: AiErrorCode[] = ["rate_limited", "gemini_error", "schema_valida
 
 export async function generateStructured<T>(
   model: JsonModel,
-  request: { label: string; system: string; prompt: string; schema: z.ZodType<T>; temperature?: number },
+  request: {
+    label: string; system: string; prompt: string; schema: z.ZodType<T>; temperature?: number;
+    /** The shape asked of the model, when `schema` reads its reply more leniently. */
+    replySchema?: z.ZodType;
+  },
   { attempts = 2, backoffMs = 1200 }: { attempts?: number; backoffMs?: number } = {},
 ): Promise<T> {
-  const jsonSchema = toGeminiSchema(request.schema);
+  const jsonSchema = toGeminiSchema(request.replySchema ?? request.schema);
   let lastError: AiError = new AiError("gemini_error");
 
   for (let attempt = 1; attempt <= attempts; attempt++) {

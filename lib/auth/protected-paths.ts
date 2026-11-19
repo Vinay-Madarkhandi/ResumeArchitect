@@ -4,7 +4,7 @@ import { safeRedirect } from "@/lib/safeRedirect";
 // sign-in with their destination and passes it on for requireUser(), which does
 // the same when the cookie turns out to be stale.
 const signedInSections = [
-  "dashboard", "tracker", "new", "settings", "onboarding", "resumes", "linkedin", "interview", "cover-letter",
+  "dashboard", "tracker", "new", "settings", "onboarding", "resumes", "scan", "scans", "linkedin", "interview", "cover-letter",
 ];
 
 export const DESTINATION_HEADER = "x-ra-destination";

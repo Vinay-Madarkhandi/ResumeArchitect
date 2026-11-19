@@ -6,13 +6,12 @@ import { checkOrigin } from "@/lib/auth/guards";
 import { currentUser } from "@/lib/auth/current-user";
 import { NextResponse } from "next/server";
 import { loadGeminiKey } from "@/lib/server/geminiKey";
-import { detectKind, ImportError, importResume } from "@/lib/server/importResume";
-import { MAX_RESUME_UPLOAD_BYTES, RESUME_UPLOADS_BUCKET, originalResumePath } from "@/lib/storage/paths";
+import { ImportError, importResume, MAX_RESUME_CHARS, MAX_UPLOAD_FORM_BYTES, readResumeUpload } from "@/lib/server/importResume";
+import { BodyTooLarge, readFormData } from "@/lib/server/request-body";
+import { RESUME_UPLOADS_BUCKET, originalResumePath } from "@/lib/storage/paths";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
-
-const MAX_PASTE_CHARS = 40_000;
 
 function fail(status: number, code: string, message: string) {
   return NextResponse.json({ errorCode: code, errorMessage: message }, { status });
@@ -29,16 +28,19 @@ export async function POST(request: Request) {
   const user = await currentUser();
   if (!user) return fail(401, "unauthorized", "Sign in to continue.");
 
-  const form = await request.formData().catch(() => null);
+  let form: FormData | null;
+  try {
+    form = await readFormData(request, MAX_UPLOAD_FORM_BYTES);
+  } catch (error) {
+    if (error instanceof BodyTooLarge) return fail(413, "file_too_large", "That file is over 8 MB. Upload a smaller one.");
+    throw error;
+  }
   if (!form) return fail(400, "no_file", "Upload a file or paste your resume.");
   const file = form.get("file");
   const pasted = form.get("text");
 
+  if (await limitAi(user.id, "resume-import")) return fail(429, "rate_limited", "Too many imports. Try again later.");
   const key = await loadGeminiKey(user.id);
-  if (key.ok) {
-    const limited = await limitAi(user.id, "resume-import");
-    if (limited) return fail(429, "rate_limited", "Too many imports. Try again later.");
-  }
   const apiKey = key.ok ? key.apiKey : null;
   const resumeId = crypto.randomUUID();
   let storagePath: string | null = null;
@@ -47,24 +49,20 @@ export async function POST(request: Request) {
   try {
     let result;
     if (file instanceof File && file.size > 0) {
-      const kind = detectKind(file);
-      if (!kind) return fail(400, "invalid_file_type", "Upload a PDF, Word (.docx), or text file.");
-      if (file.size > MAX_RESUME_UPLOAD_BYTES) return fail(400, "file_too_large", "That file is over 10 MB. Upload a smaller one.");
-      const buffer = await file.arrayBuffer();
-
+      const { kind, resume } = await readResumeUpload(file);
       storagePath = originalResumePath(user.id, resumeId, kind === "text" ? "txt" : kind);
       fileName = file.name;
       try {
-        await putObject(user.id, RESUME_UPLOADS_BUCKET, storagePath, Buffer.from(buffer), file.type || "application/octet-stream");
+        await putObject(user.id, RESUME_UPLOADS_BUCKET, storagePath, Buffer.from(await file.arrayBuffer()), file.type || "application/octet-stream");
       } catch {
         logger.warn({ userId: user.id, resumeId }, "Could not keep original resume upload");
         storagePath = null;
       }
 
-      result = await importResume(user.id, { kind, buffer }, apiKey);
+      result = await importResume(user.id, resume, apiKey);
     } else if (typeof pasted === "string" && pasted.trim()) {
-      if (pasted.length > MAX_PASTE_CHARS) return fail(400, "too_long", "That's longer than a resume. Paste just your resume text.");
-      result = await importResume(user.id, { kind: "text", text: pasted }, apiKey);
+      if (pasted.length > MAX_RESUME_CHARS) return fail(400, "too_long", "That's longer than a resume. Paste just your resume text.");
+      result = await importResume(user.id, { source: "text", text: pasted, parsed: null }, apiKey);
     } else {
       return fail(400, "no_file", "Upload a file or paste your resume.");
     }

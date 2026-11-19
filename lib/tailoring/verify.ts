@@ -1,6 +1,6 @@
 import type { JobAnalysis } from "@/lib/schemas/jobAnalysis";
 import type { ChangeFlag, TailoredChange } from "@/lib/schemas/tailoring";
-import { termPattern } from "@/lib/scoring/score";
+import { termPattern } from "@/lib/resume/termPattern";
 import { parseInline } from "@/lib/documentMarkdown";
 import { inlineText } from "@/lib/resume/units";
 

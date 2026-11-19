@@ -55,6 +55,11 @@ describe("matchTerm", () => {
     ["R", "Worked in R&D on Python projects"],
     ["React", "React promptly to JavaScript errors"],
     ["C", "C++ and C# programming"],
+    ["C", "Daily Vitamin C"],
+    ["C", "Presented to the C-suite"],
+    ["C", "Partnered with C-level stakeholders"],
+    ["C", "Finished with a grade C"],
+    ["C", "Evaluated Option C for the Java migration"],
     ["Swift", "Swift response to customer issues"],
     ["Rust", "Rust removal from steel"],
     ["Spark", "Spark interest in STEM"],
@@ -72,6 +77,12 @@ describe("matchTerm", () => {
     ["R", "Used the R language for modeling", "found"],
     ["R", "Technical Skills\nR", "found"],
     ["C", "Implemented device drivers in C", "found"],
+    ["C", "C, C++", "found"],
+    ["C", "C/C++ developer", "found"],
+    ["C", "Required: C, C++", "found"],
+    ["C", "Strong C, C++ skills", "found"],
+    ["C", "Required: C", "found"],
+    ["C", "Languages: Python, C, Java", "found"],
     ["React", "Built a front-end with React and JavaScript", "found"],
     ["Swift", "Built an iOS app in Swift", "found"],
     ["Rust", "Developed Rust crates", "found"],
@@ -79,6 +90,13 @@ describe("matchTerm", () => {
     ["数据分析", "技能：数据分析、机器学习", "found"],
   ])("finds %s with clear boundaries and context in %s", (term, text, status) => {
     expect(matchTerm(term, ctx(text)).status).toBe(status);
+  });
+
+  it("reads ambiguous mentions in time linear in the text, even on one long line", () => {
+    const jobText = "Go ".repeat(40_000);
+    const started = performance.now();
+    expect(postingCount("Go", ctx("", jobText))).toBe(0);
+    expect(performance.now() - started).toBeLessThan(1_000);
   });
 
   it("matches short acronyms by case only", () => {

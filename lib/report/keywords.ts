@@ -58,6 +58,12 @@ export function formPattern(input: string): RegExp {
 
 const SKILL_QUALIFIER = /\b(?:experience with|proficien(?:t|cy) in|competence in|written in|coded in) +$/i;
 const SKILL_LABEL = /^\s*(?:(?:technical|core|key|relevant) +)?(?:skills|technologies|languages|requirements|qualifications) *: */i;
+/** A term inside a labeled list earlier in the same sentence ("Required: C, C++"). */
+const LIST_LABEL = /\b(?:required|requirements|qualifications|skills|technologies|languages|must[- ]haves?|preferred|nice[- ]to[- ]haves?) *:[^.:;\n]*$/i;
+/** Languages a bare "C" is listed beside ("C, C++", "C/C++ developer"). */
+const SIBLINGS = "(?:C\\+\\+|C#|Objective-C|Java|Python|Rust|Golang|Assembly|Fortran|Verilog|VHDL)";
+const C_SIBLING_LEFT = new RegExp(`(?<![\\w+#-])${SIBLINGS}\\s*[,/|&]\\s*$`, "i");
+const C_SIBLING_RIGHT = new RegExp(`^\\s*[,/|&]\\s*${SIBLINGS}(?![\\w+#])`, "i");
 
 function skillLines(text: string): Set<number> {
   const starts = new Set<number>();
@@ -80,10 +86,26 @@ function everydayUse(form: string, left: string, right: string): boolean {
     case "Swift": return /^ *(?:action|response|recovery|decision)\b/i.test(right);
     case "Rust": return /^ *removal\b/i.test(right);
     case "Spark": return /^ *(?:an? |the )?(?:interest|conversation|debate|change|joy)\b/i.test(right);
-    case "C": return /(?:vitamin|grade|type) +$/i.test(left);
+    case "C": return /(?:vitamin|grade|type|class|option|choice|plan|tier|item|section|part) +$/i.test(left) || /^-(?:suite|level)\b/i.test(right);
     case "Excel": return /^ *at\b/i.test(right);
     default: return false;
   }
+}
+
+/** The line around any offset, from line starts found once. */
+function lineIndex(text: string) {
+  const starts = [0];
+  for (let i = text.indexOf("\n"); i >= 0; i = text.indexOf("\n", i + 1)) starts.push(i + 1);
+  return (at: number) => {
+    let lo = 0;
+    let hi = starts.length - 1;
+    while (lo < hi) {
+      const mid = (lo + hi + 1) >> 1;
+      if (starts[mid] <= at) lo = mid;
+      else hi = mid - 1;
+    }
+    return { start: starts[lo], end: lo + 1 < starts.length ? starts[lo + 1] - 1 : text.length };
+  };
 }
 
 interface Span {
@@ -95,6 +117,7 @@ interface Span {
 /** Mentions of any of `forms`, overlapping hits ("REST" inside "REST API") counted once. */
 function mentions(forms: readonly string[], text: string): Span[] {
   let skillStarts: Set<number> | undefined;
+  let lineAt: ReturnType<typeof lineIndex> | undefined;
   const spans = forms.flatMap((form) => {
     const canonical = CANONICAL_CASE.get(formKey(form)) ?? form;
     const technical = AMBIGUOUS.get(canonical);
@@ -102,12 +125,13 @@ function mentions(forms: readonly string[], text: string): Span[] {
       const start = m.index;
       const end = start + m[0].length;
       if (CANONICAL_CASE.has(formKey(canonical))) {
-        const lineStart = text.lastIndexOf("\n", start - 1) + 1;
-        const nextLine = text.indexOf("\n", end);
+        const { start: lineStart, end: lineEnd } = (lineAt ??= lineIndex(text))(start);
         const left = text.slice(Math.max(lineStart, start - 45), start);
-        const right = text.slice(end, Math.min(nextLine < 0 ? text.length : nextLine, end + 45));
+        const right = text.slice(end, Math.min(lineEnd, end + 45));
         if (everydayUse(canonical, left, right)) return [];
-        if (technical && !technical.test(`${left} ${right}`) && !SKILL_QUALIFIER.test(left)) {
+        const context = `${left} ${right}`;
+        const listed = SKILL_QUALIFIER.test(left) || LIST_LABEL.test(left) || (canonical === "C" && (C_SIBLING_LEFT.test(left) || C_SIBLING_RIGHT.test(right)));
+        if (technical && !technical.test(context) && !listed) {
           if (!(skillStarts ??= skillLines(text)).has(lineStart)) return [];
         }
       }
@@ -183,6 +207,30 @@ export function matchTerm(term: string, { resumeText, jobText, lexicon }: MatchC
 /** Mentions of the term or any synonym in the posting. */
 export function postingCount(term: string, { jobText, lexicon }: MatchContext): number {
   return mentions([term, ...(lexicon(term)?.forms ?? [])], jobText).length;
+}
+
+export type PostingSegment = { text: string; skill?: SkillMatch };
+
+/**
+ * The posting split into plain text and mentions of each skill (by the same
+ * matching that scores it), so highlights agree with the report. Overlaps
+ * resolve to the earliest, then longest, mention.
+ */
+export function highlightPosting(jobText: string, skills: SkillMatch[]): PostingSegment[] {
+  const lexicon = buildLexicon(jobText);
+  const hits = skills
+    .flatMap((skill) => mentions([skill.term, ...(lexicon(skill.term)?.forms ?? [])], jobText).map((span) => ({ ...span, skill })))
+    .sort((a, b) => a.start - b.start || b.end - a.end);
+  const segments: PostingSegment[] = [];
+  let pos = 0;
+  for (const hit of hits) {
+    if (hit.start < pos) continue;
+    if (hit.start > pos) segments.push({ text: jobText.slice(pos, hit.start) });
+    segments.push({ text: hit.text, skill: hit.skill });
+    pos = hit.end;
+  }
+  if (pos < jobText.length) segments.push({ text: jobText.slice(pos) });
+  return segments;
 }
 
 const IMPORTANCE_RANK = { high: 0, medium: 1, low: 2 } as const;

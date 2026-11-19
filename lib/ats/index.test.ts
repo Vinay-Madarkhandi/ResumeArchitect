@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { atsRegistry, atsTips, identifyAts } from './index';
+import { atsRegistry, atsTips, detectAts, identifyAts } from './index';
 
 const urls: Record<string, string> = {
   workday: 'https://acme.wd5.myworkdayjobs.com/en-US/External/job/Engineer?source=abc',
@@ -55,5 +55,18 @@ describe('sourced ATS guidance', () => {
     const formats = atsRegistry.find(e => e.id === 'wellfound')!.facts.acceptedFileTypes.map(f => f.text).join(' ');
     expect(formats).toContain('PDF');
     expect(formats).toContain('Plain Text');
+  });
+});
+
+describe('detectAts', () => {
+  it('returns the ATS with its sourced guidance', () => {
+    const ats = detectAts({ url: 'https://jobs.lever.co/acme/123', text: 'Backend engineer' });
+    expect(ats).toMatchObject({ id: 'lever', name: 'Lever' });
+    expect(ats?.guidance.length).toBeGreaterThan(0);
+    expect(ats?.guidance.every((g) => g.sources.length > 0)).toBe(true);
+  });
+
+  it('returns null for an unknown site', () => {
+    expect(detectAts({ url: 'https://example.com/careers/1', text: 'Backend engineer' })).toBeNull();
   });
 });

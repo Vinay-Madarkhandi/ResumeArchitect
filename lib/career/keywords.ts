@@ -1,6 +1,6 @@
 import type { JobAnalysis } from "@/lib/schemas/jobAnalysis";
 import type { KeywordHit } from "@/lib/schemas/career";
-import { termPattern } from "@/lib/scoring/score";
+import { termPattern } from "@/lib/resume/termPattern";
 
 /**
  * Finds each of the job's requirements and keywords in named sections of the

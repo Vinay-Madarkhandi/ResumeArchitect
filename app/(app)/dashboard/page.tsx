@@ -1,3 +1,4 @@
+import { listScans } from "@/lib/data/scans";
 import { listResumes } from "@/lib/data/resumes";
 import { getProfileStatus } from "@/lib/data/profiles";
 import { getTailoringScores, latestFailedTailoring } from "@/lib/data/tailoring";
@@ -21,7 +22,7 @@ function hoursAgo(hours: number): string {
 export default async function DashboardPage() {
   const user = await requireOnboardedUser();
 
-  const [resumes, profile] = await Promise.all([listResumes(user.id), getProfileStatus(user.id)]);
+  const [resumes, profile, scans] = await Promise.all([listResumes(user.id), getProfileStatus(user.id), listScans(user.id, 5)]);
 
   const master = resumes?.find((r) => r.kind === "master" && r.is_default) ?? null;
   const applications = (resumes ?? []).filter((r) => r.kind === "tailored");
@@ -139,6 +140,25 @@ export default async function DashboardPage() {
             </Link>
           </div>
         )}
+      </section>
+
+      <section aria-labelledby="recent-scans" className="rounded-lg border border-line bg-panel p-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 id="recent-scans" className="text-body font-semibold">Recent scans</h2>
+          <Link href="/scans" className={buttonVariants({ variant: "ghost", size: "sm" })}>Scan history <ArrowRight aria-hidden /></Link>
+        </div>
+        {scans.length ? (
+          <ul className="mt-2 divide-y divide-line">
+            {scans.map((scan) => (
+              <li key={scan.id}>
+                <Link href={`/scan/${scan.id}`} className="flex items-center justify-between gap-3 py-2.5 text-body hover:text-brass">
+                  <span>{scan.jobTitle || "Untitled job"} <span className="text-small text-ink-3">· {scan.resumeLabel}</span></span>
+                  <span className="font-mono tabular">{scan.matchRate}%</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        ) : <Link href="/scan" className="text-small text-brass hover:underline">Scan a resume</Link>}
       </section>
 
       <section aria-labelledby="apps-heading">

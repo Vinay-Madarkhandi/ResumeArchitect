@@ -111,9 +111,14 @@ describe("words to avoid", () => {
 });
 
 describe("web presence", () => {
-  it("passes with any profile link and fails with none", () => {
-    expect(tip("web-presence", `${experience(["Built"])}\n\ngithub.com/ada`).status).toBe("pass");
+  it("passes with any profile link in the contact block and fails with none", () => {
+    expect(tip("web-presence", experience(["Built"]).replace("# Ada\n", "# Ada\n\ngithub.com/ada\n")).status).toBe("pass");
     expect(tip("web-presence", experience(["Built"])).status).toBe("fail");
+  });
+
+  it("ignores links that aren't the candidate's own, like a reference's LinkedIn", () => {
+    const references = `${experience(["Built"])}\n\n## References\n\nGrace Hopper, linkedin.com/in/gracehopper`;
+    expect(tip("web-presence", references).status).toBe("fail");
   });
 });
 

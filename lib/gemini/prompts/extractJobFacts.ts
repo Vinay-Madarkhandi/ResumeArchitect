@@ -1,5 +1,6 @@
 import { generateStructured, type JsonModel } from "@/lib/gemini/model";
-import { JobFactsSchema, type JobFacts } from "@/lib/schemas/jobFacts";
+import { logger } from "@/lib/logger";
+import { JobFactsReplySchema, JobFactsSchema, readJobFactsReply, type JobFacts } from "@/lib/schemas/jobFacts";
 import { groundJobSkills } from "@/lib/report/keywords";
 
 const SYSTEM = `You are an applicant tracking system's job-posting parser. Read one job
@@ -47,13 +48,15 @@ Skip benefits, salary, equal-opportunity statements, and company history.`;
  * (lib/report). The AI extracts; it never produces the match rate.
  */
 export async function extractJobFacts(model: JsonModel, jobText: string): Promise<JobFacts> {
-  const facts = await generateStructured(model, {
+  const reply = await generateStructured(model, {
     label: "extractJobFacts",
     system: SYSTEM,
     prompt: `# Job posting\n\n${jobText.trim()}`,
-    schema: JobFactsSchema,
+    schema: JobFactsReplySchema,
+    replySchema: JobFactsSchema,
     temperature: 0.1,
   });
-
+  const { facts, dropped } = readJobFactsReply(reply);
+  if (Object.values(dropped).some(Boolean)) logger.warn({ dropped }, "Dropped invalid job skill entries");
   return groundJobSkills(facts, jobText);
 }
