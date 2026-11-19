@@ -41,6 +41,16 @@ const FACTS = {
 };
 
 function tailor(prompt) {
+  const reqSection = prompt.split("# Requirements")[1]?.split("#")[0] ?? "";
+  const reqs = [...reqSection.matchAll(/^-\s*([^\s·]+)\s*·\s*([^·\n]+)/gm)].map((m) => ({
+    id: m[1].trim(),
+    label: m[2].trim(),
+  }));
+  const findId = (pattern) => reqs.find((r) => pattern.test(r.label) || pattern.test(r.id))?.id;
+  const goId = findId(/go/i) ?? "go";
+  const k8sId = findId(/kube|k8s/i) ?? "k8s";
+  const mentoringId = findId(/mentor/i) ?? "mentoring";
+
   const lines = [...prompt.matchAll(/^\[(\d+)\] \(([^)]+)\) (.*)$/gm)].map((m) => ({ n: Number(m[1]), kind: m[2], text: m[3] }));
   const bullets = lines.filter((l) => l.kind === "bullet");
   const edits = [];
@@ -50,7 +60,7 @@ function tailor(prompt) {
       line: bullets[0].n,
       text: bullets[0].text.replace(/^(Worked on|Helped with|Responsible for)\s*/i, "Led ").replace(/services/i, "payment services"),
       reason: "The posting centers on payments; this bullet now says so up front.",
-      requirementIds: ["go"],
+      requirementIds: goId ? [goId] : [],
     });
   }
   if (bullets[1]) {
@@ -69,11 +79,11 @@ function tailor(prompt) {
       line: lines[skills + 1].n,
       text: `${lines[skills + 1].text}, Kubernetes`,
       reason: "Kubernetes is listed as a plus.",
-      requirementIds: ["k8s"],
+      requirementIds: k8sId ? [k8sId] : [],
     });
   }
   if (bullets[2]) {
-    edits.push({ op: "insert_after", line: bullets[2].n, text: "Mentored engineers through on-call rotations", reason: "Shows mentoring.", requirementIds: ["mentoring"] });
+    edits.push({ op: "insert_after", line: bullets[2].n, text: "Mentored engineers through on-call rotations", reason: "Shows mentoring.", requirementIds: mentoringId ? [mentoringId] : [] });
   }
   return { summary: "Leads with payments and reliability, and surfaces mentoring the posting asks for.", edits };
 }

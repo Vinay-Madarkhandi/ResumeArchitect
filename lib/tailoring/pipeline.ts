@@ -2,11 +2,12 @@ import { analyzeJob } from "@/lib/gemini/prompts/analyzeJob";
 import { tailorLines } from "@/lib/gemini/prompts/tailorLines";
 import { AiError, type JsonModel } from "@/lib/gemini/model";
 import type { DocumentContent } from "@/lib/schemas/document";
-import type { JobAnalysis } from "@/lib/schemas/jobAnalysis";
+import type { JobAnalysis, Requirement } from "@/lib/schemas/jobAnalysis";
+import { uniqueIds } from "@/lib/gemini/prompts/uniqueIds";
 import type { PipelineEvent, PipelineStage, TailoredChange, TailoringErrorCodeT } from "@/lib/schemas/tailoring";
 import { buildMatchReport } from "@/lib/report/matchReport";
 import { extractJobFacts } from "@/lib/gemini/prompts/extractJobFacts";
-import type { JobFacts } from "@/lib/schemas/jobFacts";
+import type { JobFacts, JobSkill } from "@/lib/schemas/jobFacts";
 import { documentText, fromUnits, toUnits } from "@/lib/resume/units";
 import { applyEdits } from "./applyEdits";
 import { verifyChange } from "./verify";
@@ -63,6 +64,26 @@ export interface PipelineInput {
   company?: string | null;
 }
 
+function requirementsFromFacts(facts: JobFacts, existingRequirements: Requirement[] = []): Requirement[] {
+  const existingByLabel = new Map(existingRequirements.map((r) => [r.label.toLowerCase(), r]));
+  const toReq = (skill: JobSkill, category: Requirement["category"]): Requirement => {
+    const existing = existingByLabel.get(skill.term.toLowerCase());
+    const slug = skill.term.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "skill";
+    return {
+      id: existing?.id || slug,
+      label: skill.term,
+      aliases: existing?.aliases ?? [],
+      importance: skill.importance === "high" ? "must" : "nice",
+      category: existing?.category ?? category,
+    };
+  };
+  const reqs = [
+    ...facts.hardSkills.map((s) => toReq(s, "skill")),
+    ...facts.softSkills.map((s) => toReq(s, "soft")),
+  ];
+  return uniqueIds(reqs, "req");
+}
+
 function plural(n: number, word: string): string {
   return `${n} ${word}${n === 1 ? "" : "s"}`;
 }
@@ -81,13 +102,15 @@ export async function* runPipeline(
     yield { type: "stage", stage, status: "running" };
     await store.updateSession(sessionId, { stage, status: "analyzing" });
     const analysis = await analyzeJob(model, input.jobDescription);
+    const facts = input.jobFacts ?? await extractJobFacts(model, input.jobDescription);
+    if (!input.jobFacts) await deps.saveFacts?.(facts);
+    const requirements = requirementsFromFacts(facts, analysis.requirements);
     const job: JobAnalysis = {
       ...analysis,
       title: input.jobTitle?.trim() || analysis.title,
       company: input.company?.trim() || analysis.company,
+      requirements: requirements.length > 0 ? requirements : analysis.requirements,
     };
-    const facts = input.jobFacts ?? await extractJobFacts(model, input.jobDescription);
-    if (!input.jobFacts) await deps.saveFacts?.(facts);
     const scoring = { job: facts, jobText: input.jobDescription, file: null, asOf: new Date() };
     await store.updateSession(sessionId, { job_analysis: job });
     const mustCount = job.requirements.filter((r) => r.importance === "must").length;

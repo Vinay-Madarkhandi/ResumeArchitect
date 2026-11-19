@@ -98,9 +98,18 @@ export async function tailorLines(
   input: { units: Unit[]; job: JobAnalysis; report: MatchReport },
 ): Promise<TailorResponse> {
   const { units, job, report } = input;
-  const reqLines = [...report.hardSkills, ...report.softSkills].map(
-    (s) => `- ${s.term} · ${s.importance} importance · ${s.status === "missing" ? "NOT shown in resume" : "shown in resume"}`,
+  const statusMap = new Map(
+    [...report.hardSkills, ...report.softSkills].map((s) => [s.term.toLowerCase(), s.status]),
   );
+  const reqs = job.requirements.length > 0 ? job.requirements : [...report.hardSkills, ...report.softSkills].map((s) => ({
+    id: s.term.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "skill",
+    label: s.term,
+    importance: (s.importance === "high" ? "must" : "nice") as "must" | "nice",
+  }));
+  const reqLines = reqs.map((r) => {
+    const status = statusMap.get(r.label.toLowerCase()) === "missing" ? "NOT shown in resume" : "shown in resume";
+    return `- ${r.id} · ${r.label} · ${r.importance === "must" ? "high" : "low"} importance · ${status}`;
+  });
   const prompt = [
     `# Role\n${job.title}${job.company ? ` at ${job.company}` : ""}${job.seniority ? ` (${job.seniority})` : ""}\n${job.summary}`,
     `# Requirements\n${reqLines.join("\n")}`,

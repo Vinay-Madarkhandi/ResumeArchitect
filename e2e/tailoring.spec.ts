@@ -27,6 +27,11 @@ test("sign up, tailor a resume, review every change, edit, and download", async 
   // The new number, the unbacked Kubernetes skill, and the new mentoring claim are all flagged.
   await expect(rail.getByText("Verify")).toHaveCount(3);
 
+  // Focus the first change and verify the requirement chip renders.
+  await rail.getByText(/payment services/).click();
+  await expect(rail.getByText("The posting centers on payments; this bullet now says so up front.")).toBeVisible();
+  await expect(rail.locator(".slug-in").getByText("Go", { exact: true })).toBeVisible();
+
   // Focus a flagged change, read its reason and flag, then revert it.
   await rail.getByText(/2M daily transactions/).click();
   await expect(rail.getByText("Ties the work to reliability, a stated priority.")).toBeVisible();
