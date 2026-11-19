@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { checkGrounding } from "@/lib/grounding";
+import { extractClaims, isToolSupported, isEmployerSupported, isTitleSupported } from "./entities";
+import { extractFiguresWithMeasures, isFigureSupported } from "./figures";
 import { verifyChange } from "@/lib/grounding/tailoring";
 
 type Pair = [kind: "legit" | "invented", label: string, before: string, after: string];
@@ -68,7 +70,24 @@ const additionalPairs: Pair[] = [
   ["invented", "scope inflation contributed to owned", "Contributed to auth module", "Owned auth module"],
 ];
 
-const allPairs = [...reviewerPairs, ...additionalPairs];
+
+// Coordinator probe cases (Defects 1, 2, 3 verification)
+export const probePairs: Array<[kind: "legit" | "invented", label: string, before: string, after: string, expectedEntity?: string]> = [
+  ["invented", "inflate worked->led", "Worked on services in Go backed by PostgreSQL", "Led payment services in Go backed by PostgreSQL", "Led"],
+  ["invented", "inflate worked->led no domain", "Worked on services in Go backed by PostgreSQL", "Led services in Go backed by PostgreSQL", "Led"],
+  ["invented", "new domain payments", "Worked on services in Go backed by PostgreSQL", "Worked on payment services in Go backed by PostgreSQL", "payment"],
+  ["legit", "honest reword", "Worked on services in Go backed by PostgreSQL", "Built Go services backed by PostgreSQL"],
+  ["invented", "invent kafka", "Worked on services in Go backed by PostgreSQL", "Built Go and Kafka services backed by PostgreSQL", "Kafka"],
+  ["invented", "owned", "Contributed to the billing API", "Owned the billing API", "Owned"],
+  ["invented", "sole", "Part of a team that shipped the mobile app", "Shipped the mobile app", "Shipped"],
+];
+
+const allPairs = [
+  ...reviewerPairs,
+  ...additionalPairs,
+  ...probePairs.map(([kind, label, before, after]): Pair => [kind, label, before, after]),
+];
+
 
 describe("Grounding pairs table test", () => {
   it("satisfies reviewer acceptance criteria (0 FN, <= 1 FP on reviewer legit, catches every invented pair)", () => {
@@ -102,6 +121,56 @@ describe("Grounding pairs table test", () => {
 
     expect(totalFn, "All pairs must have 0 false negatives (catch every invented pair)").toBe(0);
     expect(totalFp, "Total false positives should be <= 1").toBeLessThanOrEqual(1);
+  });
+
+
+  describe("coordinator probe cases", () => {
+    for (const [kind, label, before, after, expectedEntity] of probePairs) {
+      it(`probe: ${kind} - ${label}`, () => {
+        const g = checkGrounding([before], after);
+        if (kind === "invented") {
+          expect(g.flags.length, `Expected flags for invented claim: ${after}`).toBeGreaterThan(0);
+          if (expectedEntity) {
+            const hasExpected = g.flags.some((f) => f.value.toLowerCase() === expectedEntity.toLowerCase());
+            expect(hasExpected, `Expected flagged entity "${expectedEntity}" in flags: ${JSON.stringify(g.flags)}`).toBe(true);
+          }
+        } else {
+          expect(g.flags.length, `Expected no flags for legit reword: ${after}`).toBe(0);
+        }
+      });
+    }
+  });
+
+  it("no supported entity is ever flagged anywhere across all pairs", () => {
+    for (const [, label, before, after] of allPairs) {
+      const g = checkGrounding([before], after);
+      const beforeExtracted = extractClaims(before);
+      const beforeTools = new Set(beforeExtracted.tools.map((t) => t.toLowerCase()));
+      const beforeEmployers = new Set(beforeExtracted.employers.map((e) => e.toLowerCase()));
+
+      for (const flag of g.flags) {
+        if (flag.kind === "skill") {
+          expect(isToolSupported(flag.value, before), `In pair "${label}", supported skill "${flag.value}" should not be flagged`).toBe(false);
+        }
+        if (flag.kind === "name") {
+          expect(isEmployerSupported(flag.value, before), `In pair "${label}", supported name "${flag.value}" should not be flagged`).toBe(false);
+        }
+        if (flag.kind === "number") {
+          const afterFigs = extractFiguresWithMeasures(after);
+          const afterFig = afterFigs.find((f) => f.raw === flag.value);
+          if (afterFig) {
+            expect(isFigureSupported(afterFig, beforeExtracted.figures), `In pair "${label}", supported figure "${flag.value}" should not be flagged`).toBe(false);
+          }
+        }
+        if (flag.kind === "title") {
+          expect(isTitleSupported(flag.value, before), `In pair "${label}", supported title "${flag.value}" should not be flagged`).toBe(false);
+        }
+        const valLower = flag.value.toLowerCase();
+        if (beforeTools.has(valLower) || beforeEmployers.has(valLower)) {
+          expect.fail(`In pair "${label}", supported entity "${flag.value}" was flagged`);
+        }
+      }
+    }
   });
 
   describe("individual pairs verification", () => {

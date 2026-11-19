@@ -113,15 +113,15 @@ export function extractFiguresWithMeasures(clauseText: string): FigureMatch[] {
     const end = start + match[0].length;
 
     // Isolate words strictly within the current clause boundary (stopping at . ! ? ; \n)
-    const beforeClause = clauseText.slice(0, start).split(/[.!?;\n]/).pop() ?? "";
-    const afterClause = clauseText.slice(end).split(/[.!?;\n]/)[0] ?? "";
+    const beforeClause = clauseText.slice(0, start).split(/[.!?;\n]|\s+(?:and|or|but|while)\s+/).pop() ?? "";
+    const afterClause = clauseText.slice(end).split(/[.!?;\n]|\s+(?:and|or|but|while)\s+/)[0] ?? "";
 
-    const beforeWords = beforeClause.split(/\s+/).map(cleanWord).filter((w) => w.length >= 2 && !STOPWORDS.has(w) && !(w in NUMBER_WORDS));
-    const afterWords = afterClause.split(/\s+/).map(cleanWord).filter((w) => w.length >= 2 && !STOPWORDS.has(w) && !(w in NUMBER_WORDS));
+    const beforeWords = beforeClause.split(/\s+/).map(cleanWord).filter((w) => w.length >= 2 && !STOPWORDS.has(w) && !(w in NUMBER_WORDS) && !/^\d+$/.test(w));
+    const afterWords = afterClause.split(/\s+/).map(cleanWord).filter((w) => w.length >= 2 && !STOPWORDS.has(w) && !(w in NUMBER_WORDS) && !/^\d+$/.test(w));
 
     // Determine primary head noun:
     let headNoun: string | undefined;
-    if (/\b(?:by|from|to|at)\s*$/i.test(beforeClause.trim())) {
+    if (/\b(?:by|from|to|at|of)\s*$/i.test(beforeClause.trim())) {
       if (beforeWords.length > 0) {
         headNoun = beforeWords[beforeWords.length - 1];
       } else if (afterWords.length > 0) {

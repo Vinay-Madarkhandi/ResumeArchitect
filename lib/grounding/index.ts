@@ -4,7 +4,6 @@ import type { ChangeFlag } from "@/lib/schemas/tailoring";
 import {
   extractFiguresWithMeasures,
   isFigureSupported,
-  FIGURE,
 } from "./figures";
 import {
   extractClaims,
@@ -99,31 +98,153 @@ export function uniqueFlags(flags: ChangeFlag[]): ChangeFlag[] {
   });
 }
 
-function flag(kind: ChangeFlag["kind"], value: string, context?: string): ChangeFlag {
-  return {
-    kind,
-    value,
-    message:
-      kind === "number"
-        ? `Verify “${value}” in “${context}”. The source needs to show what the figure measures.`
-        : `Verify “${value}”. We couldn't trace it to the supplied source.`,
-  };
-}
-
-function unsupported(text: string): ChangeFlag[] {
+function unsupported(
+  plain: string,
+  fullSourceText: string,
+  fullSourceFigures: ReturnType<typeof extractFiguresWithMeasures>,
+  evidenceUnits: SourceEvidenceUnit[],
+): ChangeFlag[] {
   const flags: ChangeFlag[] = [];
-  for (const [figure] of text.matchAll(FIGURE)) flags.push(flag("number", figure, text));
-  const extracted = extractClaims(text);
-  for (const tool of extracted.tools) flags.push(flag("skill", tool));
-  for (const employer of extracted.employers) flags.push(flag("name", employer));
-  for (const name of properNouns(text)) flags.push(flag("name", name));
-  for (const title of extracted.titles) flags.push(flag("title", title));
-  for (const deg of extracted.degrees) {
-    flags.push(flag("claim", deg.degree));
-    if (deg.field) flags.push(flag("name", deg.field));
+  const extracted = extractClaims(plain);
+
+  // Tools / skills: only flag if not supported in source
+  for (const tool of extracted.tools) {
+    if (!isToolSupported(tool, fullSourceText)) {
+      flags.push({
+        kind: "skill",
+        value: tool,
+        message: `“${tool}” isn't in your resume.`,
+      });
+    }
   }
-  for (const cert of extracted.certifications) flags.push(flag("name", cert));
-  flags.push(flag("claim", text));
+
+  // Check if claim mentions a specific employer in source
+  const claimEmployers = extracted.employers.filter((e) => isEmployerSupported(e, fullSourceText));
+  const roleTiedUnit = claimEmployers.length > 0
+    ? evidenceUnits.find((u) => u.extracted.employers.some((e) => claimEmployers.some((ce) => ce.toLowerCase() === e.toLowerCase())))
+    : undefined;
+
+  // Figures / numbers: only flag if not supported by source figures (or role-tied unit figures if role is specified)
+  for (const figure of extracted.figures) {
+    const candidateFigs = roleTiedUnit ? roleTiedUnit.figures : fullSourceFigures;
+    const supported = candidateFigs.some((srcFig) => isFigureSupported(figure, [srcFig]));
+    if (!supported) {
+      flags.push({
+        kind: "number",
+        value: figure.raw,
+        message: `Verify “${figure.raw}” in “${plain}”. The source needs to show what the figure measures.`,
+      });
+    }
+  }
+
+  // Employers: only flag if not supported in source, or if role-tied claims do not match the employer
+  for (const employer of extracted.employers) {
+    if (!isEmployerSupported(employer, fullSourceText)) {
+      flags.push({
+        kind: "name",
+        value: employer,
+        message: `“${employer}” isn't in your resume.`,
+      });
+    } else if (roleTiedUnit && (extracted.titles.length > 0 || extracted.figures.length > 0)) {
+      const titlesMatch = extracted.titles.every((t) => isTitleSupported(t, roleTiedUnit.plain));
+      const figuresMatch = extracted.figures.every((f) => roleTiedUnit.figures.some((rf) => isFigureSupported(f, [rf])));
+      if (!titlesMatch && !figuresMatch) {
+        flags.push({
+          kind: "name",
+          value: employer,
+          message: `Verify “${employer}”. The role at ${employer} does not match this claim.`,
+        });
+      }
+    }
+  }
+
+  // Proper nouns: only flag if not in source and not already checked as tool/employer
+  for (const name of properNouns(plain)) {
+    const isTool = extracted.tools.some((t) => t.toLowerCase() === name.toLowerCase());
+    const isEmp = extracted.employers.some((e) => e.toLowerCase() === name.toLowerCase());
+    if (!isTool && !isEmp && !fullSourceText.toLowerCase().includes(name.toLowerCase())) {
+      flags.push({
+        kind: "name",
+        value: name,
+        message: `“${name}” isn't in your resume.`,
+      });
+    }
+  }
+
+  // Titles & Seniority: only flag if not supported in source
+  for (const title of extracted.titles) {
+    if (!isTitleSupported(title, fullSourceText)) {
+      flags.push({
+        kind: "title",
+        value: title,
+        message: `“${title}” isn't in your resume.`,
+      });
+    }
+  }
+  for (const sen of extracted.seniority) {
+    if (!new RegExp(`\\b${sen}\\b`, "i").test(fullSourceText)) {
+      flags.push({
+        kind: "title",
+        value: sen,
+        message: `“${sen}” isn't in your resume.`,
+      });
+    }
+  }
+
+  // Degrees & Certifications: only flag if not supported in source
+  for (const deg of extracted.degrees) {
+    if (!isDegreeSupported(deg, fullSourceText)) {
+      flags.push({
+        kind: "claim",
+        value: deg.degree,
+        message: `“${deg.degree}” isn't in your resume.`,
+      });
+      if (deg.field && !fullSourceText.toLowerCase().includes(deg.field.toLowerCase())) {
+        flags.push({
+          kind: "name",
+          value: deg.field,
+          message: `“${deg.field}” isn't in your resume.`,
+        });
+      }
+    }
+  }
+  for (const cert of extracted.certifications) {
+    if (!fullSourceText.toLowerCase().includes(cert.toLowerCase())) {
+      flags.push({
+        kind: "name",
+        value: cert,
+        message: `“${cert}” isn't in your resume.`,
+      });
+    }
+  }
+
+  // Durations & Years:
+  for (const dur of extracted.durations) {
+    if (!fullSourceText.toLowerCase().includes(dur.toLowerCase())) {
+      flags.push({
+        kind: "claim",
+        value: dur,
+        message: `“${dur}” isn't in your resume.`,
+      });
+    }
+  }
+  for (const yr of extracted.years) {
+    if (!fullSourceText.replace(/,(\\d{3})/g, "$1").includes(yr)) {
+      flags.push({
+        kind: "claim",
+        value: yr,
+        message: `“${yr}” isn't in your resume.`,
+      });
+    }
+  }
+
+
+  flags.push({
+    kind: "claim",
+    value: plain,
+    message: `Verify “${plain}”. We couldn't trace it to the supplied source.`,
+  });
+
   return uniqueFlags(flags);
 }
 
@@ -365,7 +486,7 @@ export function checkGrounding(sources: readonly string[], output: string) {
         }
       }
 
-      const flags = isSupported ? [] : unsupported(plain);
+      const flags = isSupported ? [] : unsupported(plain, fullSourceText, fullSourceFigures, evidenceUnits);
       claims.push({
         text: plain,
         evidence: isSupported ? evidenceText : null,
