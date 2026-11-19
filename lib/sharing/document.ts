@@ -5,23 +5,26 @@ const email = /[\p{L}\p{N}.!#$%&'*+\/=?^_`{|}~-]+@[\p{L}\p{N}-]+(?:\.[\p{L}\p{N}
 const phone = /(?<![\w\d])(?:\+|\(\+?)?\d(?:[\d().\p{Zs}-]{5,}\d)(?:[ \t]*(?:ext\.?|x)[ \t]*\d+)?(?![\w\d])/giu;
 const url = /(?:\b(?:[a-z][a-z\d+.-]*:\/\/|mailto:|tel:|www\.)[^\s<>"'|•]+|(?<![\p{L}\p{N}@_.])(?:[\p{L}\p{N}](?:[\p{L}\p{N}-]*[\p{L}\p{N}])?\.)+(?:com|org|net|edu|gov|mil|info|biz|name|me|io|dev|app|tech|page|link|cloud|online|site|xyz|example|[a-z]{2})(?![\p{L}\p{N}-]|\.[\p{L}\p{N}])(?:[/?#][^\s<>"'|•]*)?)/giu;
 const handle = /(?<![\p{L}\p{N}_])@[a-z\d_][\w.-]*/giu;
-const streetSuffix = "(?:Street|St\\.?|Road|Rd\\.?|Avenue|Ave\\.?|Boulevard|Blvd\\.?|Lane|Ln\\.?|Drive|Dr\\.?|Court|Ct\\.?|Place|Pl\\.?|Way|Terrace|Close|Crescent|Square|Parkway|Trail|Highway|Row|Mews|Gasse|Straße|Strasse|Str\\.?)";
+const streetSuffix = "(?:Street|St\\.?|Road|Rd\\.?|Avenue|Ave\\.?|Boulevard|Blvd\\.?|Lane|Ln\\.?|(?<!\\bto[ \\t]+)Drive|Dr\\.?|Court|Ct\\.?|Place|Pl\\.?|Way|Terrace|Ter\\.?|Close|Crescent|Cres\\.?|Square|Sq\\.?|Parkway|Pkwy\\.?|Trail|Trl\\.?|Highway|Hwy\\.?|Row|Mews|Circle|Cir\\.?|Grove|Grv\\.?|Alley|Walk|Plaza|Plz\\.?|Gasse|Straße|Strasse|Str\\.?)";
 const apt = "(?:[, \\t]+(?:Apt\\.?|Suite|Unit|Flat|#)[ \\t]*[A-Za-z\\d-]+)?";
+const notCompanyOrTech = "(?![ \\t]+(?:integrations?|apps?|apis?|services?|features?|branches?|bank|corporation|corp|inc|ltd|llc|company)\\b)";
 
 const address = new RegExp(
   [
     `\\bP\\.[ \\t]*O\\.[ \\t]+Box[ \\t]+\\d+[a-z]?\\b|\\bPO[ \\t]+Box[ \\t]+\\d+[a-z]?\\b`,
-    `\\b\\d+[A-Za-z]?(?:[-–]\\d+[A-Za-z]?)?[ \\t]+(?:[A-Z][\\p{L}\\p{N}.'’\\-]*[ \\t]+){1,5}${streetSuffix}\\b${apt}`,
-    `\\b\\d+[A-Za-z]?[ \\t]+(?:rue|avenue|boulevard|via|calle|carrer|rua)[ \\t]+(?:(?:de|du|des|d'|d’)[ \\t]+)?[A-Z][\\p{L}'’\\-]+(?:[ \\t]+[A-Z][\\p{L}'’\\-]+)*\\b`,
-    `\\b(?:rue|avenue|boulevard|via|calle|carrer|rua)[ \\t]+(?:[A-Z][\\p{L}'’\\-]+[ \\t]+){1,4}\\d+[A-Za-z]?\\b`,
-    `\\b[A-Z][\\p{L}.'’\\-]+(?:straße|strasse|gasse|weg|allee|platz)[ \\t]+\\d+[A-Za-z]?\\b`,
-    `\\b(?:Flat|Apt\\.?|Suite|Unit|#)[ \\t]*\\d+[A-Za-z]?(?:[-–]\\d+[A-Za-z]?)?[, \\t]+(?:[A-Z0-9][\\p{L}\\p{N}.'’\\-]*[, \\t]+){1,6}${streetSuffix}?\\b`,
-    `\\b[A-Z]{2,4}[ \\t]+(?:Road|Rd\\.?|Marg|Street|St\\.?|Avenue|Ave\\.?|Row)\\b`,
+    `\\b\\d+[A-Za-z]?(?:[-–]\\d+[A-Za-z]?)?[ \\t]+(?:[A-Za-z0-9][\\p{L}\\p{N}.'’\\-]*[ \\t]+){1,5}${streetSuffix}\\b${apt}${notCompanyOrTech}`,
+    `\\b\\d+[A-Za-z]?[ \\t]+(?:rue|avenue|avenida|boulevard|via|calle|carrer|rua|alameda|paseo)[ \\t]+(?:(?:de|du|des|d'|d’)[ \\t]+)?[A-Za-z][\\p{L}'’\\-]+(?:[ \\t]+[A-Za-z][\\p{L}'’\\-]+)*\\b`,
+    `\\b(?:rue|avenue|avenida|boulevard|via|calle|carrer|rua|alameda|paseo)[ \\t]+(?:[A-Za-z][\\p{L}'’\\-]+[ \\t]+){1,4}\\d+[A-Za-z]?\\b`,
+    `\\b[A-Za-z][\\p{L}.'’\\-]+(?:straße|strasse|gasse|weg|allee|platz|gracht|straat|laan|plein|kade)[ \\t]+\\d+[A-Za-z]?\\b`,
+    `\\b(?:Flat|Apt\\.?|Suite|Unit|#)[ \\t]*\\d+[A-Za-z]?(?:[-–]\\d+[A-Za-z]?)?[, \\t]+(?:[A-Za-z0-9][\\p{L}\\p{N}.'’\\-]*[, \\t]+){1,6}${streetSuffix}?\\b`,
+    `\\b[A-Za-z0-9]+(?:[-–/][A-Za-z0-9]+)?,?[ \\t]+(?:[A-Za-z0-9][\\p{L}\\p{N}.'’\\-]*[ \\t]+){1,4}(?:Nagar|Marg|Colony|Vihar|Enclave|Bagh|Gali)\\b`,
+    `\\b[A-Z]{2,4}[ \\t]+(?:Road|Rd\\.?|Marg|Street|St\\.?|Avenue|Ave\\.?|Row)\\b${notCompanyOrTech}`,
     `\\b[A-Z]{2}[, \\t]+\\d{5}(?:-\\d{4})?\\b`,
     `\\b[A-Z]{1,2}\\d[A-Z\\d]?[ \\t]*\\d[A-Z]{2}\\b`,
-    `\\b[A-Z][a-z]+[, \\t]+\\d{6}\\b`,
+    `\\b[A-CEGHJ-NPR-TVXY]\\d[A-CEGHJ-NPR-TV-Z][ \\t-]*\\d[A-CEGHJ-NPR-TV-Z]\\d\\b`,
+    `\\b[A-Z][a-zA-Z]+(?:[- ][A-Z][a-zA-Z]+)?[, \\t]+(?:PIN[ \\t]*-?[ \\t]*)?[1-9]\\d{5}\\b`,
   ].join("|"),
-  "gu",
+  "giu",
 );
 
 type TextBlock = Extract<BlockNode, { type: "heading" | "paragraph" }>;

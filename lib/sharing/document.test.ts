@@ -52,6 +52,16 @@ describe("sharedDocument", () => {
       ["Indian style", "Flat 402, Sai Residency, MG Road, Pune 411001", "MG Road"],
       ["zip only", "Springfield, IL 62701", "62701"],
       ["handle", "Twitter @ada_codes", "@ada_codes"],
+      ["ordinal street", "Office at 350 5th Avenue, New York", "350 5th Avenue"],
+      ["circle suffix", "Home at 88 Oak Circle", "88 Oak Circle"],
+      ["grove suffix", "Lives at 4 Elm Grove", "4 Elm Grove"],
+      ["pkwy abbreviation", "HQ at 1600 Amphitheatre Pkwy, Mountain View", "1600 Amphitheatre Pkwy"],
+      ["lowercase street and suffix", "Address: 742 evergreen terrace", "742 evergreen terrace"],
+      ["dutch gracht", "Located at Keizersgracht 123, Amsterdam", "Keizersgracht 123"],
+      ["brazilian avenida", "Studio at Avenida Paulista 1578, SP", "Avenida Paulista 1578"],
+      ["indian plot/nagar", "Resident of B-12, Shanti Nagar, Mumbai", "B-12, Shanti Nagar"],
+      ["canadian postal code", "Toronto, ON M5V 2T6", "M5V 2T6"],
+      ["indian city pin", "Pune 411001", "411001"],
     ];
 
     for (const [, line, secret] of cases) {
@@ -71,6 +81,8 @@ describe("sharedDocument", () => {
       ["S3 + percents", "Moved 400 TB to S3", "400 TB"],
       ["Way in sentence", "Found 3 ways to drive adoption", "3 ways to drive"],
       ["street word", "Shipped 2 Drive integrations", "2 Drive integrations"],
+      ["google drive integrations", "Shipped 4 Google Drive integrations", "4 Google Drive integrations"],
+      ["bank branches", "Led 3 Main Street Bank branches", "3 Main Street Bank branches"],
     ];
 
     for (const [, line, kept] of keep) {
