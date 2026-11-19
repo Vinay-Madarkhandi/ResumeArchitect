@@ -160,7 +160,7 @@ async function adaWordFile(): Promise<Buffer> {
             new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "Ada Lovelace", bold: true, size: 36 })] }),
             new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun("ada@example.com | +44 20 7946 0958 | London")] }),
             section("Professional Summary"),
-            new Paragraph({ children: [new TextRun("Backend engineer who builds dependable payment systems and enjoys teaching.")] }),
+            new Paragraph({ children: [new TextRun("Backend engineer who builds dependable systems and enjoys teaching.")] }),
             section("Work Experience"),
             new Paragraph({
               tabStops: [{ type: TabStopType.RIGHT, position: 10000 }],
@@ -224,8 +224,8 @@ test("a Word resume comes back as the same file with only the wording changed", 
   const before = await paragraphs(original);
   const after = await paragraphs(tailored);
   const xml = after.join("\n");
-  expect(xml).toContain("Built services in Go backed by PostgreSQL for the payments team");
-  expect(xml).not.toMatch(/Led payment|2M daily transactions|Mentored engineers through on-call rotations/);
+  expect(xml).toContain("Worked on the services in Go backed by PostgreSQL");
+  expect(xml).not.toMatch(/2M daily transactions|Mentored engineers through on-call rotations/);
   expect(after).toHaveLength(before.length);
   // The centered header and tab-aligned dates are the original paragraphs, byte for byte.
   expect(after[0]).toBe(before[0]);

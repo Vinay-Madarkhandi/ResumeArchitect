@@ -12,7 +12,7 @@ ada@example.com · +1 415 555 0100
 
 ## Summary
 
-Backend engineer who likes reliable systems and payment processing.
+Backend engineer who likes reliable systems.
 
 ## Experience
 
@@ -41,9 +41,9 @@ const JOB = {
 const TAILOR = {
   summary: "Leads with backend depth in Go and PostgreSQL.",
   edits: [
-    { op: "rewrite", line: 4, text: "Backend engineer building reliable **Go** and **PostgreSQL** services for payments.", reason: "Mirrors the role's focus.", requirementIds: ["go", "pg"] },
-    { op: "rewrite", line: 7, text: "Built Go services on Postgres processing 2M payments a day on Kubernetes", reason: "Leads with impact.", requirementIds: ["go"] },
-    { op: "insert_after", line: 8, text: "Containerized services with Docker", reason: "Shows deployment experience.", requirementIds: [] },
+    { op: "rewrite", line: 4, text: "Backend engineer building reliable **Go** and **PostgreSQL** services.", cites: [4], reason: "Mirrors the role's focus.", requirementIds: ["go", "pg"] },
+    { op: "rewrite", line: 7, cites: [7], text: "Built Go services on Postgres processing 2M payments a day on Kubernetes", reason: "Leads with impact.", requirementIds: ["go"] },
+    { op: "insert_after", line: 8, cites: [12], text: "Containerized services with Docker", reason: "Shows deployment experience.", requirementIds: [] },
     { op: "rewrite", line: 99, text: "nonsense", reason: "Out of range.", requirementIds: [] },
   ],
 };

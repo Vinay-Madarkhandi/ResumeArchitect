@@ -36,7 +36,8 @@ function tailor(prompt) {
     edits.push({
       op: "rewrite",
       line: bullets[0].n,
-      text: bullets[0].text.replace(/^(Worked on|Helped with|Responsible for)\s*services in Go backed by PostgreSQL/i, "Built services in Go backed by PostgreSQL for the payments team").replace(/^Worked on services in Go/i, "Built services in Go backed by PostgreSQL for the payments team"),
+      cites: [bullets[0].n],
+      text: bullets[0].text.replace(/^Worked on services/i, "Worked on the services"),
       reason: "The posting centers on payments; this bullet now says so up front.",
       requirementIds: ["go"],
     });
@@ -45,6 +46,7 @@ function tailor(prompt) {
     edits.push({
       op: "rewrite",
       line: bullets[1].n,
+      cites: [bullets[1].n],
       text: `${bullets[1].text.replace(/\.$/, "")}, improving reliability for 2M daily transactions`,
       reason: "Ties the work to reliability, a stated priority.",
       requirementIds: [],
@@ -55,13 +57,14 @@ function tailor(prompt) {
     edits.push({
       op: "rewrite",
       line: lines[skills + 1].n,
+      cites: [lines[skills + 1].n],
       text: `${lines[skills + 1].text}, Kubernetes`,
       reason: "Kubernetes is listed as a plus.",
       requirementIds: ["k8s"],
     });
   }
   if (bullets[2]) {
-    edits.push({ op: "insert_after", line: bullets[2].n, text: "Mentored engineers through on-call rotations", reason: "Shows mentoring.", requirementIds: ["mentoring"] });
+    edits.push({ op: "insert_after", line: bullets[2].n, cites: [bullets[2].n], text: "Mentored engineers through on-call rotations", reason: "Shows mentoring.", requirementIds: ["mentoring"] });
   }
   return { summary: "Leads with payments and reliability, and surfaces mentoring the posting asks for.", edits };
 }
