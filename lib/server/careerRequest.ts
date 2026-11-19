@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type { z } from "zod";
 import { checkOrigin } from "@/lib/auth/guards";
 import { currentUser } from "@/lib/auth/current-user";
+import { readJson } from "@/lib/server/request-body";
 import type { Outcome } from "./careerTarget";
 
 /** Origin check, signed-in user, and a body parsed with `schema`, with the first problem as the error. */
@@ -10,7 +11,9 @@ export async function careerRequest<T>(request: Request, schema: z.ZodType<T>): 
   if (originError) return { ok: false, response: originError };
   const user = await currentUser();
   if (!user) return { ok: false, response: NextResponse.json({ error: "Sign in to continue." }, { status: 401 }) };
-  const parsed = schema.safeParse(await request.json().catch(() => null));
+  const json = await readJson(request);
+  if (!json.ok) return json;
+  const parsed = schema.safeParse(json.data);
   if (!parsed.success) {
     return { ok: false, response: NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Invalid request." }, { status: 400 }) };
   }

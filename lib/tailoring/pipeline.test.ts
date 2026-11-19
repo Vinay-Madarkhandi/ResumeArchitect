@@ -147,6 +147,90 @@ describe("runPipeline", () => {
     expect(last).toMatchObject({ type: "error", code: "schema_validation_failed", stage: "set" });
     expect(sessions.get("s1")!.status).toBe("failed");
   }, 10_000);
+  it("preserves requirement aliases from synonyms and keeps non-skill requirements with differing facts wording", async () => {
+    const source = markdownToDocument(`# Alex Rivera
+
+alex@example.com
+
+## Summary
+
+Experienced backend developer.
+
+## Experience
+
+### Software Engineer — FinTech Corp
+
+- Developed distributed payment microservices in Golang backed by Postgres datastores
+`);
+
+    const jobAnalysis = {
+      title: "Backend Engineer",
+      company: "Acme",
+      seniority: "Mid",
+      summary: "Build payment services.",
+      requirements: [
+        { id: "go-req", label: "Go", aliases: [], importance: "must", category: "skill" },
+        { id: "pg-req", label: "PostgreSQL", aliases: [], importance: "must", category: "tool" },
+        { id: "degree-req", label: "Bachelor's degree", aliases: [], importance: "must", category: "qualification" },
+      ],
+      keywords: [{ term: "payments", aliases: [] }],
+    };
+
+    const differingFacts = {
+      title: "Backend Engineer",
+      level: "mid",
+      hardSkills: [
+        { term: "Golang", importance: "high" },
+        { term: "Postgres", importance: "high" },
+      ],
+      otherKeywords: [{ term: "payments", importance: "medium" }],
+    };
+
+    const tailorResponse = {
+      summary: "Highlights Go and PostgreSQL depth.",
+      edits: [
+        {
+          op: "rewrite",
+          line: 4,
+          text: "Senior backend developer specializing in Go and PostgreSQL systems.",
+          reason: "Aligns with tech stack.",
+          requirementIds: ["go-req", "pg-req"],
+        },
+      ],
+    };
+
+    const { store, sessions } = memoryStore();
+    await collect(
+      runPipeline(
+        { model: fakeModel([jobAnalysis, differingFacts, tailorResponse]), store },
+        { source: { title: "Alex", content: source }, jobDescription: "We need Go and PostgreSQL." },
+      ),
+    );
+
+    const session = sessions.get("s1")!;
+    expect(session.status).toBe("completed");
+
+    // Verify non-skill requirement "Bachelor's degree" was kept
+    const job = session.job_analysis!;
+    const degreeReq = job.requirements.find((r) => r.id === "degree-req");
+    expect(degreeReq).toBeDefined();
+    expect(degreeReq?.label).toBe("Bachelor's degree");
+    expect(degreeReq?.category).toBe("qualification");
+
+    // Verify aliases were built from synonyms
+    const goReq = job.requirements.find((r) => r.id === "go-req");
+    expect(goReq).toBeDefined();
+    expect(goReq?.aliases).toContain("Golang");
+
+    const pgReq = job.requirements.find((r) => r.id === "pg-req");
+    expect(pgReq).toBeDefined();
+    expect(pgReq?.aliases).toContain("Postgres");
+
+    // Verify change is NOT flagged "Claims Go..." or "Claims PostgreSQL..."
+    const change = session.changes![0];
+    const skillFlags = change.flags.filter((f) => f.kind === "skill");
+    expect(skillFlags).toHaveLength(0);
+  });
 });
 
 describe("runPipeline atomicity", () => {
