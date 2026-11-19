@@ -4,10 +4,9 @@ import { Logo } from "@/components/ui/Logo";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 
 export const SECTION_LINKS = [
-  { href: "#how-it-works", label: "How it works" },
-  { href: "#redline", label: "The redline" },
-  { href: "#score", label: "Score" },
-  { href: "#privacy", label: "Privacy" },
+  { href: "#report", label: "Match report" },
+  { href: "#features", label: "Features" },
+  { href: "#self-hosted", label: "Your data" },
   { href: "#faq", label: "FAQ" },
 ] as const;
 
@@ -16,7 +15,7 @@ export function SiteHeader() {
     <header className="sticky top-0 z-40 border-b border-line bg-ground/90 backdrop-blur-md">
       <div className="mx-auto flex h-14 w-full max-w-6xl items-center gap-4 px-5 sm:px-8">
         <Logo />
-        <nav aria-label="Page sections" className="ml-6 hidden items-center gap-1 lg:flex">
+        <nav aria-label="Page sections" className="ml-6 hidden items-center gap-1 md:flex">
           {SECTION_LINKS.map((l) => (
             <a
               key={l.href}

@@ -49,10 +49,11 @@ export function RedlineCloseUp() {
     <section id="redline" aria-labelledby="redline-title" className="scroll-mt-20 border-y border-line bg-panel/50 py-24 lg:py-32">
       <Container>
         <div className="mx-auto max-w-3xl text-center">
-          <DisplayHeading id="redline-title">One change, fully accounted for.</DisplayHeading>
+          <DisplayHeading id="redline-title">Tailoring that shows its work.</DisplayHeading>
           <Lede className="mx-auto mt-5">
-            This is what every change looks like in review. Nothing reaches your download until you&rsquo;ve seen it,
-            and nothing stays that you didn&rsquo;t choose to keep.
+            Tailor a resume to a job and Gemini rewrites your real lines toward it. Each change arrives like this, with
+            its reason. Nothing reaches your download until you&rsquo;ve seen it, and nothing stays that you didn&rsquo;t
+            choose to keep.
           </Lede>
         </div>
 
