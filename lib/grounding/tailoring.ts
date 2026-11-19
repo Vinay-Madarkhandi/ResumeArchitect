@@ -50,16 +50,21 @@ function plain(markdown: string): string {
   return inlineText(parseInline(markdown));
 }
 
+import { buildSourceIndex, type SourceIndex } from "./index";
+
 export function verifyChange(
   change: Omit<TailoredChange, "flags">,
   sourceText: string,
   job: JobAnalysis,
   anchor?: string,
+  sourceIndex?: SourceIndex,
 ): ChangeFlag[] {
   if (!change.after) return [];
   const text = plain(change.after);
   const sources = [sourceText, change.before, anchor].filter(Boolean) as string[];
-  const flags = checkGrounding(sources, change.after).flags;
+  const index = sourceIndex ?? buildSourceIndex(sources);
+  const cites = change.cites?.length ? change.cites : undefined;
+  const flags = checkGrounding(index, change.after, { cites }).flags;
 
   for (const req of job.requirements) {
     const terms = [req.label, ...req.aliases].filter((t) => t.trim());

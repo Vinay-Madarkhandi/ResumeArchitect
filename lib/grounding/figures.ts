@@ -1,4 +1,5 @@
-// Match quantities without treating digits inside names such as S3 as figures.
+import { placeholderForFigure } from "./placeholder";
+
 const NUMBER_WORD = "(?:zero|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|hundred|thousand|million|billion|trillion|half|quarter)";
 
 export const FIGURE = new RegExp(
@@ -6,7 +7,7 @@ export const FIGURE = new RegExp(
   "giu",
 );
 
-const NUMBER_WORDS: Record<string, number> = {
+export const NUMBER_WORDS: Record<string, number> = {
   zero: 0, one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9,
   ten: 10, eleven: 11, twelve: 12, thirteen: 13, fourteen: 14, fifteen: 15, sixteen: 16, seventeen: 17, eighteen: 18, nineteen: 19,
   twenty: 20, thirty: 30, forty: 40, fifty: 50, sixty: 60, seventy: 70, eighty: 80, ninety: 90,
@@ -40,6 +41,44 @@ export function parseWordNumber(text: string): number | null {
     }
   }
   return total + current;
+}
+
+export function isQuantityUsage(word: string, contextBefore: string, contextAfter: string): boolean {
+  const w = word.toLowerCase();
+  if (w !== "one" && w !== "half" && w !== "quarter") return true;
+
+  const afterTrim = contextAfter.trim().toLowerCase();
+  const beforeTrim = contextBefore.trim().toLowerCase();
+
+  if (w === "quarter") {
+    // Non-quantity: fiscal quarters, quarterly
+    if (/\b(?:first|second|third|fourth|1st|2nd|3rd|4th|last|this|next|fiscal|q[1-4])\s+quarter\b/i.test(`${beforeTrim} ${w}`)) return false;
+    if (/^\s*(?:results|earnings|revenue|report|financials|period)/i.test(afterTrim)) return false;
+    // Quantity: a quarter of, quarter of, by a quarter
+    if (/\b(?:a|by|cut|reduced|grew|lost|saved)\s+quarter\b/i.test(`${beforeTrim} ${w}`)) return true;
+    if (/^\s*(?:of|million|billion|point|percent|%)/i.test(afterTrim)) return true;
+    return false;
+  }
+
+  if (w === "half") {
+    // half the team, half a million, cut by half, half of
+    if (/^\s*(?:a|the|of|million|billion|point|percent|%|[0-9])/i.test(afterTrim)) return true;
+    if (/\b(?:by|cut|reduced|grew|lost|saved)\s+half\b/i.test(`${beforeTrim} ${w}`)) return true;
+    return false;
+  }
+
+  if (w === "one") {
+    // Non-quantity phrases:
+    if (/\b(?:no|some|every|any)\s+one\b/i.test(`${beforeTrim} ${w}`)) return false;
+    if (/\bthe\s+first\s+one\b/i.test(`${beforeTrim} ${w}`)) return false;
+    if (/\bthe\s+only\s+one\b/i.test(`${beforeTrim} ${w}`)) return false;
+    if (/^\s*(?:another|by\s+one|-on-one|day)/i.test(afterTrim)) return false;
+    // Quantity: followed by a noun or "of"
+    if (/^\s*(?:of|[a-z]+)/i.test(afterTrim) && !/^\s*(?:of\s+my\s+favorite|of\s+the\s+most)/i.test(afterTrim)) return true;
+    return false;
+  }
+
+  return true;
 }
 
 export function normalizeFigure(figure: string): string {
@@ -102,15 +141,24 @@ export function extractFiguresWithMeasures(clauseText: string): FigureMatch[] {
   for (const match of clauseText.matchAll(FIGURE)) {
     const raw = match[0].trim();
     if (!raw) continue;
-    // Skip if it looks like part of a tech name or path (e.g. S3, IPv6)
-    if (/^[a-zA-Z]+\d+$/.test(raw)) continue;
+    // Skip if it looks like part of a tech name or path (e.g. S3, IPv6, OAuth2, K8s)
+    if (/^[a-zA-Z]+\d+$/i.test(raw) || /^\d+[a-zA-Z]+$/i.test(raw)) {
+      if (!/^[+-]?\d+(?:[kmbx%]|st|nd|rd|th)$/i.test(raw)) continue;
+    }
+
+    const start = match.index ?? 0;
+    const end = start + match[0].length;
+    const contextBefore = clauseText.slice(Math.max(0, start - 20), start);
+    const contextAfter = clauseText.slice(end, end + 25);
+
+    // Quantity check for one, half, quarter:
+    if (!isQuantityUsage(raw, contextBefore, contextAfter)) {
+      continue;
+    }
 
     const normalized = normalizeFigure(raw);
     const isPercent = /(?:%|percent)/i.test(raw);
     const isCurrency = /^[$€£]/.test(raw) || /(?:dollar|euro|pound)/i.test(raw);
-
-    const start = match.index ?? 0;
-    const end = start + match[0].length;
 
     // Isolate words strictly within the current clause boundary (stopping at . ! ? ; \n)
     const beforeClause = clauseText.slice(0, start).split(/[.!?;\n]|\s+(?:and|or|but|while)\s+/).pop() ?? "";
@@ -161,27 +209,22 @@ export function extractFiguresWithMeasures(clauseText: string): FigureMatch[] {
 }
 
 export function areMeasuresCompatible(figA: FigureMatch, figB: FigureMatch): boolean {
-  if (figA.headNoun && figB.headNoun) {
-    if (figA.headNoun === figB.headNoun) return true;
-    if (figA.headNoun.startsWith(figB.headNoun) || figB.headNoun.startsWith(figA.headNoun)) {
-      if (Math.min(figA.headNoun.length, figB.headNoun.length) >= 4) return true;
-    }
-    if (figB.measureWords.includes(figA.headNoun) || figA.measureWords.includes(figB.headNoun)) {
-      return true;
-    }
-    // Both have distinct head nouns that do not match
-    return false;
-  }
+  const normalizeNoun = (s: string) =>
+    s.toLowerCase().replace(/^[^\w]+|[^\w]+$/g, "").replace(/(?:ies|es|s)$/, (m) => (m === "ies" ? "y" : ""));
 
-  if (figA.measureWords.length === 0 || figB.measureWords.length === 0) return true;
+  const wordsA = figA.measureWords.flatMap((w) => w.toLowerCase().split("-")).map(normalizeNoun).filter((w) => w.length >= 3);
+  const wordsB = figB.measureWords.flatMap((w) => w.toLowerCase().split("-")).map(normalizeNoun).filter((w) => w.length >= 3);
 
-  // Check overlap of content words
-  const setB = new Set(figB.measureWords);
-  for (const word of figA.measureWords) {
-    if (setB.has(word)) return true;
-    for (const b of figB.measureWords) {
-      if (word.startsWith(b) || b.startsWith(word)) {
-        if (Math.min(word.length, b.length) >= 4) return true;
+  if (wordsA.length === 0 || wordsB.length === 0) return true;
+
+  const setB = new Set(wordsB);
+  const common = wordsA.filter((w) => setB.has(w));
+  if (common.length >= 1) return true;
+
+  for (const a of wordsA) {
+    for (const b of wordsB) {
+      if (a === b || (a.length >= 4 && b.length >= 4 && (a.startsWith(b) || b.startsWith(a)))) {
+        return true;
       }
     }
   }
@@ -204,4 +247,29 @@ export function isFigureSupported(target: FigureMatch, sourceFigures: FigureMatc
 
   // Check if any candidate has a compatible measure
   return candidates.some((cand) => areMeasuresCompatible(target, cand));
+}
+
+export function figuresIn(text: string): Set<string> {
+  const figures = extractFiguresWithMeasures(text);
+  return new Set(figures.map((f) => f.normalized));
+}
+
+export function guardNumbers(output: string, source: string): string {
+  const known = new Set<string>();
+  for (const match of source.matchAll(FIGURE)) {
+    const raw = match[0].trim();
+    if (/^[a-zA-Z]+\\d+$/i.test(raw) || /^\\d+[a-zA-Z]+$/i.test(raw)) {
+      if (!/^[+-]?\\d+(?:[kmbx%]|st|nd|rd|th)$/i.test(raw)) continue;
+    }
+    known.add(normalizeFigure(raw));
+  }
+
+  return output.replace(FIGURE, (figure) => {
+    if (/^[a-zA-Z]+\\d+$/i.test(figure) || /^\\d+[a-zA-Z]+$/i.test(figure)) {
+      if (!/^[+-]?\\d+(?:[kmbx%]|st|nd|rd|th)$/i.test(figure)) return figure;
+    }
+    const norm = normalizeFigure(figure);
+    if (known.has(norm)) return figure;
+    return placeholderForFigure(figure);
+  });
 }

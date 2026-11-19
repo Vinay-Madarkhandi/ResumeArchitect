@@ -8,6 +8,7 @@ import { scoreResume } from "@/lib/scoring/score";
 import { fromUnits, toUnits } from "@/lib/resume/units";
 import { applyEdits } from "./applyEdits";
 import { verifyChange } from "@/lib/grounding/tailoring";
+import { buildSourceIndex } from "@/lib/grounding";
 
 /**
  * The tailoring run as five visible stages, named after a compositor's
@@ -113,9 +114,10 @@ export async function* runPipeline(
     const response = await tailorLines(model, { units: sourceUnits, job, before });
     // Proof the proposal before it can enter the persisted document.
     const sourceText = sourceUnits.map((u) => u.markdown).join("\n");
+    const sourceIndex = buildSourceIndex([sourceText]);
     const applied = applyEdits(sourceUnits, response.edits, (change, anchor) => {
       // Copying a true claim into a different role can still change its meaning.
-      const flags = verifyChange(change, sourceText, job, sourceUnits[anchor].markdown);
+      const flags = verifyChange(change, sourceText, job, sourceUnits[anchor]?.markdown, sourceIndex);
       const unverified = flags.some((flag) => flag.kind !== "dropped" && flag.kind !== "filler");
       const requirementIds = change.requirementIds.filter((id) => job.requirements.some((r) => r.id === id));
       const reason = unverified
