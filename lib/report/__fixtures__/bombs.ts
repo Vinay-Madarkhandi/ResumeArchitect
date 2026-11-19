@@ -147,3 +147,17 @@ export async function pdfFlateBomb(megabytes: number): Promise<Buffer> {
     FONT,
   ]);
 }
+
+/** A PDF whose stream is compressed twice with FlateDecode (double-compressed). */
+export async function pdfDoubleFlateBomb(megabytes: number): Promise<Buffer> {
+  const spaces = Buffer.alloc(1024 * 1024, 0x20);
+  const inner = await deflateChunks(Array.from({ length: megabytes }, () => spaces), createDeflate({ level: 9 }));
+  const outer = await deflateChunks([inner], createDeflate({ level: 9 }));
+  return pdf([
+    Buffer.from("<< /Type /Catalog /Pages 2 0 R >>"),
+    Buffer.from("<< /Type /Pages /Kids [3 0 R] /Count 1 >>"),
+    Buffer.from("<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>"),
+    stream(outer, " /Filter [/FlateDecode /FlateDecode]"),
+    FONT,
+  ]);
+}

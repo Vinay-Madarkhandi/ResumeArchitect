@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import JSZip from "jszip";
 import { Document, Packer, Paragraph } from "docx";
-import { pdfFlateBomb, pdfPages } from "./__fixtures__/bombs";
+import { pdfDoubleFlateBomb, pdfFlateBomb, pdfPages } from "./__fixtures__/bombs";
 import { INSPECTION_BACKSTOP_MS, MAX_DOCX_ENTRIES, MAX_PDF_PAGES, MAX_PDF_STREAMS, MAX_UPLOAD_BYTES, MAX_XML_BYTES } from "./inspectLimits";
 import { inspectDocx } from "./inspectDocx";
 import { inspectPdf } from "./inspectPdf";
@@ -63,6 +63,11 @@ describe("file inspection budget", () => {
     const spam = Buffer.from("%PDF-1.4\n" + "stream\nendstream\n".repeat(MAX_PDF_STREAMS + 1) + "%%EOF", "latin1");
     await expect(inspectPdf(spam)).resolves.toMatchObject({ format: "invalid", reason: "too-large" });
   });
+
+  it("rejects a double-compressed PDF stream bomb", async () => {
+    const bomb = await pdfDoubleFlateBomb(64);
+    await expect(inspectPdf(bomb)).resolves.toMatchObject({ format: "invalid", reason: "too-large" });
+  }, 30_000);
 
   it("gives a slow inspection well past 4 seconds before its wall-clock backstop", async () => {
     vi.useFakeTimers();
