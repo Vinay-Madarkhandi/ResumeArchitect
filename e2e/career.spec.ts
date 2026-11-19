@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { signUp } from "./auth-helpers";
 import { onboard } from "./onboard";
+import { goTo, openTool } from "./nav";
 
 const JOB = `Senior Backend Engineer at Northwind Payments.
 Own the payments platform end to end. Requirements: Go, PostgreSQL, Kafka, and incident response.
@@ -12,7 +13,7 @@ test.beforeEach(async ({ page }) => {
 });
 
 test("reviews LinkedIn keywords and saves resume-grounded suggestions", async ({ page }) => {
-  await page.getByRole("link", { name: "LinkedIn review" }).click();
+  await openTool(page, "LinkedIn review");
   await page.getByLabel("Headline").fill("Backend Engineer | Go and PostgreSQL");
   await page.getByLabel("About", { exact: true }).fill("I work on payments and reliability.");
   await page.getByLabel("Experience").fill("Built a Kafka pipeline that cut invoice latency by 38%.");
@@ -31,13 +32,13 @@ test("reviews LinkedIn keywords and saves resume-grounded suggestions", async ({
   await expect(page.getByRole("heading", { name: "Headlines" })).toBeVisible();
   await expect(page.getByText(/I build dependable backend services/)).toContainText("cut invoice latency by 38%");
 
-  await page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: "LinkedIn review" }).click();
+  await openTool(page, "LinkedIn review");
   await page.getByRole("region", { name: /Past reviews/ }).getByRole("link", { name: /Backend Engineer/ }).click();
   await expect(page.getByRole("button", { name: "Write new drafts" })).toBeVisible();
 });
 
 test("practices all three interview question types and saves answer feedback", async ({ page }) => {
-  await page.getByRole("link", { name: "Interview prep" }).click();
+  await openTool(page, "Interview prep");
   await page.getByRole("textbox", { name: "Job post" }).fill(JOB);
   await page.getByRole("button", { name: "Write questions" }).click();
 
@@ -54,7 +55,7 @@ test("practices all three interview question types and saves answer feedback", a
   const rubric = page.getByRole("complementary", { name: "How answers are scored" });
   for (const label of ["STAR structure", "Specificity", "Relevance"]) await expect(rubric).toContainText(label);
 
-  await page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: "Interview prep" }).click();
+  await openTool(page, "Interview prep");
   const saved = page.getByRole("region", { name: /Practice sessions/ }).getByRole("link", { name: /Senior Backend Engineer/ });
   await expect(saved).toContainText("1 answer");
   await saved.click();
@@ -63,7 +64,7 @@ test("practices all three interview question types and saves answer feedback", a
 });
 
 test("scans a pasted letter and scores the current draft from the generator", async ({ page }) => {
-  await page.getByRole("link", { name: "Cover letter scan" }).click();
+  await openTool(page, "Cover letter scan");
   await page.getByLabel("Cover letter").fill(
     "Dear Hiring Manager,\n\nI am applying for Senior Backend Engineer at Northwind Payments. I am a team player who built a Kafka pipeline that cut latency by 38%.",
   );
@@ -79,7 +80,8 @@ test("scans a pasted letter and scores the current draft from the generator", as
   await expect(keywords.getByRole("listitem").filter({ hasText: "Kafka" })).toContainText("Found:");
   await expect(keywords.getByRole("listitem").filter({ hasText: "Kubernetes" })).toContainText("Missing:");
 
-  await page.getByRole("link", { name: "New application" }).click();
+  await goTo(page, "Resumes");
+  await page.getByRole("link", { name: "New application" }).first().click();
   await page.getByRole("textbox", { name: "Job post" }).fill(JOB);
   await page.getByRole("button", { name: "Tailor resume" }).click();
   await expect(page).toHaveURL(/\/resumes\/[0-9a-f-]+\?view=review/, { timeout: 60_000 });
@@ -92,7 +94,7 @@ test("scans a pasted letter and scores the current draft from the generator", as
   await expect(page.getByRole("region", { name: /The letter/ })).toContainText("Here is a fresh edit.");
   await expect(page.getByRole("link", { name: "Edit the letter" })).toHaveAttribute("href", /\/resumes\/.+\?view=letter$/);
 
-  await page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: "Cover letter scan" }).click();
+  await openTool(page, "Cover letter scan");
   const application = page.getByLabel("Application", { exact: true });
   await expect(application).toBeVisible();
   await page.getByRole("button", { name: "Use the letter saved with this application" }).click();
@@ -101,12 +103,11 @@ test("scans a pasted letter and scores the current draft from the generator", as
 });
 
 test("explains which career tools need a Gemini key", async ({ page }) => {
-  await page.getByRole("link", { name: "Settings" }).click();
+  await goTo(page, "Settings");
   await page.getByRole("button", { name: "Remove", exact: true }).click();
   await expect(page.getByText("Key removed.")).toBeVisible();
 
-  const nav = page.getByRole("navigation", { name: "Main" });
-  await nav.getByRole("link", { name: "LinkedIn review" }).click();
+  await openTool(page, "LinkedIn review");
   await expect(page.getByRole("status").filter({ hasText: "Connect a Gemini key" })).toBeVisible();
   await expect(page.getByRole("radio", { name: "Role title" })).toBeDisabled();
   await page.getByLabel("Headline").fill("Backend Engineer");
@@ -114,11 +115,11 @@ test("explains which career tools need a Gemini key", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "Profile review" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Suggest headline and About" })).toBeDisabled();
 
-  await nav.getByRole("link", { name: "Interview prep" }).click();
+  await openTool(page, "Interview prep");
   await expect(page.getByRole("link", { name: "Open settings" })).toHaveAttribute("href", "/settings");
   await expect(page.getByRole("button", { name: "Write questions" })).toBeDisabled();
 
-  await nav.getByRole("link", { name: "Cover letter scan" }).click();
+  await openTool(page, "Cover letter scan");
   await expect(page.getByRole("status").filter({ hasText: "scan against a pasted job post" })).toBeVisible();
   await expect(page.getByRole("radio", { name: "Paste a job post" })).toBeDisabled();
   await expect(page.getByRole("button", { name: "Scan letter" })).toBeDisabled();
