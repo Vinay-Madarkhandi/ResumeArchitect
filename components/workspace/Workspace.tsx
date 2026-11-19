@@ -115,6 +115,7 @@ export function Workspace({ resume, session, jobText, jobFacts, asOf, initialVie
 
   const [doc, setDoc] = useState(resume.content);
   const [template, setTemplate] = useState<TemplateId>(resume.template);
+  const [zoom, setZoom] = useState(100);
   const [reviewed, setReviewed] = useState(() => new Set(resume.reviewedChangeIds));
   const [view, setView] = useState<View>(initialView ?? (tailored ? "review" : "edit"));
   const [focusedId, setFocusedId] = useState<string | null>(null);
@@ -311,8 +312,8 @@ export function Workspace({ resume, session, jobText, jobFacts, asOf, initialVie
       </header>
 
       <div className="grid flex-1 lg:grid-cols-[minmax(0,1fr)_23rem]">
-        <main className="min-w-0 px-3 pb-24 pt-5 sm:px-6">
-          <div className="mx-auto mb-5 flex max-w-[794px] flex-wrap items-center justify-between gap-3">
+        <main className="min-w-0 px-3 pb-24 pt-4 sm:px-6">
+          <div className="mx-auto mb-4 flex max-w-[840px] flex-wrap items-center justify-between gap-3">
             {tailored ? (
               <Tabs value={view} onValueChange={(v) => setView(v as View)}>
                 <TabsList aria-label="View">
@@ -332,7 +333,10 @@ export function Workspace({ resume, session, jobText, jobFacts, asOf, initialVie
                 </TabsList>
               </Tabs>
             ) : (
-              <p className="text-small text-ink-3">Select any text to rewrite it with AI.</p>
+              <div className="flex items-center gap-2 text-small text-ink-3">
+                <span className="size-2 rounded-full bg-brass/80" />
+                <span>Sejda PDF Editor: Click any block on the paper to edit or insert sections</span>
+              </div>
             )}
             {scoreBefore && scoreNow && (
               <a
@@ -346,7 +350,6 @@ export function Workspace({ resume, session, jobText, jobFacts, asOf, initialVie
                 <span className="font-medium text-ink">{scoreNow.matchRate}</span>
               </a>
             )}
-            {view === "edit" && <FormatBar editor={editor} />}
             {view === "review" && entries.length > 0 && (
               <p className="text-small text-ink-3">
                 <kbd className="rounded-sm border border-line-strong px-1 font-mono text-label">j</kbd>{" "}
@@ -355,38 +358,78 @@ export function Workspace({ resume, session, jobText, jobFacts, asOf, initialVie
             )}
           </div>
 
-          {view === "review" && (
-            <Paper template={template}>
-              <Redline items={redline} focusedId={focusedId} reviewed={reviewed} onFocus={(id) => { setFocusedId(id); setRail("changes"); }} />
-            </Paper>
-          )}
-
+          {/* Sejda PDF Editor Ribbon Toolbar */}
           {view === "edit" && (
-            <Paper template={template}>
-              <PaperEditor initialContent={doc} onChange={setDoc} onReady={setEditor} />
-              {editor && <AskAi editor={editor} resumeId={resume.id} />}
-            </Paper>
-          )}
-
-          {view === "letter" && (
-            <CoverLetter resumeId={resume.id} doc={deferredDoc} template={template} initial={resume.coverLetter} />
-          )}
-
-          {view === "compare" && original && (
-            <div className="mx-auto grid max-w-[1400px] gap-5 xl:grid-cols-2">
-              <section aria-label="Original resume">
-                <p className="mb-2 text-small font-medium text-ink-3">Original</p>
-                <Paper template={template} compact>
-                  <DocumentView doc={original} />
-                </Paper>
-              </section>
-              <section aria-label="Tailored resume">
-                <p className="mb-2 text-small font-medium text-ink-3">Tailored</p>
-                <Paper template={template} compact>
-                  <DocumentView doc={deferredDoc} originalLines={originalUnits?.map((u) => u.text)} />
-                </Paper>
-              </section>
+            <div className="sticky top-14 z-20 mx-auto mb-6 max-w-[840px]">
+              <FormatBar
+                editor={editor}
+                zoom={zoom}
+                onZoomChange={setZoom}
+                template={template}
+                onTemplateChange={changeTemplate}
+              />
             </div>
+          )}
+
+          <div
+            className="transition-transform duration-150 ease-out flex justify-center w-full"
+            style={{
+              transform: zoom !== 100 ? `scale(${zoom / 100})` : undefined,
+              transformOrigin: "top center",
+            }}
+          >
+            {view === "review" && (
+              <Paper template={template}>
+                <Redline items={redline} focusedId={focusedId} reviewed={reviewed} onFocus={(id) => { setFocusedId(id); setRail("changes"); }} />
+              </Paper>
+            )}
+
+            {view === "edit" && (
+              <Paper template={template}>
+                <PaperEditor initialContent={doc} onChange={setDoc} onReady={setEditor} />
+                {editor && <AskAi editor={editor} resumeId={resume.id} />}
+              </Paper>
+            )}
+
+            {view === "letter" && (
+              <CoverLetter resumeId={resume.id} doc={deferredDoc} template={template} initial={resume.coverLetter} />
+            )}
+
+            {view === "compare" && original && (
+              <div className="mx-auto grid max-w-[1400px] gap-5 xl:grid-cols-2">
+                <section aria-label="Original resume">
+                  <p className="mb-2 text-small font-medium text-ink-3">Original</p>
+                  <Paper template={template} compact>
+                    <DocumentView doc={original} />
+                  </Paper>
+                </section>
+                <section aria-label="Tailored resume">
+                  <p className="mb-2 text-small font-medium text-ink-3">Tailored</p>
+                  <Paper template={template} compact>
+                    <DocumentView doc={deferredDoc} originalLines={originalUnits?.map((u) => u.text)} />
+                  </Paper>
+                </section>
+              </div>
+            )}
+          </div>
+
+          {/* Bottom Floating Canvas Status Badge */}
+          {pages && (
+            <aside
+              aria-label="Canvas document status"
+              className="fixed bottom-4 left-1/2 -translate-x-1/2 z-20 hidden items-center gap-2.5 rounded-full border border-line bg-panel/90 px-4 py-1.5 text-label font-medium text-ink-2 shadow-lg backdrop-blur-md sm:flex"
+            >
+              <span className="flex items-center gap-1.5">
+                <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span>A4 · 210 × 297 mm</span>
+              </span>
+              <span className="text-line-strong">·</span>
+              <span>{pages.pageCount} {pages.pageCount === 1 ? "page" : "pages"}</span>
+              <span className="text-line-strong">·</span>
+              <span className="font-mono tabular">{zoom}%</span>
+              <span className="text-line-strong">·</span>
+              <span className="text-brass">Sejda PDF Canvas</span>
+            </aside>
           )}
         </main>
 

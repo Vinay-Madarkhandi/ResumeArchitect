@@ -182,8 +182,8 @@ export const FEATURES: Record<string, Feature> = {
     visual: <PowerEditMock />,
   },
   builder: {
-    id: "builder", title: "Resume builder, templates and sharing",
-    body: `Build a resume from scratch in eight guided steps. It comes out as an ordinary single-column document with standard headings. Choose from ${TEMPLATE_IDS.length} templates, download PDF or Word, or share a read-only link, with an optional password.`,
+    id: "builder", title: "Sejda-style PDF editor, templates and instant export",
+    body: `Direct inline editing on an authentic A4 paper canvas with formatting ribbon, zoom controls, and instant section inserters. Guaranteed 100% ATS parser compatibility. Choose from ${TEMPLATE_IDS.length} executive typography templates, download pixel-perfect PDF or Word files, or share a read-only proof link.`,
     visual: <TemplatesMock />,
   },
   tracker: {
