@@ -157,20 +157,71 @@ const CREDENTIAL_REGEX = new RegExp(
   "gi",
 );
 
-const COMMON_SENTENCE_STARTERS = new Set([
+export const COMMON_SENTENCE_STARTERS = new Set([
   "i", "we", "my", "our", "the", "this", "these", "those", "in", "on", "at", "to", "for", "with",
   "by", "from", "as", "during", "before", "after", "under", "over", "across", "between",
-  "built", "developed", "implemented", "wrote", "designed", "operated", "coordinated",
-  "shipped", "created", "deployed", "maintained", "tested", "refactored", "resolved",
-  "led", "managed", "directed", "drove", "owned", "headed", "spearheaded", "architected",
-  "worked", "helped", "assisted", "supported", "contributed", "collaborated", "partnered",
-  "reduced", "cut", "increased", "raised", "handled", "ran", "closed", "saved", "earned",
-  "achieved", "delivered", "served", "provided", "conducted", "performed", "ensured",
-  "monitored", "improved", "boosted", "guided", "trained", "mentored", "taught", "oversaw",
-  "established", "introduced", "organized", "spearheaded", "administered", "executed",
+  "built", "build", "building", "developed", "develop", "developing", "implemented", "implement", "implementing",
+  "wrote", "write", "writing", "designed", "design", "designing", "operated", "operate", "operating",
+  "coordinated", "coordinate", "coordinating", "shipped", "ship", "shipping", "created", "create", "creating",
+  "deployed", "deploy", "deploying", "maintained", "maintain", "maintaining", "tested", "test", "testing",
+  "refactored", "refactor", "refactoring", "resolved", "resolve", "resolving", "streamlined", "streamline", "streamlining",
+  "used", "use", "using", "utilize", "utilized", "utilizing", "applied", "apply", "applying",
+  "led", "leading", "managed", "manage", "managing", "directed", "direct", "directing",
+  "drove", "drive", "driving", "owned", "own", "owning", "headed", "heading",
+  "spearheaded", "spearhead", "spearheading", "architected", "architect", "architecting",
+  "worked", "work", "working", "helped", "help", "helping", "assisted", "assist", "assisting",
+  "supported", "support", "supporting", "contributed", "contribute", "contributing",
+  "collaborated", "collaborate", "collaborating", "partnered", "partner", "partnering",
+  "reduced", "reduce", "reducing", "cut", "cutting", "increased", "increase", "increasing",
+  "raised", "raise", "raising", "handled", "handle", "handling", "ran", "run", "running",
+  "closed", "close", "closing", "saved", "save", "saving", "earned", "earn", "earning",
+  "achieved", "achieve", "achieving", "delivered", "deliver", "delivering",
+  "served", "serve", "serving", "provided", "provide", "providing",
+  "conducted", "conduct", "conducting", "performed", "perform", "performing",
+  "ensured", "ensure", "ensuring", "monitored", "monitor", "monitoring",
+  "improved", "improve", "improving", "boosted", "boost", "boosting",
+  "guided", "guide", "guiding", "trained", "train", "training",
+  "mentored", "mentor", "mentoring", "taught", "teach", "teaching",
+  "oversaw", "oversee", "overseeing", "supervised", "supervise", "supervising",
+  "established", "establish", "establishing", "introduced", "introduce", "introducing",
+  "organized", "organize", "organizing", "administered", "administer", "administering",
+  "executed", "execute", "executing", "facilitated", "facilitate", "facilitating",
+  "instructed", "instruct", "instructing", "authored", "author", "authoring",
+  "automated", "automate", "automating", "integrated", "integrate", "integrating",
+  "tracked", "track", "tracking", "negotiated", "negotiate", "negotiating",
+  "identified", "identify", "identifying", "prepared", "prepare", "preparing",
   "dear", "sincerely", "thank", "best", "experience", "education", "skills", "summary",
-  "list", "streamlined", "revamped", "instructed", "authored", "delivered", "facilitated", "through", "using", "working", "ran", "held",
+  "list", "revamped", "revamp", "revamping", "through", "held", "hold", "holding",
+  "responsibilities", "responsibility", "responsible", "proven", "proficient",
+  "key", "core", "daily", "weekly", "monthly", "quarterly", "annual",
+  "successfully", "successful", "active", "primary", "general", "advanced", "standard",
+  "certified", "licensed", "expert", 
 ]);
+
+export function isStarterContext(preceding: string): boolean {
+  if (!preceding) return true;
+  return /[-•*▪–—\t.!?:;("‘“\/\\]\s*$/.test(preceding);
+}
+
+export function isVerbOrCommonStarterWord(word: string, fullSentence: string): boolean {
+  const w = word.toLowerCase().replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, "");
+  if (!w) return false;
+  if (COMMON_SENTENCE_STARTERS.has(w)) return true;
+  if (findVerbs(w).length > 0) return true;
+  if (w in VERB_LEVELS) return true;
+  // Morphology check: common verb/adjective endings
+  if (/^(?:[a-z]+ed|[a-z]+ing|[a-z]+ize[ds]?|[a-z]+ise[ds]?|[a-z]+ate[ds]?|[a-z]+en)$/i.test(w) && w.length >= 4) {
+    return true;
+  }
+  // Check if the lowercase form appears elsewhere in the sentence or as a common dictionary word
+  const lowerSentence = fullSentence.toLowerCase();
+  const wordIdx = lowerSentence.indexOf(w);
+  if (wordIdx !== -1) {
+    const nextIdx = lowerSentence.indexOf(w, wordIdx + w.length);
+    if (nextIdx !== -1) return true;
+  }
+  return false;
+}
 
 export interface ExtractedEntities {
   properNames: string[];
@@ -216,9 +267,9 @@ export function extractEntities(sentence: string): ExtractedEntities {
     const token = match[0].trim();
     const start = match.index ?? 0;
     const preceding = sentence.slice(0, start).trimEnd();
-    const isStartOfSentence = !preceding || /[.!?:;]$/.test(preceding);
+    const isStartOfSentence = isStarterContext(preceding);
 
-    if (isStartOfSentence && (COMMON_SENTENCE_STARTERS.has(token.toLowerCase()) || findVerbs(token).length > 0 || /ed$|ing$|ized?$|ated?$/i.test(token))) {
+    if (isStartOfSentence && isVerbOrCommonStarterWord(token, sentence)) {
       continue;
     }
     // Skip if single letter unless I or A
