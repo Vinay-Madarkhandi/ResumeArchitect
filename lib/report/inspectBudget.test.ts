@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import JSZip from "jszip";
 import { Document, Packer, Paragraph } from "docx";
 import { pdfFlateBomb, pdfPages } from "./__fixtures__/bombs";
-import { INSPECTION_BACKSTOP_MS, MAX_DOCX_ENTRIES, MAX_PDF_PAGES, MAX_UPLOAD_BYTES, MAX_XML_BYTES } from "./inspectLimits";
+import { INSPECTION_BACKSTOP_MS, MAX_DOCX_ENTRIES, MAX_PDF_PAGES, MAX_PDF_STREAMS, MAX_UPLOAD_BYTES, MAX_XML_BYTES } from "./inspectLimits";
 import { inspectDocx } from "./inspectDocx";
 import { inspectPdf } from "./inspectPdf";
 
@@ -58,6 +58,11 @@ describe("file inspection budget", () => {
     const file = pdfPages(MAX_PDF_PAGES, () => "x").toString("latin1").replaceAll("BT /F1 12 Tf 72 720 Td (x) Tj ET", busyPage);
     await expect(inspectPdf(Buffer.from(file, "latin1"))).resolves.toMatchObject({ format: "invalid", reason: "too-large" });
   }, 30_000);
+
+  it("rejects stream-keyword spam before burning CPU", async () => {
+    const spam = Buffer.from("%PDF-1.4\n" + "stream\nendstream\n".repeat(MAX_PDF_STREAMS + 1) + "%%EOF", "latin1");
+    await expect(inspectPdf(spam)).resolves.toMatchObject({ format: "invalid", reason: "too-large" });
+  });
 
   it("gives a slow inspection well past 4 seconds before its wall-clock backstop", async () => {
     vi.useFakeTimers();

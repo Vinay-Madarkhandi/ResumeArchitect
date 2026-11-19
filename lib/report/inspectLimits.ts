@@ -4,6 +4,7 @@ export const MAX_DOCX_ENTRIES = 256;
 export const MAX_XML_BYTES = 1024 * 1024;
 export const MAX_PDF_PAGES = 20;
 export const MAX_PDF_INFLATED_BYTES = 48 * 1024 * 1024;
+export const MAX_PDF_STREAMS = 2_000;
 /** Drawing operators and text items across all pages. */
 export const MAX_PDF_OPERATORS = 250_000;
 export const MAX_PDF_TEXT_ITEMS = 40_000;

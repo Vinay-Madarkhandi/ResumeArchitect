@@ -1,5 +1,5 @@
 import { constants, createInflate } from "node:zlib";
-import { InspectionLimit, MAX_PDF_INFLATED_BYTES } from "./inspectLimits.ts";
+import { InspectionLimit, MAX_PDF_INFLATED_BYTES, MAX_PDF_STREAMS } from "./inspectLimits.ts";
 
 /**
  * pdf.js inflates streams into growing typed arrays outside the worker's
@@ -31,15 +31,26 @@ function inflatedSize(data: Uint8Array, limit: number): Promise<number> {
   });
 }
 
-/** Offsets where stream data begins: after the `stream` keyword and its end of line, as pdf.js reads it. */
+/** Offsets where stream data begins: after the `stream` keyword and its end of line, scanned linearly. */
 function streamStarts(text: string): number[] {
   const starts: number[] = [];
-  const eol = /\r\n|\r|\n/g;
-  for (const match of text.matchAll(/(?<!end)stream/g)) {
-    eol.lastIndex = match.index + 6;
-    const end = eol.exec(text);
-    if (!end) break;
-    starts.push(end.index + end[0].length);
+  let count = 0;
+  let idx = 0;
+  while ((idx = text.indexOf("stream", idx)) !== -1) {
+    if (idx >= 3 && text.slice(idx - 3, idx) === "end") {
+      idx += 6;
+      continue;
+    }
+    count++;
+    if (count > MAX_PDF_STREAMS) throw new InspectionLimit();
+    let start = idx + 6;
+    if (text[start] === "\r" && text[start + 1] === "\n") {
+      start += 2;
+    } else if (text[start] === "\n" || text[start] === "\r") {
+      start += 1;
+    }
+    starts.push(start);
+    idx = start;
   }
   return starts;
 }
