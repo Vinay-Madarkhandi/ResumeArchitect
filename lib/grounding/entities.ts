@@ -223,3 +223,61 @@ export function isDegreeSupported(degree: { degree: string; field?: string }, so
   }
   return true;
 }
+
+export const HIGH_OWNERSHIP_VERBS = [
+  "led all", "owned all", "managed all", "drove all",
+  "owned", "own", "led", "lead", "architected", "spearheaded", "headed", "directed", "drove", "drive"
+];
+
+export const LOW_OWNERSHIP_VERBS = [
+  "worked on", "helped with", "helped to", "helped",
+  "contributed to", "contributed", "assisted with", "assisted in", "assisted",
+  "participated in", "participated", "supported", "involved in"
+];
+
+const HIGH_VERBS_REGEX = /\b(led all|owned all|managed all|drove all|owned|own|led|lead|architected|spearheaded|headed|directed|drove|drive)\b/i;
+const LOW_VERBS_REGEX = /\b(worked on|helped with|helped to|helped|contributed to|contributed|assisted with|assisted in|assisted|participated in|participated|supported|involved in)\b/i;
+const TEAM_FRAMING_REGEX = /\b(part of a team(?: that)?|as part of(?: a team)?|worked with\s+[\w\s&]+?\s+to|alongside\s+[\w\s&]+?\s+to)\b/i;
+
+function cap(s: string): string {
+  return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
+}
+
+export function checkScopeInflation(
+  plain: string,
+  sourceUnits: string[],
+): { kind: "claim"; value: string; message: string } | null {
+  const plainHigh = plain.match(HIGH_VERBS_REGEX);
+  const plainDropsTeam = !/\b(?:team|part of|with|collaborat(?:ed|ing|ion)|helped|assisted|contributed)\b/i.test(plain);
+
+  for (const unit of sourceUnits) {
+    const unitLow = unit.match(LOW_VERBS_REGEX);
+    const unitHigh = unit.match(HIGH_VERBS_REGEX);
+    const unitTeam = unit.match(TEAM_FRAMING_REGEX);
+
+    // 1. Verb upgrade: low ownership in unit -> high ownership in plain
+    if (plainHigh && unitLow && !unitHigh) {
+      const outV = cap(plainHigh[1]);
+      const srcV = cap(unitLow[1]);
+      return {
+        kind: "claim",
+        value: outV,
+        message: `'${outV}' claims more ownership than '${srcV}'`,
+      };
+    }
+
+    // 2. Team to sole credit: team framing in unit -> plain drops team framing
+    if (unitTeam && plainDropsTeam) {
+      const leadingMatch = plain.match(/^\s*(?:[A-Z][a-z]+(?:ed|t|d)|Built|Wrote|Ran|Shipped|Owned|Led|Managed|Created|Designed)\b/i);
+      const verb = leadingMatch ? cap(leadingMatch[0].trim()) : "Shipped";
+      return {
+        kind: "claim",
+        value: verb,
+        message: `'${verb}' claims sole credit for work done as part of a team`,
+      };
+    }
+  }
+
+  return null;
+}
+

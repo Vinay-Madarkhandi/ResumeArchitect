@@ -11,6 +11,7 @@ import {
   isEmployerSupported,
   isTitleSupported,
   isToolSupported,
+  checkScopeInflation,
 } from "./entities";
 import { VERIFY_CLAIM } from "./placeholder";
 
@@ -239,6 +240,12 @@ function unsupported(
   }
 
 
+  // Check scope / ownership inflation
+  const scopeFlag = checkScopeInflation(plain, evidenceUnits.map((u) => u.plain));
+  if (scopeFlag) {
+    flags.push(scopeFlag);
+  }
+
   flags.push({
     kind: "claim",
     value: plain,
@@ -355,13 +362,9 @@ export function checkGrounding(sources: readonly string[], output: string) {
           continue;
         }
 
-        // Scope check: if plain has high ownership and unit had low ownership
-        if (extracted.hasHighOwnership) {
-          if (/\b(?:helped|assisted|contributed|worked on)\b/i.test(unit.plain)) {
-            if (!/\b(?:led|owned|architected|spearheaded|directed)\b/i.test(unit.plain)) {
-              continue;
-            }
-          }
+        // Scope check: if unit has scope inflation against plain
+        if (checkScopeInflation(plain, [unit.plain])) {
+          continue;
         }
 
         // Causal join check: if plain has causal join, unit must contain causal join
@@ -471,7 +474,7 @@ export function checkGrounding(sources: readonly string[], output: string) {
         && extracted.degrees.every((d) => isDegreeSupported(d, fullSourceText))
         && extracted.durations.every((d) => fullSourceText.toLowerCase().includes(d.toLowerCase()))
         && extracted.years.every((y) => fullSourceText.replace(/,(\d{3})/g, "$1").includes(y))
-        && !extracted.hasHighOwnership
+        && !extracted.hasHighOwnership && !checkScopeInflation(plain, evidenceUnits.map((u) => u.plain))
         && !extracted.hasCausalJoin
         && outLinks.every((l) => allSourceLinks.has(l))
       ) {
