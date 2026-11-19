@@ -287,6 +287,8 @@ export function extractEntities(sentence: string): ExtractedEntities {
   };
 }
 
+const DERIVATIONAL_SUFFIXES = /[-](?:based|driven|powered)|(?:ful|ized|ised|based|driven|ic|ish|powered)$/i;
+
 export function isEntitySupported(
   entity: string,
   citedTexts: string[],
@@ -295,12 +297,46 @@ export function isEntitySupported(
   const normEntity = entity.toLowerCase().trim();
   const fullCited = citedTexts.join(" \n ").toLowerCase();
 
-  // 1. Direct match (substring or whole word)
+  // 1. APIs vs Web Services equivalence
+  if (/\b(?:apis?|web\s+services?|rest\s+apis?)\b/i.test(normEntity)) {
+    if (/\b(?:apis?|web\s+services?|rest\s+apis?|services)\b/i.test(fullCited)) {
+      return true;
+    }
+  }
+
+  // 2. Direct match (substring or whole word)
   const escaped = normEntity.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   if (new RegExp(`(?<![\\w-])${escaped}(?![\\w-])`, "i").test(fullCited)) {
     return true;
   }
   if (fullCited.includes(normEntity)) {
+    return true;
+  }
+
+  // 2b. Derivational morphological variant matching (-ful, -ized/-ised, -based, -driven, -ic, -ish, -powered)
+  if (DERIVATIONAL_SUFFIXES.test(normEntity)) {
+    const baseForm = normEntity.replace(DERIVATIONAL_SUFFIXES, "").trim();
+    if (baseForm.length >= 2) {
+      const baseEsc = baseForm.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      if (new RegExp(`(?<![\\w-])${baseEsc}(?![\\w-])`, "i").test(fullCited) || fullCited.includes(baseForm)) {
+        return true;
+      }
+      const baseGroup = lookupSynonymGroup(baseForm);
+      if (baseGroup) {
+        for (const form of baseGroup.forms) {
+          const normForm = form.toLowerCase();
+          const escForm = normForm.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+          if (new RegExp(`(?<![\\w-])${escForm}(?![\\w-])`, "i").test(fullCited) || fullCited.includes(normForm)) {
+            return true;
+          }
+        }
+      }
+    }
+  }
+
+  // Check if cited contains the entity with a derivational suffix (e.g. source has Kubernetes-based, query is Kubernetes)
+  const derivedInCited = new RegExp(`(?<![\\w-])${escaped}(?:-(?:based|driven|powered)|ful|ized|ised|based|driven|ic|ish|powered)(?![\\w-])`, "i");
+  if (derivedInCited.test(fullCited)) {
     return true;
   }
 

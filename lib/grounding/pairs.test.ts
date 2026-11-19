@@ -123,6 +123,8 @@ export const DOMAINS: PersonaDomain[] = [
       "B.Sc. in Computer Science from State University",
     ],
     pairs: [
+      { kind: "legit", label: "pattern2: APIs equivalent to web services", before: "Worked on services in Go backed by PostgreSQL and Redis", after: "Wrote Go APIs backed by PostgreSQL and Redis" },
+      { kind: "legit", label: "pattern2: morphological suffix Kubernetes-based", before: "Maintained CI/CD pipelines in GitHub Actions and deployed microservices on Kubernetes", after: "Deployed microservices on Kubernetes-based infrastructure and maintained CI/CD pipelines in GitHub Actions" },
       { kind: "legit", label: "pattern1: sentence-initial verb Build", before: "Worked on services in Go backed by PostgreSQL and Redis", after: "Build Go services backed by PostgreSQL and Redis" },
       { kind: "legit", label: "synonym Go", before: "Worked on services in Go backed by PostgreSQL and Redis", after: "Worked on services in Golang backed by PostgreSQL and Redis" },
       { kind: "legit", label: "synonym Postgres", before: "Migrated reporting data from MySQL to PostgreSQL without downtime", after: "Migrated reporting data from MySQL to Postgres without downtime" },
@@ -157,6 +159,7 @@ export const DOMAINS: PersonaDomain[] = [
       "Registered Nurse (RN) with BSN degree from City College",
     ],
     pairs: [
+      { kind: "invented", label: "pattern2: invented tool Cerner-based", before: "Documented patient assessments and medication administration in Epic EHR", after: "Documented patient assessments in Cerner-based EHR systems" },
       { kind: "legit", label: "pattern1: sentence-initial verb Used", before: "Documented patient assessments and medication administration in Epic EHR", after: "Used Epic EHR to document patient assessments and medication administration" },
       { kind: "legit", label: "word to digit 3 nurses", before: "Mentored three new-graduate nurses on clinical procedures and hospital protocols", after: "Mentored 3 new-graduate nurses on clinical procedures and hospital protocols" },
       { kind: "legit", label: "hyphen drop new graduate", before: "Mentored three new-graduate nurses on clinical procedures and hospital protocols", after: "Mentored 3 new graduate nurses on clinical procedures and hospital protocols" },
@@ -225,6 +228,7 @@ export const DOMAINS: PersonaDomain[] = [
       "B.S. in Finance from University of Michigan",
     ],
     pairs: [
+      { kind: "legit", label: "pattern2: morphological suffix Pythonic", before: "Automated recurring monthly reporting using Python and SQL scripts", after: "Automated recurring monthly reporting using Pythonic and SQL scripts" },
       { kind: "legit", label: "pattern1: colon-initial verb Built", before: "Built quarterly financial forecasting models in Microsoft Excel", after: "Responsibilities: Built quarterly financial forecasting models in Microsoft Excel" },
       { kind: "legit", label: "$15M to $15 million", before: "Analyzed variance for $15M operational expense budget", after: "Analyzed variance for $15 million operational expense budget" },
       { kind: "legit", label: "$350,000 to $350k", before: "Identified $350,000 in redundant operational expenses", after: "Identified $350k in redundant operational expenses" },
@@ -259,6 +263,7 @@ export const DOMAINS: PersonaDomain[] = [
       "B.A. in Mathematics Education from Central College",
     ],
     pairs: [
+      { kind: "invented", label: "pattern2: invented tool Canvas-powered", before: "Integrated Google Classroom and Khan Academy into daily instruction", after: "Integrated Canvas-powered portals into daily instruction" },
       { kind: "invented", label: "pattern1: invented tool Canvas LMS with starter verb", before: "Integrated Google Classroom and Khan Academy into daily instruction", after: "Used Canvas LMS and Khan Academy in daily instruction" },
       { kind: "legit", label: "two years to 2 years", before: "Improved standardized test passing rates from 72% to 86% over two years", after: "Improved standardized test passing rates from 72% to 86% over 2 years" },
       { kind: "legit", label: "four to 4 mentors", before: "Mentored four student teachers on classroom management strategies", after: "Mentored 4 student teachers on classroom management strategies" },
@@ -293,6 +298,7 @@ export const DOMAINS: PersonaDomain[] = [
       "B.S. in Supply Chain Management from Penn State",
     ],
     pairs: [
+      { kind: "legit", label: "pattern2: morphological suffix SAP-driven", before: "Monitored warehouse inventory counts and stock transfers in SAP", after: "Monitored warehouse inventory counts and stock transfers in SAP-driven systems" },
       { kind: "invented", label: "pattern1: invented ERP tool with bullet starter", before: "Monitored warehouse inventory counts and stock transfers in SAP", after: "- Operated Oracle SCM for tracking warehouse inventory counts" },
       { kind: "legit", label: "80 shipments weekly", before: "Handled 80 shipments weekly across regional distribution centers", after: "Handled 80 inbound and outbound shipments a week across regional distribution centers" },
       { kind: "legit", label: "fleet of 35", before: "Coordinated daily dispatch schedules for fleet of 35 freight trucks", after: "Coordinated dispatch schedules daily for fleet of 35 trucks" },
