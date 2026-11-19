@@ -7,16 +7,18 @@ const JOB = `Senior Backend Engineer at Northwind Payments.
 Own the payments platform end to end. Requirements: Go, PostgreSQL, Kafka, and incident response.
 Nice to have: Kubernetes and mentoring experience. We care about reliability and latency.`;
 
-test.beforeEach(async ({ page }) => {
-  await signUp(page);
-  await onboard(page);
-});
+const SPARSE = `Ada Lovelace
+ada@example.com
+Sorted product samples
+Recorded deliveries and kept the stockroom tidy.`;
 
-test("reviews LinkedIn keywords and saves resume-grounded suggestions", async ({ page }) => {
+test("flags unsupported LinkedIn headlines, About text and tips, and blocks copying", async ({ page }) => {
+  await signUp(page);
+  await onboard(page, SPARSE);
   await openTool(page, "LinkedIn review");
   await page.getByLabel("Headline").fill("Backend Engineer | Go and PostgreSQL");
   await page.getByLabel("About", { exact: true }).fill("I work on payments and reliability.");
-  await page.getByLabel("Experience").fill("Built a Kafka pipeline that cut invoice latency by 38%.");
+  await page.getByLabel("Experience").fill("Sorted product samples");
   await page.getByLabel("Skills", { exact: true }).fill("Go, PostgreSQL");
   await page.getByLabel("Profile URL").fill("linkedin.com/in/ada-lovelace");
   await page.getByRole("radio", { name: "Role title" }).check();
@@ -26,18 +28,29 @@ test("reviews LinkedIn keywords and saves resume-grounded suggestions", async ({
   await expect(page).toHaveURL(/\/linkedin\/[0-9a-f-]+$/);
   await expect(page.getByRole("region", { name: "Profile checks" })).toContainText("Uses a clean, custom address.");
   const keywords = page.getByRole("region", { name: "Keyword match" });
-  await expect(keywords.getByRole("listitem").filter({ hasText: "Kafka" })).toContainText("Found:");
+  await expect(keywords.getByRole("listitem").filter({ hasText: "Kafka" })).toContainText("Missing:");
   await expect(keywords.getByRole("listitem").filter({ hasText: "Kubernetes" })).toContainText("Missing:");
   await page.getByRole("button", { name: "Suggest headline and About" }).click();
   await expect(page.getByRole("heading", { name: "Headlines" })).toBeVisible();
-  await expect(page.getByText(/I build dependable backend services/)).toContainText("cut invoice latency by 38%");
+  const drafts = page.getByRole("region", { name: "Suggested rewrites" });
+  await expect(drafts.getByText(/Verify “Go services and incident response”/)).toBeVisible();
+  await expect(drafts.getByText(/Verify “38%”/).first()).toBeVisible();
+  await expect(drafts.getByText(/Verify “List Kafka in your Skills section/)).toBeVisible();
+  await expect(drafts.getByRole("button", { name: /Copy (headline|About section)/ })).toHaveCount(0);
+  await drafts.getByText("Review and edit About section").click();
+  await drafts.getByLabel("Edit About section").fill("I sorted product samples.");
+  await expect(drafts.getByRole("button", { name: "Copy About section" })).toHaveCount(0);
+  await drafts.getByRole("checkbox", { name: "I verified the details in this draft" }).check();
+  await expect(drafts.getByRole("button", { name: "Copy About section" })).toBeVisible();
 
   await openTool(page, "LinkedIn review");
   await page.getByRole("region", { name: /Past reviews/ }).getByRole("link", { name: /Backend Engineer/ }).click();
   await expect(page.getByRole("button", { name: "Write new drafts" })).toBeVisible();
 });
 
-test("practices all three interview question types and saves answer feedback", async ({ page }) => {
+test("replaces unsupported interview assumptions and removes invented praise", async ({ page }) => {
+  await signUp(page);
+  await onboard(page, SPARSE);
   await openTool(page, "Interview prep");
   await page.getByRole("textbox", { name: "Job post" }).fill(JOB);
   await page.getByRole("button", { name: "Write questions" }).click();
@@ -46,12 +59,14 @@ test("practices all three interview question types and saves answer feedback", a
   for (const category of ["Behavioral", "Technical", "Role-specific"]) {
     await expect(page.getByRole("region", { name: new RegExp(category) })).toBeVisible();
   }
-  const question = page.getByRole("article", { name: /measure the effect of your Kafka pipeline/ });
-  await expect(question).toContainText("Measurement and a fair baseline.");
-  const answer = "When invoice processing slowed, I owned the fix. I built a Kafka pipeline and cut invoice latency by 38%.";
+  const question = page.getByRole("article", { name: /technical problem involving Kafka/ });
+  await expect(question).toContainText("Your reasoning, trade-offs");
+  await expect(page.getByText(/your Kafka pipeline/)).toHaveCount(0);
+  const answer = "I sorted product samples. I worked through the boxes in order.";
   await question.getByLabel("Your answer").fill(answer);
   await question.getByRole("button", { name: "Get feedback" }).click();
-  await expect(question.getByText("Explain how you measured invoice latency.")).toBeVisible();
+  await expect(question.getByText("Include a measurable result if you have a figure you can verify.")).toBeVisible();
+  await expect(question.getByText(/38%|invoice latency/)).toHaveCount(0);
   const rubric = page.getByRole("complementary", { name: "How answers are scored" });
   for (const label of ["STAR structure", "Specificity", "Relevance"]) await expect(rubric).toContainText(label);
 
@@ -60,10 +75,13 @@ test("practices all three interview question types and saves answer feedback", a
   await expect(saved).toContainText("1 answer");
   await saved.click();
   await expect(question.getByLabel("Your answer")).toHaveValue(answer);
-  await expect(question.getByText("Explain how you measured invoice latency.")).toBeVisible();
+  await expect(question.getByText("Include a measurable result if you have a figure you can verify.")).toBeVisible();
+  await expect(question.getByText(/38%|invoice latency/)).toHaveCount(0);
 });
 
 test("scans a pasted letter and scores the current draft from the generator", async ({ page }) => {
+  await signUp(page);
+  await onboard(page);
   await openTool(page, "Cover letter scan");
   await page.getByLabel("Cover letter").fill(
     "Dear Hiring Manager,\n\nI am applying for Senior Backend Engineer at Northwind Payments. I am a team player who built a Kafka pipeline that cut latency by 38%.",
@@ -89,7 +107,10 @@ test("scans a pasted letter and scores the current draft from the generator", as
   await page.getByRole("button", { name: "Write cover letter" }).click();
   const letter = page.getByLabel("Cover letter");
   await expect(letter).toHaveValue(/Dear Hiring Manager/);
-  await letter.fill((await letter.inputValue()) + "\n\nHere is a fresh edit.");
+  await expect(letter).toHaveValue(/\[Verify claim\]/);
+  await expect(letter).not.toHaveValue(/Apache Pulsar|cut costs/);
+  await expect(page.getByRole("button", { name: "Scan letter" })).toBeDisabled();
+  await letter.fill((await letter.inputValue()).replace(/\[Verify claim\]\.?/g, "") + "\n\nHere is a fresh edit.");
   await page.getByRole("button", { name: "Scan letter" }).click();
   await expect(page.getByRole("region", { name: /The letter/ })).toContainText("Here is a fresh edit.");
   await expect(page.getByRole("link", { name: "Edit the letter" })).toHaveAttribute("href", /\/resumes\/.+\?view=letter$/);
@@ -103,6 +124,8 @@ test("scans a pasted letter and scores the current draft from the generator", as
 });
 
 test("explains which career tools need a Gemini key", async ({ page }) => {
+  await signUp(page);
+  await onboard(page);
   await goTo(page, "Settings");
   await page.getByRole("button", { name: "Remove", exact: true }).click();
   await expect(page.getByText("Key removed.")).toBeVisible();

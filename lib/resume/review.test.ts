@@ -39,6 +39,7 @@ describe("matchChange", () => {
       reason: "Shows onboarding focus.",
       requirementIds: [],
       flags: [],
+      cites: [],
     };
     const modified = hunks.find((h) => h.kind === "modified")!;
     expect(matchChange(modified, [change])?.id).toBe("c1");

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { guardNumbers } from "@/lib/builder/numbers";
+import { guardNumbers } from "@/lib/grounding/figures";
 import { draftPlaceholders, emptyDraft } from "@/lib/builder/draft";
 
 describe("guardNumbers", () => {

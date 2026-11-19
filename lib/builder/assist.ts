@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { generateStructured, type JsonModel } from "@/lib/gemini/model";
-import { guardNumbers } from "./numbers";
+import { checkGrounding } from "@/lib/grounding";
 
 const instructions = {
   summary: "Write one brief professional summary.",
@@ -25,12 +25,22 @@ export async function suggestBuilderField(model: JsonModel, input: z.infer<typeo
       instructions[input.field],
       "Use only claims supported by the source. Never add tools, qualifications, employers, results, or quantities.",
       "Preserve supplied numbers with their original units and context. Use digits, never spell out quantities.",
-      "If a measurement is essential to a bullet but absent, use [X%] or [N] for the user to fill, or omit it.",
-      "Return plain text, with one string per bullet or one string for the requested field. Do not add bullet markers.",
+      "Keep each achievement tied to its original action, tool, and result. Omit details you cannot trace to the exact source sentence.",
+      "Return plain text, with one string per bullet or one string for the requested field. Do not add bullet markers. Include cites: [line_numbers] for each bullet.",
     ].join(" "),
     prompt: JSON.stringify({ source: input.source }),
-    schema: z.object({ lines: z.array(z.string().trim().min(1).max(max)).min(1).max(bullets ? 5 : 1) }),
+    schema: z.object({
+      lines: z.array(z.union([
+        z.string().trim().min(1).max(max),
+        z.object({ text: z.string().trim().min(1).max(max), cites: z.array(z.number().int()).default([]) }),
+      ])).min(1).max(bullets ? 5 : 1),
+    }),
     temperature: 0.2,
   });
-  return lines.map((line) => guardNumbers(line.replace(/\s+/g, " "), input.source).slice(0, max));
+  return lines.map((item) => {
+    const lineStr = typeof item === "string" ? item : item.text;
+    const cites = typeof item === "string" ? undefined : item.cites;
+    const { text, flags } = checkGrounding([input.source], lineStr.replace(/\s+/g, " "), { cites });
+    return { text: text.slice(0, max), flags };
+  });
 }

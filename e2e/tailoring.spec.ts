@@ -23,23 +23,27 @@ test("sign up, tailor a resume, review every change, edit, and download", async 
   // Lands in the review once all five stages finish.
   await expect(page).toHaveURL(/\/resumes\/[0-9a-f-]+\?view=review/, { timeout: 60_000 });
   const rail = page.getByRole("complementary");
-  await expect(rail.getByText(/to review/)).toBeVisible();
+  await expect(rail.getByText(/need checking/)).toBeVisible();
   await expect(page.locator(".rl-hunk")).toHaveCount(4);
 
   // The new number, the unbacked Kubernetes skill, and the new mentoring claim are all flagged.
-  await expect(rail.getByText("Verify")).toHaveCount(3);
+  await expect(rail.getByText("Verify", { exact: true })).toHaveCount(3);
 
-  // Focus the first change and verify the requirement chip renders.
-  await rail.getByText(/payment services/).click();
-  await expect(rail.getByText("The posting centers on payments; this bullet now says so up front.")).toBeVisible();
-  await expect(rail.locator(".slug-in").getByText("Go", { exact: true })).toBeVisible();
-
-  // Focus a flagged change, read its reason and flag, then revert it.
-  await rail.getByText(/2M daily transactions/).click();
-  await expect(rail.getByText("Ties the work to reliability, a stated priority.")).toBeVisible();
-  await expect(rail.getByText(/"2M"|2M/).first()).toBeVisible();
-  await rail.getByRole("button", { name: "Revert to original" }).click();
-  await expect(page.locator(".rl-hunk")).toHaveCount(3);
+  // Server-produced placeholders require review before export.
+  await page.getByRole("button", { name: "Download" }).click();
+  await expect(page.getByRole("menuitem", { name: "PDF" })).toBeDisabled();
+  await page.keyboard.press("Escape");
+  const savedExport = await page.request.get(`/api${new URL(page.url()).pathname}/export?format=pdf`);
+  expect(savedExport.status()).toBe(422);
+  for (const id of [2, 3, 4]) {
+    await expect(rail.getByText(`[Verify claim ${id}]`, { exact: true })).toBeVisible();
+    await rail.getByText(`[Verify claim ${id}]`, { exact: true }).click();
+    await expect(rail.getByText("Replace this placeholder with details you can verify, or revert the change.")).toBeVisible();
+    if (id === 2) await expect(rail.getByText(/Verify “2M”/)).toBeVisible();
+    await rail.getByRole("button", { name: "Revert to original" }).click();
+    await expect(rail.getByText(`[Verify claim ${id}]`, { exact: true })).toHaveCount(0);
+  }
+  await expect(page.locator(".rl-hunk")).toHaveCount(1);
 
   // Keep everything else.
   await rail.getByRole("button", { name: "Keep all" }).click();
@@ -66,11 +70,23 @@ test("sign up, tailor a resume, review every change, edit, and download", async 
   // Write and download a cover letter.
   await page.getByRole("tab", { name: "Cover letter" }).click();
   await page.getByRole("button", { name: "Write cover letter" }).click();
-  await expect(page.getByLabel("Cover letter")).toHaveValue(/Dear Hiring Manager/);
+  const letter = page.getByLabel("Cover letter");
+  await expect(letter).toHaveValue(/Dear Hiring Manager/);
+  await expect(letter).toHaveValue(/\[Verify claim\]/);
+  await expect(page.getByRole("button", { name: "Download" }).last()).toBeDisabled();
+  await letter.fill((await letter.inputValue()).replace(/\[Verify claim\]\.?/g, ""));
   await page.getByRole("button", { name: "Download" }).last().click();
   const letterDownload = page.waitForEvent("download");
   await page.getByRole("menuitem", { name: "Word (.docx)" }).click();
   expect((await letterDownload).suggestedFilename()).toMatch(/Cover letter\.docx$/);
+
+  const resumeUrl = new URL(page.url());
+  const selection = await page.request.post(`/api${resumeUrl.pathname}/ai-edit`, {
+    headers: { origin: resumeUrl.origin },
+    data: { selectedText: "Worked on services in Go", instruction: "Lead with a strong verb" },
+  });
+  expect(selection.ok()).toBe(true);
+  expect(await selection.json()).toMatchObject({ flagged: true, replacementText: "[Verify claim]" });
 
   // Edit in place; the change autosaves.
   await page.getByRole("tab", { name: "Edit" }).click();
@@ -145,7 +161,7 @@ async function adaWordFile(): Promise<Buffer> {
             new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "Ada Lovelace", bold: true, size: 36 })] }),
             new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun("ada@example.com | +44 20 7946 0958 | London")] }),
             section("Professional Summary"),
-            new Paragraph({ children: [new TextRun("Backend engineer who builds dependable systems and enjoys teaching.")] }),
+            new Paragraph({ children: [new TextRun("Backend engineer who builds dependable payment systems and enjoys teaching.")] }),
             section("Work Experience"),
             new Paragraph({
               tabStops: [{ type: TabStopType.RIGHT, position: 10000 }],
@@ -192,6 +208,12 @@ test("a Word resume comes back as the same file with only the wording changed", 
   await page.getByRole("button", { name: "Tailor resume" }).click();
   await expect(page).toHaveURL(/\/resumes\/[0-9a-f-]+\?view=review/, { timeout: 60_000 });
 
+  const rail = page.getByRole("complementary");
+  for (const id of [2, 3, 4]) {
+    await rail.getByText(`[Verify claim ${id}]`, { exact: true }).click();
+    await rail.getByRole("button", { name: "Revert to original" }).click();
+    await expect(rail.getByText(`[Verify claim ${id}]`, { exact: true })).toHaveCount(0);
+  }
   await page.getByRole("button", { name: "Download" }).click();
   await expect(page.getByText("Same fonts and layout, new wording.")).toBeVisible();
   const download = page.waitForEvent("download");
@@ -204,15 +226,11 @@ test("a Word resume comes back as the same file with only the wording changed", 
   const before = await paragraphs(original);
   const after = await paragraphs(tailored);
   const xml = after.join("\n");
-  // The fake model rewrote two bullets, extended the skills line, and added one bullet.
-  expect(xml).toContain("Led payment services in Go backed by PostgreSQL");
-  expect(xml).toContain("2M daily transactions");
-  expect(xml).toContain("Mentored engineers through on-call rotations");
-  expect(after).toHaveLength(before.length + 1);
-  // The design is untouched: the centered header and the tab-aligned dates are the original paragraphs, byte for byte.
+  expect(xml).toContain("Worked on services in Go backed by PostgreSQL for the payments team");
+  expect(xml).not.toMatch(/2M daily transactions|Mentored engineers through on-call rotations/);
+  expect(after).toHaveLength(before.length);
+  // The centered header and tab-aligned dates are the original paragraphs, byte for byte.
   expect(after[0]).toBe(before[0]);
   expect(after[0]).toContain('<w:jc w:val="center"/>');
   expect(after.find((p) => p.includes("2020 – Present"))).toBe(before.find((p) => p.includes("2020 – Present")));
-  // The new bullet is a real Word bullet, like its neighbours.
-  expect(after.find((p) => p.includes("Mentored engineers"))).toContain("<w:numPr>");
 });

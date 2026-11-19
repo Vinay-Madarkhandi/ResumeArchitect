@@ -1,10 +1,21 @@
+import { checkGrounding } from "@/lib/grounding";
 import { z } from "zod";
 import { generateStructured, type JsonModel } from "@/lib/gemini/model";
 import type { JobAnalysis } from "@/lib/schemas/jobAnalysis";
 
-const CoverLetterSchema = z.object({
-  /** The letter as plain paragraphs separated by blank lines, greeting and sign-off included. */
-  letter: z.string(),
+export const CoverLetterSentenceSchema = z.object({
+  text: z.string(),
+  cites: z.array(z.number().int()).default([]),
+});
+
+export const CoverLetterParagraphSchema = z.object({
+  sentences: z.array(CoverLetterSentenceSchema),
+});
+
+export const CoverLetterSchema = z.object({
+  /** Flat letter text fallback */
+  letter: z.string().optional(),
+  paragraphs: z.array(CoverLetterParagraphSchema).optional(),
 });
 
 export const COVER_LETTER_TONES = ["confident", "warm", "concise"] as const;
@@ -16,13 +27,13 @@ You get their tailored resume (Markdown), the job's analysis, and the job post.
 Hard rules:
 1. Use only facts from the resume. Never invent employers, titles, numbers,
    projects, skills, or reasons for leaving. Never add a metric the resume
-   doesn't state.
+   doesn't state, and keep the metric with its original achievement.
 2. If the job asks for something the resume doesn't show, don't claim it.
 3. No clichés ("I am writing to express my interest", "team player",
    "passionate", "synergy"). No flattery of the company you can't back up.
 
 Shape: 3–4 short paragraphs, 220–320 words.
-- Opening: the role, and the single strongest reason they fit, stated plainly.
+- Opening: "I'm applying for this role." Then state the strongest resume-backed reason they fit.
 - Middle: two concrete examples from the resume, each tied to a named
   requirement of the job.
 - Close: what they'd do first or care about in the role, and a simple ask.
@@ -32,7 +43,7 @@ Plain text only: no Markdown, no bullet points.`;
 
 export async function writeCoverLetter(
   model: JsonModel,
-  input: { resumeMarkdown: string; job: JobAnalysis; jobText: string | null; tone: CoverLetterTone },
+  input: { resumeMarkdown: string; job: JobAnalysis; jobText: string | null; tone: CoverLetterTone; sourceMarkdown?: string },
 ): Promise<string> {
   const prompt = [
     `# Tone\n${input.tone}`,
@@ -43,12 +54,28 @@ export async function writeCoverLetter(
   ]
     .filter(Boolean)
     .join("\n\n");
-  const { letter } = await generateStructured(model, {
+  const response = await generateStructured(model, {
     label: "coverLetter",
     system: SYSTEM,
     prompt,
     schema: CoverLetterSchema,
     temperature: 0.7,
   });
-  return letter.trim();
+  const rawLetter = response.paragraphs?.length
+    ? response.paragraphs.map((p) => p.sentences.map((s) => s.text).join(" ")).join("\n\n")
+    : (response.letter ?? "");
+  const safeLetterText = [
+    "Dear Hiring Manager,",
+    "I'm applying for this role.",
+    "I'd welcome a conversation.",
+    "Thank you for your consideration.",
+    "Sincerely,",
+    "Best regards,",
+  ].join("\n");
+  const sources = [input.sourceMarkdown, input.resumeMarkdown, safeLetterText].filter(Boolean) as string[];
+  return checkGrounding(sources, rawLetter.trim(), {
+    isCoverLetter: true,
+    company: input.job.company,
+    jobTitle: input.job.title,
+  }).text;
 }

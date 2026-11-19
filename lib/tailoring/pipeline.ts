@@ -11,7 +11,8 @@ import type { JobFacts, JobSkill } from "@/lib/schemas/jobFacts";
 import { buildLexicon, formKey } from "@/lib/report/synonyms";
 import { documentText, fromUnits, toUnits } from "@/lib/resume/units";
 import { applyEdits } from "./applyEdits";
-import { verifyChange } from "./verify";
+import { verifyChange } from "@/lib/grounding/tailoring";
+import { buildSourceIndex } from "@/lib/grounding";
 
 /**
  * The tailoring run as five visible stages, named after a compositor's
@@ -195,7 +196,24 @@ export async function* runPipeline(
     await store.updateSession(sessionId, { stage, status: "generating" });
     const sourceUnits = toUnits(input.source.content);
     const response = await tailorLines(model, { units: sourceUnits, job, report: before });
-    const applied = applyEdits(sourceUnits, response.edits);
+    // Proof the proposal before it can enter the persisted document.
+    const sourceText = sourceUnits.map((u) => u.markdown).join("\n");
+    const sourceIndex = buildSourceIndex([sourceText]);
+    const applied = applyEdits(sourceUnits, response.edits, (change, anchor) => {
+      // Copying a true claim into a different role can still change its meaning.
+      const flags = verifyChange(change, sourceText, job, sourceUnits[anchor]?.markdown, sourceIndex);
+      const unverified = flags.some((flag) => flag.kind !== "dropped" && flag.kind !== "filler");
+      const requirementIds = change.requirementIds.filter((id) => job.requirements.some((r) => r.id === id));
+      const reason = unverified
+        ? "Replace this placeholder with details you can verify, or revert the change."
+        : requirementIds.length
+          ? "Addresses a requirement in the job posting."
+          : "Suggested wording change for this application.";
+      return {
+        ...change, reason, requirementIds, flags,
+        after: unverified ? [change.before, `[Verify claim ${change.id.slice(1)}]`].filter(Boolean).join(" ") : change.after,
+      };
+    });
     const rewrites = applied.changes.filter((c) => c.op === "rewrite").length;
     const inserts = applied.changes.filter((c) => c.op === "insert_after").length;
     const removals = applied.changes.filter((c) => c.op === "remove").length;
@@ -212,14 +230,13 @@ export async function* runPipeline(
     stage = "proof";
     yield { type: "stage", stage, status: "running" };
     await store.updateSession(sessionId, { stage });
-    const sourceText = documentText(input.source.content);
-    const changes: TailoredChange[] = applied.changes.map((c) => ({ ...c, flags: verifyChange(c, sourceText, job) }));
+    const { changes } = applied;
     const flagged = changes.filter((c) => c.flags.length > 0).length;
     yield {
       type: "stage",
       stage,
       status: "done",
-      note: flagged === 0 ? "Nothing invented" : `${plural(flagged, "change")} to verify`,
+      note: flagged === 0 ? "No claims flagged" : `${plural(flagged, "change")} to verify`,
     };
 
     // lockup

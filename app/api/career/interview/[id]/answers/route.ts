@@ -1,3 +1,4 @@
+import { groundInterviewQuestion } from "@/lib/grounding/interview";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { scoreAnswer } from "@/lib/career/interview";
@@ -34,8 +35,11 @@ export async function POST(request: Request, { params }: RouteContext<"/api/care
   if (!model.ok) return model.response;
 
   try {
-    const rating = await rateAnswer(model.value, { job: job.data, question, answer: body.answer, resumeMarkdown: resume.value.markdown });
-    const feedback = scoreAnswer(body.answer, rating);
+    const safe = question.grounded
+      ? question
+      : groundInterviewQuestion(question, resume.value.markdown, job.data.requirements.map((r) => r.label));
+    const rating = await rateAnswer(model.value, { job: job.data, question: safe, answer: body.answer, resumeMarkdown: resume.value.markdown });
+    const feedback = { ...scoreAnswer(body.answer, rating), grounded: true as const };
     const saved = await addInterviewAnswer(userId, id, { question_id: question.id, answer: body.answer, feedback, score: feedback.score.total });
     return NextResponse.json({ id: saved?.id, createdAt: saved?.created_at, feedback });
   } catch (error) {

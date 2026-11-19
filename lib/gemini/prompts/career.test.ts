@@ -25,16 +25,20 @@ const profile = LinkedInProfileSchema.parse({ headline: "Engineer at Analytical 
 describe("suggestLinkedIn", () => {
   it("flags numbers, names and skills the resume can't back up", async () => {
     const model = fakeModel([{
-      headlines: ["Backend Engineer | Go, Kafka | Cut invoice latency 38%", "Backend Engineer | Kubernetes at Globex Corp | 5M users"],
-      about: "I build payment services in Go.",
+      headlines: ["Built a Kafka pipeline that cut invoice latency by 38%", "Backend Engineer | Kubernetes at Globex Corp | 5M users"],
+      about: "I wrote payment services in Go on Postgres.",
+      notes: ["List Apache Pulsar in your Skills section."],
     }]);
     const result = await suggestLinkedIn(model, { profile, resumeMarkdown: RESUME, job: NORTHWIND });
     expect(result.headlines[0].flags).toEqual([]);
-    expect(result.headlines[1].flags.map((f) => [f.kind, f.value])).toEqual([
+    expect(result.headlines[1].flags.map((f) => [f.kind, f.value])).toEqual(expect.arrayContaining([
       ["number", "5M"], ["name", "Globex Corp"], ["skill", "Kubernetes"],
-    ]);
+    ]));
+    expect(result.headlines[1].text).not.toContain("Kubernetes");
     expect(result.about.flags).toEqual([]);
-    expect(result.notes).toEqual([]);
+    expect(result.notes[0]).toMatchObject({ text: "[Verify claim].", flags: expect.arrayContaining([
+      expect.objectContaining({ value: "Apache Pulsar" }),
+    ]) });
     expect(model.calls[0].prompt).toContain("Kafka (must-have)");
     expect(model.calls[0].system).toContain("Never invent");
   });
@@ -46,7 +50,7 @@ describe("suggestLinkedIn", () => {
     ]);
     const result = await suggestLinkedIn(model, { profile, resumeMarkdown: RESUME, job: null });
     expect(model.calls).toHaveLength(2);
-    expect(result.headlines.map((h) => h.text)).toEqual(["Backend Engineer"]);
+    expect(result.headlines.map((h) => h.text)).toEqual(["[Verify claim]"]);
     expect(model.calls[0].prompt).toContain("None given");
   });
 });
@@ -65,11 +69,15 @@ describe("interview prompts", () => {
     expect(questions.map((x) => x.id)).toEqual(["outage", "outage-1", "q-2"]);
   });
 
-  it("returns the rating Gemini gives, validated", async () => {
-    const rating = { star: { situation: true, task: true, action: true, result: false }, specificity: 4, relevance: 3, strengths: ["Clear"], improvements: [] };
+  it("filters invented praise and validates STAR evidence against the answer", async () => {
+    const rating = { star: { situation: true, task: true, action: true, result: false }, specificity: 4, relevance: 3, strengths: ["The 38% reduction makes the result measurable.", "I measured throughput."], improvements: ["Explain how you measured invoice latency."], starEvidence: { action: "I measured throughput.", situation: "When invoice processing slowed" } };
     const question = { id: "q", category: "technical" as const, question: "How do you size Kafka partitions?", assessing: "Depth.", requirement: "Kafka" };
     const model = fakeModel([rating]);
-    await expect(rateAnswer(model, { job: NORTHWIND, question, answer: "  I measured throughput.  ", resumeMarkdown: RESUME })).resolves.toEqual(rating);
+    await expect(rateAnswer(model, { job: NORTHWIND, question, answer: "  I measured throughput.  ", resumeMarkdown: RESUME })).resolves.toEqual({
+      star: { situation: false, task: false, action: true, result: false },
+      specificity: 4, relevance: 3, strengths: ["“I measured throughput.”"],
+      improvements: ["State the outcome of your actions.", "Include a measurable result if you have a figure you can verify."],
+    });
     expect(model.calls[0].prompt).toContain("# Their answer\nI measured throughput.");
   });
 

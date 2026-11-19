@@ -20,6 +20,8 @@ export const LineEditSchema = z.object({
   reason: z.string(),
   /** Requirement ids from the job analysis this edit addresses. */
   requirementIds: z.array(z.string()).default([]),
+  /** Source line numbers from the numbered resume that support this edit. */
+  cites: z.array(z.number().int()).default([]),
 });
 export type LineEdit = z.infer<typeof LineEditSchema>;
 
@@ -42,6 +44,7 @@ Edit operations:
   already supports somewhere else.
 - remove: delete line N. Use it rarely, only for content that is clearly
   irrelevant to this job and costs space.
+- cites: array of line numbers from the numbered resume that directly support this edit's claims. Every candidate claim must cite the source line numbers supporting it.
 Lines marked "locked" contain nested content: never rewrite or remove them
 (you may insert_after them).
 
@@ -50,7 +53,8 @@ Hard rules, no exceptions:
    certifications, tools, skills, projects, or achievements that the resume
    does not already state or directly imply.
 2. Never invent or change numbers. Keep every existing metric exactly; never
-   add a metric that is not in the resume.
+   add a metric that is not in the resume. Keep each figure with its original
+   action, unit and result, and keep each experience under its original role.
 3. Use the job's vocabulary only when the underlying claim is already true
    ("JS" → "JavaScript" is fine; adding Kubernetes the resume never mentions is not).
 4. If a requirement is missing from the resume, do not fake it. Leave it for

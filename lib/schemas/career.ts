@@ -75,16 +75,23 @@ export const LinkedInReportSchema = z.object({
 export type LinkedInReport = z.infer<typeof LinkedInReportSchema>;
 
 /** What Gemini returns for a LinkedIn profile. Validated, then each line is proofed against the resume. */
-export const LinkedInDraftSchema = z.object({
-  headlines: z.array(z.string().trim().min(1).max(220)).min(1).max(5),
-  about: z.string().trim().min(1).max(2_600),
-  notes: z.array(z.string()).max(6).default([]),
+export const CitationItemSchema = z.object({
+  text: z.string().trim().min(1),
+  cites: z.array(z.number().int()).default([]),
 });
 
+export const LinkedInDraftSchema = z.object({
+  headlines: z.array(z.union([z.string().trim().min(1).max(220), CitationItemSchema])).min(1).max(5),
+  about: z.union([z.string().trim().min(1).max(2_600), CitationItemSchema, z.array(CitationItemSchema)]),
+  notes: z.array(z.union([z.string(), CitationItemSchema])).max(6).default([]),
+});
+
+const VerifiedDraft = z.object({ text: z.string(), flags: z.array(ChangeFlagSchema) });
 export const LinkedInSuggestionsSchema = z.object({
-  headlines: z.array(z.object({ text: z.string(), flags: z.array(ChangeFlagSchema) })),
-  about: z.object({ text: z.string(), flags: z.array(ChangeFlagSchema) }),
-  notes: z.array(z.string()),
+  headlines: z.array(VerifiedDraft),
+  about: VerifiedDraft,
+  notes: z.array(z.union([VerifiedDraft, z.string()])),
+  grounded: z.literal(true).optional(),
 });
 export type LinkedInSuggestions = z.infer<typeof LinkedInSuggestionsSchema>;
 
@@ -110,6 +117,7 @@ export const InterviewQuestionSchema = z.object({
   assessing: z.string().min(1),
   /** The job requirement this question probes, when there is one. */
   requirement: z.string().nullable().default(null),
+  grounded: z.literal(true).optional(),
 });
 export type InterviewQuestion = z.infer<typeof InterviewQuestionSchema>;
 
@@ -137,5 +145,6 @@ export const AnswerFeedbackSchema = z.object({
   rating: AnswerRatingSchema,
   words: z.number().int(),
   measurable: z.boolean(),
+  grounded: z.literal(true).optional(),
 });
 export type AnswerFeedback = z.infer<typeof AnswerFeedbackSchema>;

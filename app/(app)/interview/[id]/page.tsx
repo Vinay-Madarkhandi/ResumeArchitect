@@ -1,3 +1,6 @@
+import { scoreAnswer } from "@/lib/career/interview";
+import { groundAnswerRating, groundInterviewQuestion } from "@/lib/grounding/interview";
+import { JobAnalysisSchema } from "@/lib/schemas/jobAnalysis";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -21,10 +24,15 @@ export default async function InterviewSessionPage({ params }: PageProps<"/inter
   const questionSet = InterviewQuestionSetSchema.safeParse({ questions: session?.questions });
   if (!session || !questionSet.success) notFound();
 
+  const job = JobAnalysisSchema.safeParse(session.job_analysis);
+  const topics = job.data?.requirements.map((r) => r.label) ?? [];
+  const questions = questionSet.data.questions.map((q) => q.grounded ? q : groundInterviewQuestion(q, "", topics));
   const attempts = answers.flatMap((answer) => {
     const feedback = AnswerFeedbackSchema.safeParse(answer.feedback);
     return feedback.success
-      ? [{ id: answer.id, questionId: answer.question_id, answer: answer.answer, feedback: feedback.data }]
+      ? [{ id: answer.id, questionId: answer.question_id, answer: answer.answer, feedback: feedback.data.grounded
+          ? feedback.data
+          : scoreAnswer(answer.answer, groundAnswerRating(answer.answer, feedback.data.rating)) }]
       : [];
   });
   const hasKey = profile?.gemini_key_status === "valid";
@@ -39,7 +47,7 @@ export default async function InterviewSessionPage({ params }: PageProps<"/inter
         <p className="mt-1.5 text-body text-ink-2">Session started {formatRelativeTime(session.created_at)}.</p>
       </div>
       {!hasKey && <KeyMissing what="rate new practice answers" />}
-      <InterviewPractice sessionId={session.id} questions={questionSet.data.questions} attempts={attempts} hasKey={hasKey} />
+      <InterviewPractice sessionId={session.id} questions={questions} attempts={attempts} hasKey={hasKey} />
     </div>
   );
 }

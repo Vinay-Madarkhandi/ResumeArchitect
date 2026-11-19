@@ -1,3 +1,5 @@
+import { parseInline } from "@/lib/documentMarkdown";
+import { inlineText } from "@/lib/resume/units";
 import type { TailoredChange } from "@/lib/schemas/tailoring";
 import type { Hunk } from "@/lib/resume/diff";
 import type { Unit } from "@/lib/resume/units";
@@ -38,9 +40,10 @@ const norm = (s: string | null | undefined) => (s ?? "").replace(/\s+/g, " ").tr
  */
 export function matchChange(hunk: Hunk, changes: TailoredChange[]): TailoredChange | null {
   const afterMd = hunk.after.map((u) => norm(u.markdown));
+  const afterText = hunk.after.map((u) => norm(u.text));
   const beforeMd = hunk.before.map((u) => norm(u.markdown));
   return (
-    changes.find((c) => c.after && afterMd.includes(norm(c.after))) ??
+    changes.find((c) => c.after && (afterMd.includes(norm(c.after)) || afterText.includes(norm(inlineText(parseInline(c.after)))))) ??
     changes.find((c) => c.before && beforeMd.includes(norm(c.before)) && (c.op !== "remove" || hunk.kind === "removed")) ??
     null
   );

@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import { DocumentView, Paper } from "@/components/paper/Paper";
-import { getShareAccess, recordShareView } from "@/lib/data/shares";
+import { getShareAccess, readSharedResume } from "@/lib/data/shares";
+import { requestDetails } from "@/lib/auth/current-user";
 import { shareCookieName, validShareGrant } from "@/lib/sharing/access";
 import { SharePassword } from "./SharePassword";
 
@@ -21,7 +22,7 @@ export default async function SharedResumePage({ params }: PageProps<"/r/[slug]"
     return <SharePassword slug={slug} />;
   }
 
-  const share = await recordShareView(slug, access.passwordHash);
+  const share = await readSharedResume(slug, access.passwordHash, await requestDetails());
   if (!share) notFound();
 
   return (

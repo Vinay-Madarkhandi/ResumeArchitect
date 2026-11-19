@@ -8,6 +8,9 @@ import { editSelection } from "@/lib/gemini/prompts/editSelection";
 import { loadGeminiKey } from "@/lib/server/geminiKey";
 import { MAX_SELECTION_LENGTH } from "@/lib/schemas/selectionEdit";
 
+import { DocumentContentSchema } from "@/lib/schemas/document";
+import { documentToMarkdown } from "@/lib/documentMarkdown";
+
 export const runtime = "nodejs";
 export const maxDuration = 30;
 
@@ -22,7 +25,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   const { id } = await params;
   const owned = await requireOwnedResume(id);
   if (!owned.ok) return owned.response;
-  const { user } = owned;
+  const { user, resume } = owned;
 
   const json = await readJson<Record<string, unknown>>(request);
   if (!json.ok) return json.response;
@@ -49,7 +52,15 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   if (!key.ok) return NextResponse.json({ error: key.message }, { status: 400 });
 
   try {
-    const result = await editSelection(geminiModel(key.apiKey, user.id), { contextBefore, selectedText, contextAfter, instruction });
+    const doc = DocumentContentSchema.safeParse(resume.content);
+    const resumeMarkdown = doc.success ? documentToMarkdown(doc.data) : undefined;
+    const result = await editSelection(geminiModel(key.apiKey, user.id), {
+      contextBefore,
+      selectedText,
+      contextAfter,
+      instruction,
+      resumeMarkdown,
+    });
     return NextResponse.json(result);
   } catch (error) {
     const message = error instanceof AiError ? error.message : "Something went wrong. Try again.";

@@ -1,3 +1,4 @@
+import { checkGrounding } from "@/lib/grounding";
 import { geminiModel } from "@/lib/gemini/model";
 import { parseResume } from "@/lib/gemini/prompts/parseResume";
 import { markdownToDocument } from "@/lib/documentMarkdown";
@@ -106,7 +107,12 @@ export async function importResume(
     try {
       const ai = await parseResume(geminiModel(apiKey, userId), text);
       const content = markdownToDocument(ai.markdown);
-      if (content.content.length >= 3) return { title: ai.title.trim() || "Master resume", content, usedAi: true, keepsDesign: false };
+      const units = toUnits(content);
+      const grounded = units.every((unit) => !checkGrounding([text], unit.markdown).flags.length);
+      if (content.content.length >= 3 && grounded) {
+        const name = units[0]?.kind === "heading" ? units[0].text : "";
+        return { title: ai.title?.trim() || name || "Master resume", content, usedAi: true, keepsDesign: false };
+      }
     } catch {
       // Fall through to the non-AI path; the user can still review and fix it.
     }

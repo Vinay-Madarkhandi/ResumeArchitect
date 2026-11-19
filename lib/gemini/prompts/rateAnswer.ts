@@ -1,6 +1,21 @@
+import { z } from "zod";
+import { groundAnswerRating } from "@/lib/grounding/interview";
 import { generateStructured, type JsonModel } from "@/lib/gemini/model";
 import { AnswerRatingSchema, type AnswerRating, type InterviewQuestion } from "@/lib/schemas/career";
 import type { JobAnalysis } from "@/lib/schemas/jobAnalysis";
+
+const RatingDraft = AnswerRatingSchema.extend({
+  improvements: z.array(z.union([
+    z.string(),
+    z.object({ text: z.string(), cites: z.array(z.number().int()).default([]) }),
+  ])).max(4).default([]),
+  starEvidence: z.object({
+    situation: z.string().optional(),
+    task: z.string().optional(),
+    action: z.string().optional(),
+    result: z.string().optional(),
+  }).optional(),
+});
 
 const SYSTEM = `You coach a candidate on one practice interview answer. You get the job,
 the question with what the interviewer is assessing, the candidate's resume,
@@ -16,7 +31,10 @@ Rate the answer:
   5 = concrete actions, tools, names and numbers from their own work.
 - relevance, 1–5: 1 = doesn't answer the question; 3 = answers it loosely;
   5 = answers it directly and connects to what the job needs.
-- strengths: up to 3 short points on what works, quoting their words.
+- starEvidence: one complete verbatim sentence from their answer for each
+  STAR part marked present. Omit any part with no direct evidence.
+- strengths: up to 3 complete verbatim sentences from their answer that
+  work particularly well. Return only the quotes, without commentary.
 - improvements: up to 3 specific, actionable fixes. Suggest details only
   from their resume; never invent experience or numbers for them.
 
@@ -34,11 +52,12 @@ export async function rateAnswer(
     `# Candidate's resume\n${resumeMarkdown}`,
     `# Their answer\n${answer.trim()}`,
   ].join("\n\n");
-  return generateStructured(model, {
+  const draft = await generateStructured(model, {
     label: "rateAnswer",
     system: SYSTEM,
     prompt,
-    schema: AnswerRatingSchema,
+    schema: RatingDraft,
     temperature: 0.2,
   });
+  return groundAnswerRating(answer, draft);
 }
