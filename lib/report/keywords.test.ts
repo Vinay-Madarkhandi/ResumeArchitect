@@ -59,6 +59,7 @@ describe("matchTerm", () => {
     ["C", "Presented to the C-suite"],
     ["C", "Partnered with C-level stakeholders"],
     ["C", "Finished with a grade C"],
+    ["C", "Evaluated Option C for the Java migration"],
     ["Swift", "Swift response to customer issues"],
     ["Rust", "Rust removal from steel"],
     ["Spark", "Spark interest in STEM"],

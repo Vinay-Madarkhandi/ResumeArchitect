@@ -61,7 +61,9 @@ const SKILL_LABEL = /^\s*(?:(?:technical|core|key|relevant) +)?(?:skills|technol
 /** A term inside a labeled list earlier in the same sentence ("Required: C, C++"). */
 const LIST_LABEL = /\b(?:required|requirements|qualifications|skills|technologies|languages|must[- ]haves?|preferred|nice[- ]to[- ]haves?) *:[^.:;\n]*$/i;
 /** Languages a bare "C" is listed beside ("C, C++", "C/C++ developer"). */
-const C_SIBLING = /(?<![\w+#-])(?:C\+\+|C#|Objective-C|Java|Python|Rust|Golang|Assembly|Fortran|Verilog|VHDL)(?![\w+#])/i;
+const SIBLINGS = "(?:C\\+\\+|C#|Objective-C|Java|Python|Rust|Golang|Assembly|Fortran|Verilog|VHDL)";
+const C_SIBLING_LEFT = new RegExp(`(?<![\\w+#-])${SIBLINGS}\\s*[,/|&]\\s*$`, "i");
+const C_SIBLING_RIGHT = new RegExp(`^\\s*[,/|&]\\s*${SIBLINGS}(?![\\w+#])`, "i");
 
 function skillLines(text: string): Set<number> {
   const starts = new Set<number>();
@@ -84,7 +86,7 @@ function everydayUse(form: string, left: string, right: string): boolean {
     case "Swift": return /^ *(?:action|response|recovery|decision)\b/i.test(right);
     case "Rust": return /^ *removal\b/i.test(right);
     case "Spark": return /^ *(?:an? |the )?(?:interest|conversation|debate|change|joy)\b/i.test(right);
-    case "C": return /(?:vitamin|grade|type|class) +$/i.test(left) || /^-(?:suite|level)\b/i.test(right);
+    case "C": return /(?:vitamin|grade|type|class|option|choice|plan|tier|item|section|part) +$/i.test(left) || /^-(?:suite|level)\b/i.test(right);
     case "Excel": return /^ *at\b/i.test(right);
     default: return false;
   }
@@ -128,7 +130,7 @@ function mentions(forms: readonly string[], text: string): Span[] {
         const right = text.slice(end, Math.min(lineEnd, end + 45));
         if (everydayUse(canonical, left, right)) return [];
         const context = `${left} ${right}`;
-        const listed = SKILL_QUALIFIER.test(left) || LIST_LABEL.test(left) || (canonical === "C" && C_SIBLING.test(context));
+        const listed = SKILL_QUALIFIER.test(left) || LIST_LABEL.test(left) || (canonical === "C" && (C_SIBLING_LEFT.test(left) || C_SIBLING_RIGHT.test(right)));
         if (technical && !technical.test(context) && !listed) {
           if (!(skillStarts ??= skillLines(text)).has(lineStart)) return [];
         }
