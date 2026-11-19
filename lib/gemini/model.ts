@@ -87,29 +87,44 @@ export function geminiModel(apiKey: string, userId?: string): JsonModel {
       kind, model: TAILOR_MODEL, ok: error_code === null, error_code, latency_ms, tokens_in, tokens_out,
     }) : undefined,
     async generate({ label, system, prompt, jsonSchema, temperature }) {
-      const response = await client.models.generateContent({
-        model: TAILOR_MODEL,
-        contents: prompt,
-        config: {
-          systemInstruction: system,
-          responseMimeType: "application/json",
-          responseJsonSchema: jsonSchema,
-          temperature: temperature ?? 0.4,
-          abortSignal: AbortSignal.timeout(CALL_TIMEOUT_MS),
-        },
-      });
-      const meta = response.usageMetadata;
-      if (meta) {
-        const prev = usage[label] ?? { prompt: 0, output: 0, total: 0 };
-        usage[label] = {
-          prompt: prev.prompt + (meta.promptTokenCount ?? 0),
-          output: prev.output + (meta.candidatesTokenCount ?? 0) + (meta.thoughtsTokenCount ?? 0),
-          total: prev.total + (meta.totalTokenCount ?? 0),
-        };
+      const candidates = [TAILOR_MODEL, "gemini-3.5-flash-lite", "gemini-flash-lite-latest"].filter(
+        (m, i, arr): m is string => Boolean(m) && arr.indexOf(m) === i,
+      );
+      let lastErr: unknown;
+      for (const modelName of candidates) {
+        try {
+          const response = await client.models.generateContent({
+            model: modelName,
+            contents: prompt,
+            config: {
+              systemInstruction: system,
+              responseMimeType: "application/json",
+              responseJsonSchema: jsonSchema,
+              temperature: temperature ?? 0.4,
+              abortSignal: AbortSignal.timeout(CALL_TIMEOUT_MS),
+            },
+          });
+          const meta = response.usageMetadata;
+          if (meta) {
+            const prev = usage[label] ?? { prompt: 0, output: 0, total: 0 };
+            usage[label] = {
+              prompt: prev.prompt + (meta.promptTokenCount ?? 0),
+              output: prev.output + (meta.candidatesTokenCount ?? 0) + (meta.thoughtsTokenCount ?? 0),
+              total: prev.total + (meta.totalTokenCount ?? 0),
+            };
+          }
+          const text = response.text;
+          if (!text) throw new AiError("gemini_error", "Gemini returned an empty answer. Try again.");
+          return text;
+        } catch (err) {
+          lastErr = err;
+          if (err instanceof ApiError && (err.status === 404 || err.status === 503)) {
+            continue;
+          }
+          throw err;
+        }
       }
-      const text = response.text;
-      if (!text) throw new AiError("gemini_error", "Gemini returned an empty answer. Try again.");
-      return text;
+      throw lastErr;
     },
   };
 }

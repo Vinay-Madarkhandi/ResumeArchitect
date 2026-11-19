@@ -176,7 +176,7 @@ http
         return res.end(JSON.stringify({ error: { code: 400, message: "API key not valid.", status: "INVALID_ARGUMENT" } }));
       }
       if (req.method === "GET") {
-        return res.end(JSON.stringify({ name: "models/gemini-2.5-flash", displayName: "Gemini 2.5 Flash" }));
+        return res.end(JSON.stringify({ name: "models/gemini-3.5-flash-lite", displayName: "Gemini 3.5 Flash Lite" }));
       }
       const json = JSON.parse(body || "{}");
       const system = json.systemInstruction?.parts?.map((p) => p.text).join("\n") ?? json.system_instruction?.parts?.map((p) => p.text).join("\n") ?? "";

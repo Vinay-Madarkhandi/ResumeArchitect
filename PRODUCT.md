@@ -47,7 +47,7 @@ and claims it can't trace to the source resume are flagged for the user to verif
 
 ## Capabilities and Constraints
 
-- Gemini model `gemini-2.5-flash` via `@google/genai`, using the user's key.
+- Gemini model `gemini-3.5-flash-lite` via `@google/genai`, using the user's key.
 - Next.js 16 App Router, React 19, Tailwind v4, TipTap editor, `@react-pdf/renderer`.
 - Serverless request limits mean that long AI runs must stream their progress.
 - The resume document is a constrained rich-text model: headings, paragraphs, lists,

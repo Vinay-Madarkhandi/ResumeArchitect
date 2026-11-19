@@ -101,7 +101,7 @@ Run the live Gemini smoke test to check the prompts, schemas and model name agai
 GEMINI_API_KEY=AIza... npm run smoke:gemini
 ```
 
-Set `GEMINI_MODEL` (server env) to switch models without a code change; it defaults to `gemini-2.5-flash`.
+Set `GEMINI_MODEL` (server env) to switch models without a code change; it defaults to `gemini-3.5-flash-lite`.
 
 ## Job tracker and browser clipper
 
