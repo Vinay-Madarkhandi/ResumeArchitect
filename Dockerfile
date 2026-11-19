@@ -12,6 +12,7 @@ FROM deps AS worker-deps
 RUN npm prune --omit=dev
 
 FROM node:22-bookworm-slim AS platform
+RUN apt-get update && apt-get install -y --no-install-recommends util-linux && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 HOSTNAME=0.0.0.0 PORT=3000
 COPY --from=build --chown=node:node /app/.next/standalone ./
