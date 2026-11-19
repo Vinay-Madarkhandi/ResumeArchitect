@@ -34,14 +34,14 @@ const FACTS = {
   level: "senior",
   hardSkills: [
     { term: "Golang", importance: "high" },
-    { term: "Postgres", importance: "high" },
+    { term: "PostgreSQL", importance: "high" },
     { term: "Kafka", importance: "high" },
     { term: "Incident response", importance: "high" },
     { term: "Kubernetes", importance: "low" },
   ],
   softSkills: [{ term: "Mentoring", importance: "low" }],
   otherKeywords: JOB.keywords.map((k) => ({ term: k.term, importance: "medium" })),
-  education: "Bachelor's degree in Computer Science or related field",
+  education: { degree: "bachelor", fields: ["Computer Science"], equivalentExperience: true },
   yearsRequired: null,
   predictedSkills: [{ term: "Distributed tracing", reason: "Useful for diagnosing latency across services." }],
 };
