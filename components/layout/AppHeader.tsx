@@ -198,8 +198,15 @@ export function AppHeader({ email, admin = false }: { email: string; admin?: boo
   return (
     <header className="sticky top-0 z-40 border-b border-line bg-ground/90 backdrop-blur-md">
       <div className="relative mx-auto flex h-14 max-w-6xl items-center gap-4 px-4 sm:px-6">
-        <Logo href="/dashboard" />
+        <div className="flex items-center gap-3">
+          <Logo href="/dashboard" />
+          <span className="hidden items-center gap-1.5 rounded-full border border-line bg-raised/70 px-2.5 py-0.5 text-[11px] font-mono text-ink-3 md:inline-flex">
+            <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            <span>ATS Engine</span>
+          </span>
+        </div>
         <nav aria-label="Main" className="ml-2 hidden items-center gap-0.5 lg:flex">
+
           {areas.map((area) =>
             area.children ? (
               <AreaMenu key={area.id} area={area} pathname={pathname} />
