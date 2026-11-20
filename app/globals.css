@@ -206,6 +206,12 @@ a {
 /* review redline, and the compare view.                               */
 /* ------------------------------------------------------------------ */
 
+.paper-desk {
+  background-color: var(--sunken);
+  background-image: radial-gradient(var(--line) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
 .paper {
   background: var(--paper);
   color: var(--paper-ink);
@@ -253,14 +259,16 @@ a {
   line-height: var(--paper-name-line);
   font-weight: var(--paper-head-weight);
   margin: 0 0 var(--paper-name-after);
+  letter-spacing: -0.015em;
 }
 
+/* Ensure all header contact lines before the first section are aligned matching the template */
 .paper-flow h1,
-.paper-flow h1 + p {
+.paper-flow h1 ~ p:not(h2 ~ p) {
   text-align: var(--paper-header-align);
 }
 
-/* Never letter-spaced, like the PDF: an ATS reads tracked capitals as "S U M M A R Y". */
+/* Standard section headings */
 .paper-flow h2 {
   font-family: var(--paper-head);
   font-size: var(--paper-fs-section);
@@ -277,6 +285,7 @@ a {
   font-size: var(--paper-fs-entry);
   font-weight: 600;
   margin: var(--paper-entry-before) 0 var(--paper-entry-after);
+  color: var(--paper-ink);
 }
 
 .paper-flow p {
@@ -298,7 +307,7 @@ a {
 }
 
 .paper-flow li {
-  margin: 0 0 var(--paper-bullet-after);;
+  margin: 0 0 var(--paper-bullet-after);
 }
 
 .paper-flow li::marker {
@@ -327,18 +336,23 @@ a {
 /* Sejda PDF Canvas: interactive block outline on hover & focus */
 .paper .ProseMirror > * {
   position: relative;
-  border-radius: 3px;
-  transition: outline 0.12s ease-in-out, box-shadow 0.12s ease-in-out;
+  border-radius: 4px;
+  padding: 1px 4px;
+  margin-left: -4px;
+  margin-right: -4px;
+  transition: outline 0.12s ease-in-out, background-color 0.12s ease-in-out;
 }
 
 .paper .ProseMirror > *:hover {
-  outline: 1.5px dashed rgba(245, 158, 11, 0.45);
-  outline-offset: 4px;
+  outline: 1.5px dashed rgba(245, 158, 11, 0.55);
+  outline-offset: 2px;
+  background-color: rgba(245, 158, 11, 0.025);
 }
 
 .paper .ProseMirror > *:focus-within {
-  outline: 2px solid rgba(245, 158, 11, 0.85);
-  outline-offset: 4px;
+  outline: 2px solid rgba(245, 158, 11, 0.9);
+  outline-offset: 2px;
+  background-color: transparent;
 }
 
 .paper .ProseMirror p.is-editor-empty:first-child::before {

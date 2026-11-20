@@ -1,5 +1,6 @@
 "use client";
 
+import { BookmarkCheck, Briefcase, FileCode, MinusCircle } from "lucide-react";
 import { Field, Input, Select, Textarea } from "@/components/ui/Field";
 import type { TargetInput } from "@/lib/schemas/career";
 import { cn } from "@/lib/cn";
@@ -18,11 +19,11 @@ export interface ApplicationOption {
   label: string;
 }
 
-const LABELS: Record<TargetKind, string> = {
-  none: "No target",
-  application: "Saved application",
-  posting: "Paste a job post",
-  role: "Role title",
+const LABELS: Record<TargetKind, { label: string; icon: React.ReactNode }> = {
+  none: { label: "No target", icon: <MinusCircle className="size-3.5" /> },
+  application: { label: "Saved application", icon: <BookmarkCheck className="size-3.5" /> },
+  posting: { label: "Paste a job post", icon: <FileCode className="size-3.5" /> },
+  role: { label: "Role title", icon: <Briefcase className="size-3.5" /> },
 };
 
 const NEEDS_KEY: TargetKind[] = ["posting", "role"];
@@ -60,13 +61,15 @@ export function TargetPicker({
   value: TargetDraft;
   onChange: (next: TargetDraft) => void;
 }) {
-  const disabled = (kind: TargetKind) => (kind === "application" && applications.length === 0) || (!hasKey && NEEDS_KEY.includes(kind));
+  const disabled = (kind: TargetKind) =>
+    (kind === "application" && applications.length === 0) || (!hasKey && NEEDS_KEY.includes(kind));
+
   return (
-    <fieldset className="flex flex-col gap-3">
-      <legend className="mb-1.5 text-small font-medium text-ink-2">Target job</legend>
-      <div className="inline-flex w-fit flex-wrap rounded-md border border-line bg-sunken p-0.5">
+    <fieldset className="flex flex-col gap-3.5">
+      <legend className="text-small font-medium text-ink-2">Target context</legend>
+      <div className="inline-flex w-full flex-wrap gap-1 rounded-lg border border-line bg-sunken p-1 sm:w-fit">
         {kinds.map((kind) => (
-          <label key={kind} className="relative">
+          <label key={kind} className="relative flex-1 sm:flex-initial">
             <input
               type="radio"
               name="target-kind"
@@ -76,19 +79,22 @@ export function TargetPicker({
               onChange={() => onChange({ ...value, kind })}
               className="peer absolute inset-0 size-full cursor-pointer opacity-0 disabled:cursor-default"
             />
-            <span className={cn(
-              "inline-flex h-7 cursor-pointer items-center rounded-sm px-3 text-small text-ink-3 transition-colors hover:text-ink",
-              "peer-checked:bg-raised peer-checked:text-ink peer-checked:shadow-[0_1px_2px_oklch(0%_0_0/0.25)]",
-              "peer-focus-visible:outline-2 peer-focus-visible:outline-focus peer-disabled:cursor-default peer-disabled:opacity-45",
-            )}>
-              {LABELS[kind]}
+            <span
+              className={cn(
+                "flex h-8 cursor-pointer items-center justify-center gap-1.5 rounded-md px-3 text-small font-medium text-ink-3 transition-all hover:text-ink",
+                "peer-checked:bg-raised peer-checked:text-ink peer-checked:shadow-xs",
+                "peer-focus-visible:outline-2 peer-focus-visible:outline-brass peer-disabled:cursor-default peer-disabled:opacity-40",
+              )}
+            >
+              {LABELS[kind].icon}
+              <span>{LABELS[kind].label}</span>
             </span>
           </label>
         ))}
       </div>
 
       {value.kind === "application" && (
-        <Field label="Application" hint="Uses the job requirements from your saved application.">
+        <Field label="Saved application" hint="Uses the tailored resume and requirements from your saved tracker.">
           {(props) => (
             <Select {...props} value={value.resumeId} onChange={(e) => onChange({ ...value, resumeId: e.target.value })}>
               {applications.map((a) => (
@@ -101,16 +107,28 @@ export function TargetPicker({
         </Field>
       )}
       {value.kind === "posting" && (
-        <Field label="Job post" hint="Include the responsibilities and requirements.">
+        <Field label="Job description post" hint="Paste the responsibilities, requirements, and tech stack details.">
           {(props) => (
-            <Textarea {...props} rows={8} value={value.text} onChange={(e) => onChange({ ...value, text: e.target.value })} />
+            <Textarea
+              {...props}
+              rows={8}
+              value={value.text}
+              placeholder="Paste the full job post here…"
+              onChange={(e) => onChange({ ...value, text: e.target.value })}
+              className="font-sans text-small leading-relaxed"
+            />
           )}
         </Field>
       )}
       {value.kind === "role" && (
-        <Field label="Role" hint="Uses typical requirements for this role.">
+        <Field label="Role title" hint="Uses industry standard criteria for this role.">
           {(props) => (
-            <Input {...props} value={value.role} placeholder="e.g. Product designer" onChange={(e) => onChange({ ...value, role: e.target.value })} />
+            <Input
+              {...props}
+              value={value.role}
+              placeholder="e.g. Staff Full Stack Engineer"
+              onChange={(e) => onChange({ ...value, role: e.target.value })}
+            />
           )}
         </Field>
       )}

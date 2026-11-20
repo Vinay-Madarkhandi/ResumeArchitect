@@ -40,17 +40,17 @@ export function CoverLetterForm({
   }
 
   return (
-    <form onSubmit={submit} className="grid gap-10 lg:grid-cols-[1fr_19rem]">
-      <div className="flex min-w-0 flex-col gap-3">
+    <form onSubmit={submit} className="grid gap-6 lg:grid-cols-[1fr_21rem]">
+      <div className="flex min-w-0 flex-col gap-4 rounded-xl border border-line bg-panel/75 p-6 shadow-xs backdrop-blur-xs">
         <Field
-          label="Cover letter"
+          label="Cover letter draft"
           hint={
             <>
               <span className="font-mono tabular">{words}</span> words · {IDEAL_WORDS.min}–{IDEAL_WORDS.max} reads best
             </>
           }
         >
-          {(props) => <Textarea {...props} rows={16} value={letter} onChange={(e) => setLetter(e.target.value)} />}
+          {(props) => <Textarea {...props} rows={16} value={letter} onChange={(e) => setLetter(e.target.value)} placeholder="Dear Hiring Team,&#10;&#10;I am writing to express my strong interest in the role..." className="font-sans text-small leading-relaxed" />}
         </Field>
         {selected?.letter && selected.letter !== letter && (
           <Button size="sm" className="self-start" onClick={() => setLetter(selected.letter ?? "")}>
@@ -58,7 +58,7 @@ export function CoverLetterForm({
           </Button>
         )}
       </div>
-      <div className="flex flex-col gap-5">
+      <div className="flex flex-col gap-5 rounded-xl border border-line bg-panel/75 p-6 shadow-xs backdrop-blur-xs h-fit">
         <TargetPicker kinds={KINDS} applications={applications} hasKey={hasKey} value={target} onChange={setTarget} />
         {error && (
           <p role="alert" className="flex gap-2 text-small text-danger">
