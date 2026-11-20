@@ -3,7 +3,7 @@
 import { useCallback, useDeferredValue, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import type { Editor } from "@tiptap/react";
-import { ArrowLeft, Check, CircleAlert, Columns2, FileCheck2, LayoutTemplate, LoaderCircle, Mail, PenLine, RotateCcw } from "lucide-react";
+import { ArrowLeft, Check, CircleAlert, Columns2, FileCheck2, LayoutTemplate, LoaderCircle, Mail, Maximize2, Minimize2, PenLine, RotateCcw } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/Tabs";
 import { Button } from "@/components/ui/Button";
 import { Dialog, DialogContent } from "@/components/ui/Dialog";
@@ -123,6 +123,7 @@ export function Workspace({ resume, session, jobText, jobFacts, asOf, initialVie
   const [rail, setRail] = useState<Rail>("changes");
   const [choosingTemplate, setChoosingTemplate] = useState(false);
   const [masterRail, setMasterRail] = useState<"checks" | "history">("checks");
+  const [focusCanvas, setFocusCanvas] = useState(false);
 
   const { status, flush } = useAutosave(doc, (content) => patch(resume.id, { content }));
   const deferredDoc = useDeferredValue(doc);
@@ -297,6 +298,16 @@ export function Workspace({ resume, session, jobText, jobFacts, asOf, initialVie
                 <TemplateGallery doc={deferredDoc} value={template} onChange={changeTemplate} />
               </DialogContent>
             </Dialog>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setFocusCanvas((prev) => !prev)}
+              title={focusCanvas ? "Restore side panels" : "Focus canvas (Full Sejda view)"}
+              className="hidden md:inline-flex"
+            >
+              {focusCanvas ? <Minimize2 className="size-4" /> : <Maximize2 className="size-4" />}
+              <span>{focusCanvas ? "Show panels" : "Focus canvas"}</span>
+            </Button>
             <ThemeToggle />
             <ShareDialog resumeId={resume.id} doc={doc} template={template} />
             <ExportMenu
@@ -311,8 +322,8 @@ export function Workspace({ resume, session, jobText, jobFacts, asOf, initialVie
         </div>
       </header>
 
-      <div className="grid flex-1 lg:grid-cols-[minmax(0,1fr)_23rem]">
-        <main className="min-w-0 px-3 pb-24 pt-4 sm:px-6">
+      <div className={cn("grid flex-1", focusCanvas ? "grid-cols-1" : "lg:grid-cols-[minmax(0,1fr)_23rem]")}>
+        <main className="min-w-0 px-3 pb-24 pt-4 sm:px-6 paper-desk transition-colors">
           <div className="mx-auto mb-4 flex max-w-[840px] flex-wrap items-center justify-between gap-3">
             {tailored ? (
               <Tabs value={view} onValueChange={(v) => setView(v as View)}>
@@ -433,7 +444,8 @@ export function Workspace({ resume, session, jobText, jobFacts, asOf, initialVie
           )}
         </main>
 
-        <aside id="score-rail" className="border-t border-line bg-panel/40 lg:sticky lg:top-14 lg:h-[calc(100dvh-3.5rem)] lg:overflow-y-auto lg:border-l lg:border-t-0">
+        {!focusCanvas && (
+          <aside id="score-rail" className="border-t border-line bg-panel/40 lg:sticky lg:top-14 lg:h-[calc(100dvh-3.5rem)] lg:overflow-y-auto lg:border-l lg:border-t-0">
           <PowerEdit active={view === "edit"} doc={doc} resumeId={resume.id} jobs={scanTargets} initialJobId={initialJobId}
             initialTarget={initialTarget} asOf={asOf} onAddSkill={onAddSkill} onInsert={insertAtCursor} flush={flush} />
           {view === "edit" && tailored ? null : tailored && scoreBefore && scoreNow && job ? (
@@ -526,7 +538,8 @@ export function Workspace({ resume, session, jobText, jobFacts, asOf, initialVie
               )}
             </div>
           )}
-        </aside>
+          </aside>
+        )}
       </div>
     </div>
   );

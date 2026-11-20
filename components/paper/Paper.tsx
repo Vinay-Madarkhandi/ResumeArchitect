@@ -20,7 +20,7 @@ export function Paper({
       data-template={template}
       style={templateStyle(TEMPLATES[template])}
       className={cn(
-        "paper mx-auto w-full transition-all duration-150 min-h-[1050px]",
+        "paper mx-auto w-full transition-all duration-150 min-h-[1123px] border border-neutral-200/60 dark:border-neutral-800/60",
         compact ? "max-w-[640px] px-8 py-8" : "max-w-[794px] px-6 py-8 sm:px-(--paper-pad-x) sm:py-(--paper-pad-y)",
         className,
       )}
