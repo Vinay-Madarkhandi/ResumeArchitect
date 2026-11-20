@@ -14,7 +14,7 @@ import {
   FileText,
   Globe,
   Link2,
-  Sparkles,
+  Cpu,
   UploadCloud,
   X,
 } from "lucide-react";
@@ -476,7 +476,7 @@ export function ScanForm({
       {/* Submission Footer */}
       <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-line bg-panel/50 p-4">
         <div className="flex items-center gap-2 text-small text-ink-3">
-          <Sparkles className="size-4 text-brass" />
+          <Cpu className="size-4 text-brass" />
           <span>
             {needsRead && !hasKey
               ? "Reading a new job needs your Gemini key in Settings. Existing jobs scan instantly."
