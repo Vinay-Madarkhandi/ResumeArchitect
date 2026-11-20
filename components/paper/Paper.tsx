@@ -16,19 +16,32 @@ export function Paper({
   compact?: boolean;
 }) {
   return (
-    <div
-      data-template={template}
-      style={templateStyle(TEMPLATES[template])}
-      className={cn(
-        "paper mx-auto w-full transition-all duration-150 min-h-[1123px] border border-neutral-200/60 dark:border-neutral-800/60",
-        compact ? "max-w-[640px] px-8 py-8" : "max-w-[794px] px-6 py-8 sm:px-(--paper-pad-x) sm:py-(--paper-pad-y)",
-        className,
-      )}
-    >
-      {children}
+    <div className="relative mx-auto w-full flex justify-center group/sheet">
+      {/* Corner Crop Marks for authentic Sejda drafting table feel */}
+      <div
+        data-template={template}
+        style={templateStyle(TEMPLATES[template])}
+        className={cn(
+          "paper relative mx-auto w-full transition-all duration-150 min-h-[1123px] rounded-[2px] bg-white text-neutral-900 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.05),0_20px_45px_-10px_rgba(0,0,0,0.22),0_0_0_1px_rgba(0,0,0,0.08)]",
+          compact ? "max-w-[640px] px-8 py-8" : "max-w-[794px] px-6 py-8 sm:px-(--paper-pad-x) sm:py-(--paper-pad-y)",
+          className,
+        )}
+      >
+        {/* Top-left corner tick */}
+        <span aria-hidden className="pointer-events-none absolute -left-2.5 -top-2.5 size-2 border-b border-r border-neutral-400/40" />
+        {/* Top-right corner tick */}
+        <span aria-hidden className="pointer-events-none absolute -right-2.5 -top-2.5 size-2 border-b border-l border-neutral-400/40" />
+        {/* Bottom-left corner tick */}
+        <span aria-hidden className="pointer-events-none absolute -bottom-2.5 -left-2.5 size-2 border-t border-r border-neutral-400/40" />
+        {/* Bottom-right corner tick */}
+        <span aria-hidden className="pointer-events-none absolute -bottom-2.5 -right-2.5 size-2 border-t border-l border-neutral-400/40" />
+
+        {children}
+      </div>
     </div>
   );
 }
+
 
 export function Inline({ nodes }: { nodes: InlineNode[] }) {
   return (

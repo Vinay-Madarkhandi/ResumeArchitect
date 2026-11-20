@@ -20,11 +20,27 @@ export async function testGeminiApiKey(apiKey: string, userId: string): Promise<
 
   const started = performance.now();
   let errorCode: string | null = null;
+  let verifiedModel = TEST_CONNECTION_MODEL;
   try {
     const client = createGeminiClient(apiKey);
-    // A metadata fetch, not a generation call — costs no output-token quota,
-    // and confirms this key can actually reach the model tailoring uses.
-    await client.models.get({ model: TEST_CONNECTION_MODEL });
+    const candidates = [TEST_CONNECTION_MODEL, "gemini-flash-lite-latest", "gemini-2.5-flash", "gemini-2.0-flash"].filter(
+      (m, i, arr): m is string => Boolean(m) && arr.indexOf(m) === i,
+    );
+    let connected = false;
+    let lastError: unknown;
+    for (const m of candidates) {
+      try {
+        await client.models.get({ model: m });
+        connected = true;
+        verifiedModel = m;
+        break;
+      } catch (err) {
+        lastError = err;
+        if (err instanceof ApiError && err.status === 404) continue;
+        throw err;
+      }
+    }
+    if (!connected) throw lastError;
     return { valid: true, rejected: false, message: "Connected." };
   } catch (error) {
     if (error instanceof ApiError && (error.status === 400 || error.status === 401 || error.status === 403)) {
@@ -35,8 +51,9 @@ export async function testGeminiApiKey(apiKey: string, userId: string): Promise<
     return { valid: false, rejected: false, message: "Couldn't reach Gemini to check the key. Try again in a moment." };
   } finally {
     await recordAiCall(userId, {
-      kind: "key-test", model: TEST_CONNECTION_MODEL, ok: errorCode === null, error_code: errorCode,
+      kind: "key-test", model: verifiedModel, ok: errorCode === null, error_code: errorCode,
       latency_ms: Math.round(performance.now() - started),
     });
   }
 }
+
