@@ -118,9 +118,6 @@ export function RedlineCloseUp() {
                 <Marker n={5} className="ml-auto" />
               </div>
             </div>
-            <figcaption className="mt-5 text-center text-label text-ink-3">
-              Example resume and job. In the app, the change list holds one card like this per change.
-            </figcaption>
           </figure>
 
           <div>

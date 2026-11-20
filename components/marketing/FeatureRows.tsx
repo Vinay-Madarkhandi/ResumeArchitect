@@ -17,7 +17,7 @@ function AtsMock() {
   return (
     <div className="rounded-lg border border-line bg-panel p-5">
       <p className="text-small text-ink-2">
-        Job link: <span className="font-mono text-label text-ink-3">boards.greenhouse.io/northwind/jobs/123</span>
+        Job link: <span className="font-mono text-label text-ink-3">boards.greenhouse.io/canonical/jobs/52019</span>
       </p>
       <p className="mt-3 text-body font-semibold text-ink">This posting runs on Greenhouse</p>
       <p className="mt-1 text-small text-ink-2">Guidance for it is quoted from the vendor&rsquo;s own documentation and cites its source.</p>
@@ -46,7 +46,7 @@ function PowerEditMock() {
           <span className="text-ink-3 line-through decoration-del/70 decoration-[1.5px]">72</span>
           <span className="inline-block border-b-2 border-brass pb-1 text-[26px] font-medium leading-none text-ink">76</span>
         </p>
-        <p className="mt-3 text-label text-ink-3">Kubernetes moved from missing to found. Example data.</p>
+        <p className="mt-3 font-mono text-[11px] text-ink-3">Kubernetes added · Score updated in 12ms</p>
       </div>
     </div>
   );
@@ -131,7 +131,7 @@ function LinkedInMock() {
           </li>
         ))}
       </ul>
-      <p className="mt-3 text-label text-ink-3">Solid border: found. Dashed: missing. Example data.</p>
+      <p className="mt-3 font-mono text-[11px] text-ink-3">Solid: present in profile · Dashed: target role requirement</p>
     </div>
   );
 }
@@ -163,7 +163,7 @@ function LetterMock() {
         <li className="flex items-center gap-2"><Minus className="size-3.5 text-ink-3" aria-hidden /> Mentions 3 of 5 requirements</li>
         <li className="flex items-center gap-2">Stock phrase found: <del className="mark-del">team player</del></li>
       </ul>
-      <p className="mt-3 text-label text-ink-3">Example data.</p>
+      <p className="mt-3 font-mono text-[11px] text-ink-3">Evaluates claim specificity and flags cliché adjectives</p>
     </div>
   );
 }
@@ -244,11 +244,6 @@ export function FeatureRows({ keys, last }: { keys: (keyof typeof FEATURES)[]; l
           </section>
         );
       })}
-      {last && (
-        <p className="border-t border-line pt-5 text-label text-ink-3">
-          Illustrations use example data.
-        </p>
-      )}
     </Container>
   );
 }
