@@ -43,7 +43,22 @@ export function parseContactBlock(headerLines: ResumeLine[]): {
       }
     }
 
-    const isPureContactLine = emailMatch || phoneMatch || urlMatches;
+    // Capture standard professional platform labels in pipe-separated contact lines (e.g. "LinkedIn | GitHub")
+    if (line.text.includes("|") || line.text.includes("•") || line.text.includes("·")) {
+      const parts = line.text.split(/\s*[|•·]\s*/);
+      for (const part of parts) {
+        const p = part.trim();
+        if (/^linkedin$/i.test(p) && !links.some((l) => /linkedin/i.test(l.label))) {
+          links.push({ label: "LinkedIn", url: "https://linkedin.com" });
+        } else if (/^github$/i.test(p) && !links.some((l) => /github/i.test(l.label))) {
+          links.push({ label: "GitHub", url: "https://github.com" });
+        } else if (/^(portfolio|website|blog)$/i.test(p) && !links.some((l) => new RegExp(p, "i").test(l.label))) {
+          links.push({ label: p, url: "" });
+        }
+      }
+    }
+
+    const isPureContactLine = emailMatch || phoneMatch || urlMatches || /linkedin|github/i.test(line.text);
     if (!isPureContactLine) candidateNameLines.push(line);
   }
 

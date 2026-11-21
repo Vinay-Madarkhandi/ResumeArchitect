@@ -21,14 +21,14 @@ export function looksLikeDateBoundary(text: string): boolean {
   return DATE_RANGE_RE.test(text) || MONTH_YEAR_ANYWHERE_RE.test(text);
 }
 
-export const BULLET_PREFIX_RE = /^[•\-\*▪◦‣·○]\s*/;
+export const BULLET_PREFIX_RE = /^[•\-\*▪◦‣·○●◆■\u2022\u25cf\u25aa\u25ab\u25b8\u2043\u2219]\s*/;
 
 export function stripBulletPrefix(line: string): string {
   return line.replace(BULLET_PREFIX_RE, "").trim();
 }
 
 export function looksLikeBullet(line: string): boolean {
-  return BULLET_PREFIX_RE.test(line);
+  return BULLET_PREFIX_RE.test(line.trim());
 }
 
 /**
@@ -71,7 +71,7 @@ export const SECTION_HEADER_KEYWORDS: Record<
   "summary" | "experience" | "education" | "skills" | "projects" | "certifications",
   string[]
 > = {
-  summary: ["summary", "professional summary", "objective", "profile", "about", "about me", "career objective"],
+  summary: ["summary", "professional summary", "executive summary", "profile", "about", "about me", "career objective"],
   experience: [
     "experience",
     "work experience",
@@ -83,8 +83,8 @@ export const SECTION_HEADER_KEYWORDS: Record<
     "relevant experience",
   ],
   education: ["education", "academic background", "education & training", "education and training"],
-  skills: ["skills", "technical skills", "core competencies", "skills & tools", "competencies", "technologies"],
-  projects: ["projects", "personal projects", "academic projects", "key projects", "selected projects"],
+  skills: ["skills", "technical skills", "core competencies", "skills & tools", "competencies", "technologies", "key skills", "areas of expertise"],
+  projects: ["projects", "personal projects", "academic projects", "key projects", "selected projects", "technical projects"],
   certifications: [
     "certifications",
     "certificates",
@@ -92,20 +92,25 @@ export const SECTION_HEADER_KEYWORDS: Record<
     "certifications & licenses",
     "licenses",
     "licenses and certifications",
+    "certifications & awards",
   ],
 };
 
 export type SectionKind = keyof typeof SECTION_HEADER_KEYWORDS;
 
 export function matchSectionHeader(line: string): SectionKind | null {
-  const normalized = line
+  const trimmed = line.trim();
+  if (!trimmed || looksLikeBullet(trimmed)) return null;
+  // Section headers in resumes start with an uppercase letter and are concise headings
+  if (!/^[A-Z]/.test(trimmed)) return null;
+  const normalized = trimmed
     .toLowerCase()
-    .trim()
-    .replace(/:$/, "")
-    .replace(/\s+/g, " ");
-  if (normalized.length > 45) return null;
+    .replace(/[:\-–—]+$/, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (normalized.length > 40) return null;
   for (const [kind, keywords] of Object.entries(SECTION_HEADER_KEYWORDS) as [SectionKind, string[]][]) {
-    if (keywords.some((k) => normalized === k || normalized.startsWith(k + " "))) {
+    if (keywords.some((k) => normalized === k)) {
       return kind;
     }
   }

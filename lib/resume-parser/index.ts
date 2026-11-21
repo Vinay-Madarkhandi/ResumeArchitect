@@ -11,6 +11,7 @@ import { ResumeContentSchema, type ResumeContent } from "@/lib/schemas/resume";
 export interface ParseResumeResult {
   content: ResumeContent;
   lowConfidenceFields: string[];
+  sectionTitles?: Record<string, string>;
 }
 
 export class ResumeParseError extends Error {
@@ -43,6 +44,13 @@ export async function parseResumeFile(fileBuffer: ArrayBuffer): Promise<ParseRes
 
   const segments = splitIntoSegments(lines);
   const headerSegment = segments.find((s) => s.kind === "header");
+
+  const sectionTitles: Record<string, string> = {};
+  for (const seg of segments) {
+    if (seg.kind !== "header" && seg.kind !== "unknown" && seg.headerLine?.text) {
+      sectionTitles[seg.kind] = seg.headerLine.text.trim();
+    }
+  }
 
   const { personalInfo, lowConfidenceFields: contactLowConfidence } = parseContactBlock(
     headerSegment?.lines ?? [],
@@ -95,5 +103,5 @@ export async function parseResumeFile(fileBuffer: ArrayBuffer): Promise<ParseRes
     throw new ResumeParseError("Parsed resume data did not match the expected shape.", result.error);
   }
 
-  return { content: result.data, lowConfidenceFields };
+  return { content: result.data, lowConfidenceFields, sectionTitles };
 }

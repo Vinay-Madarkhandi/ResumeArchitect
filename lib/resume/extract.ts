@@ -31,6 +31,9 @@ export async function extractPdf(file: Uint8Array): Promise<ExtractedResume> {
   const proxyBytes = new Uint8Array(Buffer.from(file.buffer, file.byteOffset, file.byteLength));
   const parseBytes = new Uint8Array(Buffer.from(file.buffer, file.byteOffset, file.byteLength));
   const { text } = await extractText(await getDocumentProxy(proxyBytes), { mergePages: true });
-  const parsed = await parseResumeFile(parseBytes.buffer).then(({ content }) => resumeContentToDoc(content), () => null);
+  const parsed = await parseResumeFile(parseBytes.buffer).then(
+    ({ content, sectionTitles }) => resumeContentToDoc(content, sectionTitles),
+    () => null,
+  );
   return { source: "text", text, parsed };
 }

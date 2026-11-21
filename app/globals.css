@@ -264,6 +264,7 @@ a {
 
 /* Ensure all header contact lines before the first section are aligned matching the template */
 .paper-flow h1,
+.paper-flow h1 + p,
 .paper-flow h1 ~ p:not(h2 ~ p) {
   text-align: var(--paper-header-align);
 }

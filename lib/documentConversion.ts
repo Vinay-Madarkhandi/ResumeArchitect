@@ -36,7 +36,10 @@ export function resolveDocument(content: unknown): DocumentContent | null {
  * freeform; this function is only ever the starting point, never re-run
  * against a resume the user has already edited as a document.
  */
-export function resumeContentToDoc(content: ResumeContent): DocumentContent {
+export function resumeContentToDoc(
+  content: ResumeContent,
+  sectionTitles?: Record<string, string>,
+): DocumentContent {
   const blocks: BlockNode[] = [];
 
   blocks.push(heading(1, [text(content.personalInfo.fullName || "Untitled")]));
@@ -46,22 +49,22 @@ export function resumeContentToDoc(content: ResumeContent): DocumentContent {
   }
 
   const contactParts = [
-    content.personalInfo.location,
-    content.personalInfo.email,
     content.personalInfo.phone,
+    content.personalInfo.email,
+    content.personalInfo.location,
     ...content.personalInfo.links.map((l) => l.label || l.url),
   ].filter((part): part is string => Boolean(part && part.trim()));
   if (contactParts.length > 0) {
-    blocks.push(paragraph([text(contactParts.join("   •   "))]));
+    blocks.push(paragraph([text(contactParts.join(" | "))]));
   }
 
   if (content.summary && content.summary.trim()) {
-    blocks.push(heading(2, [text("Summary")]));
+    blocks.push(heading(2, [text(sectionTitles?.summary || "Professional Summary")]));
     blocks.push(paragraph([text(content.summary)]));
   }
 
   if (content.experience.length > 0) {
-    blocks.push(heading(2, [text("Experience")]));
+    blocks.push(heading(2, [text(sectionTitles?.experience || "Work Experience")]));
     for (const entry of content.experience) {
       const titleLine = [entry.role, entry.company].filter(Boolean).join(" — ");
       blocks.push(heading(3, [text(titleLine || entry.company || entry.role || "Untitled role")]));
@@ -69,7 +72,7 @@ export function resumeContentToDoc(content: ResumeContent): DocumentContent {
       const dateRange = formatDateRange(entry.startDate, entry.endDate, entry.isCurrent);
       const metaParts = [entry.location, dateRange].filter((p): p is string => Boolean(p));
       if (metaParts.length > 0) {
-        blocks.push(paragraph([text(metaParts.join("   •   "), ["italic"])]));
+        blocks.push(paragraph([text(metaParts.join(" • "), ["italic"])]));
       }
 
       if (entry.bullets.length > 0) {
@@ -79,16 +82,21 @@ export function resumeContentToDoc(content: ResumeContent): DocumentContent {
   }
 
   if (content.projects.length > 0) {
-    blocks.push(heading(2, [text("Projects")]));
+    blocks.push(heading(2, [text(sectionTitles?.projects || "Projects")]));
     for (const entry of content.projects) {
       const nameNode = entry.url ? text(entry.name, ["link"], entry.url) : text(entry.name);
       blocks.push(heading(3, [nameNode]));
 
-      const metaParts = [entry.description, entry.technologies.length > 0 ? entry.technologies.join(", ") : undefined].filter(
-        (p): p is string => Boolean(p),
-      );
-      if (metaParts.length > 0) {
-        blocks.push(paragraph([text(metaParts.join(" — "), ["italic"])]));
+      const techStr = entry.technologies.length > 0 ? entry.technologies.join(", ") : undefined;
+      let subtitle = "";
+      if (techStr && entry.description && entry.description.includes(techStr)) {
+        subtitle = entry.description;
+      } else {
+        const parts = [entry.description, techStr].filter((p): p is string => Boolean(p && p.trim()));
+        subtitle = Array.from(new Set(parts)).join(" — ");
+      }
+      if (subtitle) {
+        blocks.push(paragraph([text(subtitle, ["italic"])]));
       }
 
       if (entry.bullets.length > 0) {
@@ -98,7 +106,7 @@ export function resumeContentToDoc(content: ResumeContent): DocumentContent {
   }
 
   if (content.education.length > 0) {
-    blocks.push(heading(2, [text("Education")]));
+    blocks.push(heading(2, [text(sectionTitles?.education || "Education")]));
     for (const entry of content.education) {
       blocks.push(heading(3, [text(entry.institution || "Untitled institution")]));
 
@@ -107,7 +115,7 @@ export function resumeContentToDoc(content: ResumeContent): DocumentContent {
       const gpaLine = entry.gpa ? `GPA: ${entry.gpa}` : undefined;
       const metaParts = [degreeLine, dateRange, gpaLine].filter((p): p is string => Boolean(p));
       if (metaParts.length > 0) {
-        blocks.push(paragraph([text(metaParts.join("   •   "), ["italic"])]));
+        blocks.push(paragraph([text(metaParts.join(" • "), ["italic"])]));
       }
 
       if (entry.honors.length > 0) {
@@ -117,7 +125,7 @@ export function resumeContentToDoc(content: ResumeContent): DocumentContent {
   }
 
   if (content.skills.length > 0) {
-    blocks.push(heading(2, [text("Skills")]));
+    blocks.push(heading(2, [text(sectionTitles?.skills || "Technical Skills")]));
     for (const group of content.skills) {
       if (group.items.length === 0) continue;
       blocks.push(paragraph([text(`${group.category}: `, ["bold"]), text(group.items.join(", "))]));
@@ -125,7 +133,7 @@ export function resumeContentToDoc(content: ResumeContent): DocumentContent {
   }
 
   if (content.certifications.length > 0) {
-    blocks.push(heading(2, [text("Certifications")]));
+    blocks.push(heading(2, [text(sectionTitles?.certifications || "Certifications")]));
     for (const cert of content.certifications) {
       const metaParts = [cert.issuer, cert.date].filter((p): p is string => Boolean(p));
       const label = metaParts.length > 0 ? `${cert.name} — ${metaParts.join(", ")}` : cert.name;

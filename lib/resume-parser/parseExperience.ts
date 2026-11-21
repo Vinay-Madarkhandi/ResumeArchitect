@@ -60,12 +60,9 @@ function groupIntoRawEntries(lines: ResumeLine[]): RawEntry[] {
   return entries;
 }
 
-/**
- * Splits a joined header ("Senior Engineer | Acme Corp") into role/company.
- * Tries common separators in order; falls back to putting the whole text in
- * `role` and flagging `company` for review rather than guessing which half
- * is which.
- */
+const WORKPLACE_RE = /\b(on-site|remote|hybrid)\b/i;
+const CITY_STATE_RE = /\b[A-Z][a-zA-Z\s]+,\s*([A-Z]{2}\b|USA|UK|India|Canada|Germany)\b/i;
+
 function splitRoleAndCompany(headerText: string): { role: string; company: string; confident: boolean } {
   for (const sep of [" | ", " · ", " at ", ", "]) {
     const idx = headerText.indexOf(sep);
@@ -80,6 +77,105 @@ function splitRoleAndCompany(headerText: string): { role: string; company: strin
   return { role: headerText.trim(), company: "", confident: false };
 }
 
+function parseExperienceHeader(rawLines: ResumeLine[]): {
+  role: string;
+  company: string;
+  location?: string;
+  startDate?: string;
+  endDate: string | null;
+  isCurrent: boolean;
+  confident: boolean;
+} {
+  const lineTexts = rawLines.map((l) => l.text.trim()).filter(Boolean);
+  if (lineTexts.length === 0) {
+    return { role: "Untitled role", company: "", endDate: null, isCurrent: false, confident: false };
+  }
+
+  let startDate: string | undefined;
+  let endDate: string | null = null;
+  let isCurrent = false;
+  let dateText = "";
+
+  for (const text of lineTexts) {
+    const dateMatch = text.match(DATE_RANGE_RE);
+    if (dateMatch && !startDate) {
+      dateText = dateMatch[0];
+      startDate = dateMatch[1];
+      const endToken = dateMatch[2];
+      isCurrent = /present|current/i.test(endToken ?? "");
+      endDate = isCurrent ? null : (endToken ?? null);
+      break;
+    }
+  }
+
+  if (lineTexts.length === 1) {
+    const withoutDate = dateText ? lineTexts[0].replace(dateText, "").trim() : lineTexts[0];
+    const cleaned = withoutDate.replace(/[|,\-–—]+$/, "").replace(/^[|,\-–—]+/, "").trim();
+    const { role, company, confident } = splitRoleAndCompany(cleaned);
+    return { role: role || "Untitled role", company, startDate, endDate, isCurrent, confident };
+  }
+
+  let role = "";
+  let company = "";
+  let location: string | undefined;
+
+  for (const text of lineTexts) {
+    if (dateText && text.includes(dateText)) {
+      const remainder = text.replace(dateText, "").replace(/[|,\-–—]+$/, "").replace(/^[|,\-–—]+/, "").trim();
+      if (remainder) {
+        const split = splitRoleAndCompany(remainder);
+        if (split.confident && split.company) {
+          role = split.role;
+          company = split.company;
+        } else {
+          role = remainder;
+        }
+      }
+    }
+  }
+
+  for (const text of lineTexts) {
+    const clean = (dateText ? text.replace(dateText, "") : text).replace(/[|,\-–—]+$/, "").replace(/^[|,\-–—]+/, "").trim();
+    if (!clean || clean === role) continue;
+
+    const locMatch = clean.match(WORKPLACE_RE) || clean.match(CITY_STATE_RE);
+    if (locMatch && !location) {
+      location = locMatch[0].trim();
+      const rest = clean.replace(locMatch[0], "").replace(/[|,\-–—]+$/, "").replace(/^[|,\-–—]+/, "").trim();
+      if (rest && !company) {
+        company = rest;
+        continue;
+      }
+    }
+
+    if (!company) {
+      if (/\b(inc|corp|ltd|limited|llc|technologies|solutions|software|labs|group|studio|university|company)\b/i.test(clean) || !clean.includes(",")) {
+        company = clean;
+      }
+    }
+  }
+
+  if (!company) {
+    for (const text of lineTexts) {
+      const clean = (dateText ? text.replace(dateText, "") : text).replace(/[|,\-–—]+$/, "").replace(/^[|,\-–—]+/, "").trim();
+      if (clean && clean !== role) {
+        company = clean;
+        break;
+      }
+    }
+  }
+
+  return {
+    role: role || "Untitled role",
+    company,
+    location,
+    startDate,
+    endDate,
+    isCurrent,
+    confident: Boolean(role && company),
+  };
+}
+
 export function parseExperienceSection(lines: ResumeLine[]): {
   experience: ExperienceEntry[];
   lowConfidenceFields: string[];
@@ -89,30 +185,23 @@ export function parseExperienceSection(lines: ResumeLine[]): {
   const experience: ExperienceEntry[] = [];
 
   rawEntries.forEach((raw, index) => {
-    const headerText = raw.headerLines.map((l) => l.text).join(" ").replace(/\s+/g, " ").trim();
-    const dateMatch = headerText.match(DATE_RANGE_RE);
-    const withoutDate = dateMatch ? headerText.replace(dateMatch[0], "").trim() : headerText;
-    const cleanedHeader = withoutDate.replace(/[|,\-–—]+$/, "").replace(/^[|,\-–—]+/, "").trim();
+    const parsed = parseExperienceHeader(raw.headerLines);
 
-    const { role, company, confident } = splitRoleAndCompany(cleanedHeader);
-    if (!confident) lowConfidenceFields.push(`experience[${index}].company`);
-    if (!role) lowConfidenceFields.push(`experience[${index}].role`);
-
-    const startDate = dateMatch?.[1];
-    const endToken = dateMatch?.[2];
-    const isCurrent = /present|current/i.test(endToken ?? "");
-    if (!dateMatch) lowConfidenceFields.push(`experience[${index}].startDate`);
+    if (!parsed.confident) lowConfidenceFields.push(`experience[${index}].company`);
+    if (!parsed.role || parsed.role === "Untitled role") lowConfidenceFields.push(`experience[${index}].role`);
+    if (!parsed.startDate) lowConfidenceFields.push(`experience[${index}].startDate`);
 
     const bullets = raw.bulletLines.map((l) => ({ id: randomUUID(), text: stripBulletPrefix(l.text) }));
     if (bullets.length === 0) lowConfidenceFields.push(`experience[${index}].bullets`);
 
     experience.push({
       id: randomUUID(),
-      company,
-      role: role || "Untitled role",
-      startDate,
-      endDate: isCurrent ? null : (endToken ?? null),
-      isCurrent,
+      company: parsed.company,
+      role: parsed.role,
+      location: parsed.location,
+      startDate: parsed.startDate,
+      endDate: parsed.endDate,
+      isCurrent: parsed.isCurrent,
       bullets,
     });
   });

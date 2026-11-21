@@ -14,8 +14,8 @@ export type TemplateId = (typeof TEMPLATE_IDS)[number];
 
 export const RESUME_PAGE = { width: 595.28, height: 841.89 };
 export const RESUME_SPACING = {
-  nameAfter: 6, nameLine: 1.15, sectionAfter: 5, sectionRulePad: 3, sectionRule: 0.75,
-  entryBefore: 6, entryAfter: 1.5, paragraphAfter: 3.5, bulletAfter: 2, bulletIndent: 13,
+  nameAfter: 4, nameLine: 1.15, sectionAfter: 4, sectionRulePad: 2.5, sectionRule: 0.75,
+  entryBefore: 5, entryAfter: 1.2, paragraphAfter: 3, bulletAfter: 1.8, bulletIndent: 13,
 };
 
 /** The two embedded faces: Source Serif 4 and Hanken Grotesk. */
@@ -42,15 +42,15 @@ export const TEMPLATES: Record<TemplateId, Template> = {
   classic: {
     id: "classic",
     label: "Classic",
-    description: "Serif body, ruled section headings. Reads like a printed CV.",
+    description: "Centered serif header, ruled section headings. Reads like a printed CV.",
     body: "serif",
-    heading: "sans",
-    size: { name: 22, section: 10.5, entry: 10, body: 10 },
-    space: { marginX: 46, marginY: 42, section: 13, line: 1.42 },
-    color: { ink: "#1d1b18", muted: "#5b5750", accent: "#1d1b18", rule: "#c9c3b8" },
+    heading: "serif",
+    size: { name: 24, section: 11, entry: 10, body: 9.75 },
+    space: { marginX: 40, marginY: 34, section: 10, line: 1.34 },
+    color: { ink: "#111111", muted: "#4a4a4a", accent: "#111111", rule: "#2b2b2b" },
     sectionStyle: "rule",
-    header: "left",
-    sectionCase: "upper",
+    header: "center",
+    sectionCase: "asis",
   },
   modern: {
     id: "modern",

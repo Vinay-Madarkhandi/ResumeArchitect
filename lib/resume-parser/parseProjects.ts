@@ -79,19 +79,28 @@ export function parseProjectsSection(lines: ResumeLine[]): {
     .filter((p) => p.nameLine || p.bulletLines.length > 0)
     .map((p, index) => {
       const nameText = p.nameLine?.text ?? "Untitled project";
-      const withoutDate = nameText.replace(DATE_RANGE_RE, "").trim();
+      const withoutDate = nameText
+        .replace(DATE_RANGE_RE, "")
+        .replace(/(?:(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\.?\s+\d{4}|\b\d{4}\b)$/i, "")
+        .trim();
       const name = withoutDate.replace(/[|,\-–—]+$/, "").trim() || "Untitled project";
       if (!p.nameLine) lowConfidenceFields.push(`projects[${index}].name`);
 
       const bullets = p.bulletLines.map((l) => ({ id: randomUUID(), text: stripBulletPrefix(l.text) }));
       const description = p.descriptionLines.map((l) => l.text).join(" ").trim() || undefined;
 
+      // If technologies weren't explicitly prefixed with "Technologies:", but description is a comma list of tools
+      let technologies = p.technologies;
+      if (technologies.length === 0 && description && description.includes(",")) {
+        technologies = description.split(/[,;|]/).map((s) => s.trim()).filter(Boolean);
+      }
+
       return {
         id: randomUUID(),
         name,
         description,
         url: p.url,
-        technologies: p.technologies,
+        technologies,
         bullets,
       };
     });
