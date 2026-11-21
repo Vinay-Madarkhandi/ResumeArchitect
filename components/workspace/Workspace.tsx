@@ -204,10 +204,9 @@ export function Workspace({ resume, session, jobText, jobFacts, asOf, initialVie
   );
 
   function keepAll() {
-    const ready = entries.filter(({ hunk }) => !hunk.after.some((line) => hasUnverifiedClaim(line.text)));
-    persistReviewed(new Set([...reviewed, ...ready.map((e) => e.hunk.id)]));
+    persistReviewed(new Set([...reviewed, ...entries.map((e) => e.hunk.id)]));
     setFocusedId(null);
-    toast(ready.length === entries.length ? "All changes kept." : "Verification placeholders still need review.", "info");
+    toast("All changes kept.", "info");
   }
 
   function revertAll() {

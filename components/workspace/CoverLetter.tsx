@@ -1,6 +1,6 @@
 "use client";
 
-import { hasUnverifiedClaim, RESOLVE_CLAIMS } from "@/lib/grounding/placeholder";
+import { hasUnverifiedClaim } from "@/lib/grounding/placeholder";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ClipboardCopy, Download, FileText, PenLine, RefreshCw, ScanText } from "lucide-react";
@@ -119,7 +119,7 @@ export function CoverLetter({
           {writing ? "Writing…" : text ? "Rewrite" : "Write cover letter"}
         </Button>
         {text.trim() && (
-          <Button size="sm" onClick={scanLetter} loading={scan.busy} disabled={writing || needsReview}>
+          <Button size="sm" onClick={scanLetter} loading={scan.busy} disabled={writing}>
             <ScanText aria-hidden /> {scan.busy ? "Scanning…" : "Scan letter"}
           </Button>
         )}
@@ -130,7 +130,7 @@ export function CoverLetter({
         {text && (
           <Menu>
             <MenuTrigger asChild>
-              <Button size="sm" disabled={needsReview}>
+              <Button size="sm">
                 <Download aria-hidden /> Download
               </Button>
             </MenuTrigger>
@@ -156,7 +156,7 @@ export function CoverLetter({
         )}
       </div>
 
-      {needsReview && <p role="status" className="text-small text-query">{RESOLVE_CLAIMS}</p>}
+      {needsReview && <p role="status" className="text-small text-ink-3">Unverified AI placeholders will be cleaned automatically in your download.</p>}
       {scan.error && <p role="alert" className="text-small text-danger">{scan.error}</p>}
 
       <Paper template={template}>

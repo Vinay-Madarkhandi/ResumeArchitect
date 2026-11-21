@@ -147,7 +147,7 @@ export function ChangeList({
                   </p>
                 ))}
                 <div className="flex gap-2">
-                  {!isReviewed && !needsReview && (
+                  {!isReviewed && (
                     <Button size="sm" variant="primary" onClick={() => onKeep(hunk.id)}>
                       <Check aria-hidden /> Keep
                     </Button>

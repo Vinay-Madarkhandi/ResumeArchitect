@@ -1,5 +1,5 @@
 import { readJson } from "@/lib/server/request-body";
-import { hasUnverifiedClaim, RESOLVE_CLAIMS } from "@/lib/grounding/placeholder";
+import { stripClaimsFromDocument, stripUnverifiedClaims } from "@/lib/grounding/placeholder";
 import { documentText } from "@/lib/resume/units";
 import { getResume } from "@/lib/data/resumes";
 import { getObject } from "@/lib/storage";
@@ -89,10 +89,10 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   if (!resume) return NextResponse.json({ error: "Resume not found." }, { status: 404 });
   const doc = resolveDocument(resume.content);
   if (!doc) return NextResponse.json({ error: "This resume couldn't be read." }, { status: 422 });
-  if (hasUnverifiedClaim(documentText(doc))) return NextResponse.json({ error: RESOLVE_CLAIMS }, { status: 422 });
+  const cleanedDoc = stripClaimsFromDocument(doc);
   try {
-    if (format === "design") return await renderDesign(resume, doc);
-    return await render({ kind: "resume", doc }, format, resume.template, resume.title);
+    if (format === "design") return await renderDesign(resume, cleanedDoc);
+    return await render({ kind: "resume", doc: cleanedDoc }, format, resume.template, resume.title);
   } catch {
     return NextResponse.json({ error: "Couldn't build the file. Try again." }, { status: 500 });
   }
@@ -120,14 +120,14 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       if (format === "design") return NextResponse.json({ error: "Invalid export request." }, { status: 400 });
       const text = typeof body.text === "string" ? body.text.slice(0, 20_000) : "";
       if (!text.trim()) return NextResponse.json({ error: "The letter is empty." }, { status: 400 });
-      if (hasUnverifiedClaim(text)) return NextResponse.json({ error: RESOLVE_CLAIMS }, { status: 422 });
-      return await render({ kind: "letter", text }, format, template, `${resume.title} — Cover letter`);
+      const cleanedText = stripUnverifiedClaims(text);
+      return await render({ kind: "letter", text: cleanedText }, format, template, `${resume.title} — Cover letter`);
     }
     const parsed = DocumentContentSchema.safeParse(body?.content);
     if (!parsed.success) return NextResponse.json({ error: "Invalid export request." }, { status: 400 });
-    if (hasUnverifiedClaim(documentText(parsed.data))) return NextResponse.json({ error: RESOLVE_CLAIMS }, { status: 422 });
-    if (format === "design") return await renderDesign(resume, parsed.data);
-    return await render({ kind: "resume", doc: parsed.data }, format, template, resume.title);
+    const cleanedDoc = stripClaimsFromDocument(parsed.data);
+    if (format === "design") return await renderDesign(resume, cleanedDoc);
+    return await render({ kind: "resume", doc: cleanedDoc }, format, template, resume.title);
   } catch {
     return NextResponse.json({ error: "Couldn't build the file. Try again." }, { status: 500 });
   }

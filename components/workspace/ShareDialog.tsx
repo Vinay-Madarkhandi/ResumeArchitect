@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/Dialog";
 import { Field, Input } from "@/components/ui/Field";
 import type { TemplateId } from "@/lib/resume/templates";
 import type { DocumentContent } from "@/lib/schemas/document";
-import { hasUnverifiedClaim, RESOLVE_CLAIMS } from "@/lib/grounding/placeholder";
+import { hasUnverifiedClaim } from "@/lib/grounding/placeholder";
 import { documentText } from "@/lib/resume/units";
 import { contactBlockOptions, sharedDocument } from "@/lib/sharing/document";
 
@@ -130,8 +130,8 @@ export function ShareDialog({ resumeId, doc, template }: { resumeId: string; doc
               <Field label="Link password" optional hint="Leave blank for anyone with the link. Use at least 10 characters to require a password.">
                 {(props) => <Input {...props} type="password" value={password} disabled={busy} onChange={(e) => setPassword(e.target.value)} maxLength={1024} minLength={10} autoComplete="new-password" />}
               </Field>
-              {needsReview && <p className="text-small text-query">{RESOLVE_CLAIMS}</p>}
-              <Button type="submit" variant="primary" disabled={needsReview} loading={busy} className="justify-self-start">Publish resume</Button>
+              {needsReview && <p className="text-small text-ink-3">Unverified AI placeholders will be cleaned automatically when shared.</p>}
+              <Button type="submit" variant="primary" loading={busy} className="justify-self-start">Publish resume</Button>
             </form>
           )}
           {share && path && (

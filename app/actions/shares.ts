@@ -10,8 +10,7 @@ import { getOwnedShare, getShareAccess, publishOwnedShare, unpublishOwnedShare }
 import { TEMPLATE_IDS } from "@/lib/resume/templates";
 import { DocumentContentSchema } from "@/lib/schemas/document";
 import { isShareSlug, shareCookieName, shareGrant } from "@/lib/sharing/access";
-import { hasUnverifiedClaim, RESOLVE_CLAIMS } from "@/lib/grounding/placeholder";
-import { documentText } from "@/lib/resume/units";
+import { stripClaimsFromDocument } from "@/lib/grounding/placeholder";
 import { sharedDocument } from "@/lib/sharing/document";
 
 const publishInput = z.object({
@@ -38,13 +37,13 @@ export async function publishResumeShare(resumeId: string, input: unknown) {
   const parsed = publishInput.safeParse(input);
   if (!parsed.success) return { error: "This resume couldn't be published. Check the sharing settings." };
   const { content, template, hideContact, contactBlocks, password } = parsed.data;
-  if (hasUnverifiedClaim(documentText(content))) return { error: RESOLVE_CLAIMS };
+  const cleanedContent = stripClaimsFromDocument(content);
   const error = password ? passwordError(password) : null;
   if (error) return { error };
 
   try {
     const share = await publishOwnedShare(user.id, resumeId, {
-      content: sharedDocument(content, hideContact, contactBlocks),
+      content: sharedDocument(cleanedContent, hideContact, contactBlocks),
       template,
       password_hash: password ? await hashPassword(password) : null,
     });
