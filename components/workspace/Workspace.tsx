@@ -378,6 +378,7 @@ export function Workspace({ resume, session, jobText, jobFacts, asOf, initialVie
                 onZoomChange={setZoom}
                 template={template}
                 onTemplateChange={changeTemplate}
+                onOpenGallery={() => setChoosingTemplate(true)}
               />
             </div>
           )}

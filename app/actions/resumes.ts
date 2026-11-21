@@ -29,6 +29,7 @@ export async function duplicateResume(resumeId: string): Promise<ActionResult> {
     kind: "tailored",
     title: `${original.title} (Copy)`,
     content: original.content,
+    template: original.template,
     source_resume_id: original.kind === "master" ? original.id : original.source_resume_id,
     source_resume_title_snapshot: original.kind === "master" ? original.title : original.source_resume_title_snapshot,
     job_description_id: original.job_description_id,

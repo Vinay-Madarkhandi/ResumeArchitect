@@ -49,10 +49,13 @@ export async function POST(request: Request) {
 
   try {
     let result;
+    let detectedTemplate: import("@/lib/resume/templates").TemplateId = "classic";
     if (file instanceof File && file.size > 0) {
-      const { kind, resume } = await readResumeUpload(file);
+      const { kind, facts, resume } = await readResumeUpload(file);
       storagePath = originalResumePath(user.id, resumeId, kind === "text" ? "txt" : kind);
       fileName = file.name;
+      const { detectResumeTemplate } = await import("@/lib/resume/detectTemplate");
+      detectedTemplate = detectResumeTemplate(facts);
       try {
         await putObject(user.id, RESUME_UPLOADS_BUCKET, storagePath, Buffer.from(await file.arrayBuffer()), file.type || "application/octet-stream");
       } catch {
@@ -78,12 +81,18 @@ export async function POST(request: Request) {
       original_file_storage_path: storagePath,
       original_file_name: fileName,
       design_source_path: result.keepsDesign ? storagePath : null,
+      template: detectedTemplate,
     });
     const referenced = await referencedObjects(user.id, RESUME_UPLOADS_BUCKET, stale).catch(() => new Set(stale));
     await deleteObjects(user.id, RESUME_UPLOADS_BUCKET, stale.filter((path) => !referenced.has(path)))
       .catch(() => logger.warn({ userId: user.id }, "Could not remove stale uploads"));
 
-    return NextResponse.json({ resumeId, usedAi: result.usedAi, keepsDesign: result.keepsDesign && !!storagePath });
+    return NextResponse.json({
+      resumeId,
+      usedAi: result.usedAi,
+      keepsDesign: result.keepsDesign && !!storagePath,
+      template: detectedTemplate,
+    });
   } catch (error) {
     if (storagePath) await deleteObjects(user.id, RESUME_UPLOADS_BUCKET, [storagePath]).catch(() => {});
     if (error instanceof ParseBusyError) {

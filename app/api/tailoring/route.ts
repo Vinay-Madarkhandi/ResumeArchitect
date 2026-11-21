@@ -130,6 +130,7 @@ export async function POST(request: Request) {
         sourceTitle: source.title,
         designSourcePath: source.design_source_path,
         jobDescriptionId,
+        template: source.template,
       }),
     },
     { source: { title: source.title, content: sourceDoc }, jobDescription: posting.raw_text, jobFacts: jobFacts.data, jobTitle, company },

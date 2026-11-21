@@ -117,8 +117,8 @@
   --font-sans: var(--font-schibsted), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
   --font-display: var(--font-bodoni), "Bodoni 72", Didot, serif;
-  --font-paper-serif: var(--font-source-serif), Georgia, serif;
-  --font-paper-sans: var(--font-hanken), ui-sans-serif, sans-serif;
+  --font-paper-serif: var(--font-source-serif), "Times New Roman", Times, Georgia, serif;
+  --font-paper-sans: var(--font-hanken), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, ui-sans-serif, sans-serif;
 
   /* Six-step UI scale; rank comes from weight before size. */
   --text-label: 0.75rem;
@@ -260,12 +260,14 @@ a {
   font-weight: var(--paper-head-weight);
   margin: 0 0 var(--paper-name-after);
   letter-spacing: -0.015em;
+  text-align: var(--paper-header-align);
 }
 
 /* Ensure all header contact lines before the first section are aligned matching the template */
-.paper-flow h1,
-.paper-flow h1 + p,
-.paper-flow h1 ~ p:not(h2 ~ p) {
+.paper-flow > h1,
+.paper-flow > h1 + p,
+.paper-flow > h1 + p + p,
+.paper-flow h1 + p {
   text-align: var(--paper-header-align);
 }
 

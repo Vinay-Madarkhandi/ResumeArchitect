@@ -23,6 +23,7 @@ import {
   FileText,
   Award,
   Type,
+  LayoutTemplate,
 } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { TEMPLATES, type TemplateId } from "@/lib/resume/templates";
@@ -34,6 +35,7 @@ interface FormatBarProps {
   onZoomChange?: (zoom: number) => void;
   template?: TemplateId;
   onTemplateChange?: (t: TemplateId) => void;
+  onOpenGallery?: () => void;
 }
 
 function Tool({
@@ -75,6 +77,7 @@ export function FormatBar({
   onZoomChange,
   template,
   onTemplateChange,
+  onOpenGallery,
 }: FormatBarProps) {
   if (!editor) return <div className={cn("h-10", className)} />;
   return (
@@ -85,6 +88,7 @@ export function FormatBar({
       onZoomChange={onZoomChange}
       template={template}
       onTemplateChange={onTemplateChange}
+      onOpenGallery={onOpenGallery}
     />
   );
 }
@@ -96,6 +100,7 @@ function RibbonTools({
   onZoomChange,
   template,
   onTemplateChange,
+  onOpenGallery,
 }: {
   editor: Editor;
   className?: string;
@@ -103,6 +108,7 @@ function RibbonTools({
   onZoomChange?: (zoom: number) => void;
   template?: TemplateId;
   onTemplateChange?: (t: TemplateId) => void;
+  onOpenGallery?: () => void;
 }) {
   const [sectionMenuOpen, setSectionMenuOpen] = useState(false);
   const [styleMenuOpen, setStyleMenuOpen] = useState(false);
@@ -407,18 +413,31 @@ function RibbonTools({
 
       {/* Template quick preview */}
       {template && onTemplateChange && (
-        <select
-          value={template}
-          onChange={(e) => onTemplateChange(e.target.value as TemplateId)}
-          className="h-8 rounded border border-line bg-transparent px-2 text-small font-medium text-ink hover:bg-hover focus:outline-none focus:ring-1 focus:ring-brass"
-          title="Document Typography Template"
-        >
-          {Object.values(TEMPLATES).map((t) => (
-            <option key={t.id} value={t.id} className="bg-raised text-ink">
-              {t.label} ({t.body === "serif" ? "Serif" : "Sans"})
-            </option>
-          ))}
-        </select>
+        <div className="flex items-center gap-1">
+          <select
+            value={template}
+            onChange={(e) => onTemplateChange(e.target.value as TemplateId)}
+            className="h-8 rounded border border-line bg-transparent px-2 text-small font-medium text-ink hover:bg-hover focus:outline-none focus:ring-1 focus:ring-brass cursor-pointer"
+            title="Document Typography Template"
+          >
+            {Object.values(TEMPLATES).map((t) => (
+              <option key={t.id} value={t.id} className="bg-raised text-ink">
+                {t.label} ({t.body === "serif" ? "Serif" : "Sans"})
+              </option>
+            ))}
+          </select>
+          {onOpenGallery && (
+            <button
+              type="button"
+              onClick={onOpenGallery}
+              title="Browse Visual Template Gallery"
+              className="flex h-8 items-center gap-1 rounded border border-line px-2 text-label font-medium text-ink-2 hover:bg-hover hover:text-ink transition-colors cursor-pointer"
+            >
+              <LayoutTemplate className="size-3.5 text-brass" />
+              <span className="hidden sm:inline">Gallery</span>
+            </button>
+          )}
+        </div>
       )}
 
       <span className="mx-1 h-5 w-px bg-line" aria-hidden />

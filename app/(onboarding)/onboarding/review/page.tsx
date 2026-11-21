@@ -26,6 +26,7 @@ export default async function ReviewPage({ searchParams }: PageProps<"/onboardin
       resumeId={resume.id}
       initialTitle={resume.title}
       initialContent={content}
+      initialTemplate={resume.template}
       usedAi={profile?.gemini_key_status === "valid"}
     />
   );

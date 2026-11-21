@@ -122,8 +122,12 @@ function renderBlock(node: BlockNode, key: number, s: Styles, contact = false): 
 }
 
 function isContactLine(blocks: BlockNode[], i: number): boolean {
-  const prev = blocks[i - 1];
-  return i > 0 && prev.type === "heading" && prev.attrs.level === 1 && blocks[i].type === "paragraph";
+  if (i === 0 || blocks[i].type !== "paragraph") return false;
+  for (let j = 0; j < i; j++) {
+    const b = blocks[j];
+    if (b.type === "heading" && b.attrs.level === 2) return false;
+  }
+  return true;
 }
 
 export function DocumentPdf({ doc, template, title }: { doc: DocumentContent; template: Template; title?: string }) {

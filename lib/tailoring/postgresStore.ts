@@ -2,9 +2,17 @@ import { createResume, removeResume } from "@/lib/data/resumes";
 import { createTailoringSession, updateTailoringSession } from "@/lib/data/tailoring";
 import type { PipelineStore } from "./pipeline";
 
+import type { TemplateId } from "@/lib/resume/templates";
+
 export function postgresPipelineStore(
   userId: string,
-  ctx: { sourceResumeId: string; sourceTitle: string; designSourcePath: string | null; jobDescriptionId: string },
+  ctx: {
+    sourceResumeId: string;
+    sourceTitle: string;
+    designSourcePath: string | null;
+    jobDescriptionId: string;
+    template?: TemplateId;
+  },
 ): PipelineStore {
   const source = {
     source_resume_id: ctx.sourceResumeId,
@@ -19,6 +27,7 @@ export function postgresPipelineStore(
     createTailoredResume: ({ sessionId, title, content, jobTitle, company }) => createResume(userId, {
       ...source, kind: "tailored", title, content, job_title_snapshot: jobTitle, job_company_snapshot: company,
       tailoring_session_id: sessionId, design_source_path: ctx.designSourcePath,
+      template: ctx.template ?? "classic",
     }),
     async deleteResume(id) {
       await removeResume(userId, id);

@@ -71,7 +71,13 @@ export async function removeResume(userId: string, resumeId: string) {
   return row;
 }
 
-export async function promoteMaster(userId: string, resumeId: string, content: DocumentContent, title: string) {
+export async function promoteMaster(
+  userId: string,
+  resumeId: string,
+  content: DocumentContent,
+  title: string,
+  template?: import("@/lib/resume/templates").TemplateId,
+) {
   if (!uuid.safeParse(resumeId).success) return false;
   return db.transaction(async (tx) => {
     await tx.select({ id: profiles.id }).from(profiles).where(eq(profiles.id, userId)).for("update");
@@ -81,7 +87,13 @@ export async function promoteMaster(userId: string, resumeId: string, content: D
     await tx.update(resumes).set({ is_default: false, status: "archived" }).where(and(
       eq(resumes.user_id, userId), eq(resumes.kind, "master"), eq(resumes.is_default, true), ne(resumes.id, resumeId),
     ));
-    await tx.update(resumes).set({ content, title, is_default: true, status: "draft" }).where(owned(userId, resumeId));
+    await tx.update(resumes).set({
+      content,
+      title,
+      is_default: true,
+      status: "draft",
+      ...(template ? { template } : {}),
+    }).where(owned(userId, resumeId));
     await tx.update(profiles).set({ default_resume_id: resumeId, onboarding_completed_at: new Date().toISOString() })
       .where(eq(profiles.id, userId));
     return true;
