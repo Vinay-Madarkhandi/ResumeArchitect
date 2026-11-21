@@ -327,8 +327,9 @@ a {
   text-decoration-color: var(--paper-rule);
 }
 
-.paper-flow strong {
-  font-weight: var(--paper-body-weight);
+.paper-flow strong,
+.paper-flow b {
+  font-weight: 700;
 }
 
 .paper .ProseMirror {

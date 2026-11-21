@@ -46,8 +46,8 @@ export const TEMPLATES: Record<TemplateId, Template> = {
     body: "serif",
     heading: "serif",
     size: { name: 24, section: 11, entry: 10, body: 9.75 },
-    space: { marginX: 40, marginY: 34, section: 10, line: 1.34 },
-    color: { ink: "#111111", muted: "#4a4a4a", accent: "#111111", rule: "#2b2b2b" },
+    space: { marginX: 36, marginY: 30, section: 8, line: 1.25 },
+    color: { ink: "#000000", muted: "#3a3a3a", accent: "#000000", rule: "#000000" },
     sectionStyle: "rule",
     header: "center",
     sectionCase: "asis",
@@ -119,8 +119,8 @@ export function getTemplate(id: string | null | undefined): Template {
 /** The family name used for embedded PDF and Word fonts. */
 export const resumeFontFamily = (face: Face) => (face === "serif" ? "Source Serif 4" : "Hanken Grotesk");
 
-/** The heaviest weight embedded for a face: Source Serif 4 ships up to SemiBold. */
-export const boldWeight = (face: Face) => (face === "serif" ? 600 : 700);
+/** The heaviest weight embedded for a face: 700 bold. */
+export const boldWeight = (_face: Face) => 700;
 
 /** The proof page is A4 at 96 dpi (794 px wide), where one point is exactly 4/3 px. */
 const px = (pt: number) => `${Math.round(pt * (4 / 3) * 100) / 100}px`;

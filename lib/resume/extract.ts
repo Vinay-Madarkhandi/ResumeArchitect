@@ -2,6 +2,7 @@ import mammoth from "mammoth";
 import { extractText, getDocumentProxy } from "unpdf";
 import { resumeContentToDoc } from "@/lib/documentConversion";
 import { docxToDocument } from "@/lib/docx/inPlace";
+import { pdfToDocument } from "@/lib/resume/pdfToDocument";
 import { parseResumeFile } from "@/lib/resume-parser";
 import { toUnits } from "@/lib/resume/units";
 import type { DocumentContent } from "@/lib/schemas/document";
@@ -31,9 +32,14 @@ export async function extractPdf(file: Uint8Array): Promise<ExtractedResume> {
   const proxyBytes = new Uint8Array(Buffer.from(file.buffer, file.byteOffset, file.byteLength));
   const parseBytes = new Uint8Array(Buffer.from(file.buffer, file.byteOffset, file.byteLength));
   const { text } = await extractText(await getDocumentProxy(proxyBytes), { mergePages: true });
-  const parsed = await parseResumeFile(parseBytes.buffer).then(
-    ({ content, sectionTitles }) => resumeContentToDoc(content, sectionTitles),
-    () => null,
-  );
+
+  let parsed: DocumentContent | null = await pdfToDocument(parseBytes).catch(() => null);
+  if (!parsed || parsed.content.length < 3) {
+    parsed = await parseResumeFile(parseBytes.buffer).then(
+      ({ content, sectionTitles }) => resumeContentToDoc(content, sectionTitles),
+      () => null,
+    );
+  }
   return { source: "text", text, parsed };
 }
+
